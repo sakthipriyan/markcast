@@ -75,7 +75,10 @@ window.SLIDETAKE = {
 
 Load it from npm through a CDN (pin the version, as above), or copy `dist/slidetake.js` into your site, or `npm install slidetake` and serve `node_modules/slidetake/dist/slidetake.js`.
 
-The page then shows that deck, read-only, with the layouts, keys and fullscreen. Camera and Record appear when the address has `?obs=` (or with `recording: true`), so readers get a clean view and you can still record from the page. See [examples/embed.html](examples/embed.html). The [hugo-continuum](https://github.com/sakthipriyan/hugo-continuum) theme uses it for slide pages with `engine: slidetake`.
+The page then shows that deck, read-only, in one of two modes:
+
+- **Viewer** (the default): no bottom bar. The header carries Slidetake, the layouts, light/dark, Keys and Fullscreen.
+- **Record** (`?obs=` in the address, or `recording: true`): the bottom bar as on slidetake.com, with Keys, Camera, Record and Fullscreen. See [examples/embed.html](examples/embed.html). The [hugo-continuum](https://github.com/sakthipriyan/hugo-continuum) theme uses it for slide pages with `engine: slidetake`.
 
 ## Develop
 

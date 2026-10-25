@@ -1981,9 +1981,17 @@ if (EMBED){
   credit.id = 'credit'; credit.href = 'https://slidetake.com'; credit.target = '_blank'; credit.rel = 'noopener';
   credit.title = 'Made with Slidetake'; credit.setAttribute('aria-label', 'Made with Slidetake');
   credit.innerHTML = LOGO + '<span class="word">Slide<span>take</span></span>';
-  // header, right side: Slidetake | layouts | light/dark (no help or keys buttons on a site page)
+  // header, right side: Slidetake | layouts | light/dark, and for viewers Keys and Fullscreen too: a reader's
+  // page has no bottom bar. With ?obs= (recording) the bottom bar is back, as on slidetake.com.
   const actions = document.querySelector('header .hdr-actions');
   actions.insertBefore(credit, actions.firstChild);
+  if (!RECORDING_UI){
+    actions.insertAdjacentHTML('beforeend',
+      '<button class="btn icon" id="hdr-keys" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">⌨</button>' +
+      '<button class="btn icon" id="hdr-full" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button>');
+    document.getElementById('hdr-keys').onclick = ()=>document.getElementById('help').classList.add('open');
+    document.getElementById('hdr-full').onclick = ()=>setPresent(!presenting);
+  }
 }
 
 // ---------- the deck on this page, and the working copy ----------

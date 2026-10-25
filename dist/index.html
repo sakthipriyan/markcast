@@ -474,8 +474,14 @@
   #credit .logo{width:18px;height:18px;fill:var(--accent);}
   #credit .word > span{color:var(--accent);}
   #credit:hover{opacity:.85;}
-  html.embed #btn-help, html.embed #btn-keys{display:none !important;}
-  html.no-record #btn-camera, html.no-record #btn-record, html.no-record #navbar .divider, html.embed #navbar .divider, html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
+  html.embed #btn-help{display:none !important;}
+  /* a reader's page (embedded, not recording): no bottom bar, except the arrows on touch screens */
+  html.embed.no-record #navbar{display:none;}
+  @media (pointer:coarse){
+    html.embed.no-record #navbar{display:flex;}
+    html.embed.no-record #navbar > :not(.touch-only){display:none !important;}
+  }
+  html.no-record #btn-camera, html.no-record #btn-record, html.no-record #navbar .divider, html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
   /* the logo written into a heading: # ![](/favicon.svg) Slidetake */
   .node .body :is(h1,h2) img[src$="favicon.svg"]{height:1em;width:auto;vertical-align:-.12em;margin-right:.25em;display:inline;}
   #brand .st-mark{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--text);}
@@ -3634,6 +3640,14 @@
     credit.innerHTML = LOGO + '<span class="word">Slide<span>take</span></span>';
     const actions = document.querySelector("header .hdr-actions");
     actions.insertBefore(credit, actions.firstChild);
+    if (!RECORDING_UI) {
+      actions.insertAdjacentHTML(
+        "beforeend",
+        '<button class="btn icon" id="hdr-keys" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">\u2328</button><button class="btn icon" id="hdr-full" title="Fullscreen (F)" aria-label="Fullscreen">\u26F6</button>'
+      );
+      document.getElementById("hdr-keys").onclick = () => document.getElementById("help").classList.add("open");
+      document.getElementById("hdr-full").onclick = () => setPresent(!presenting);
+    }
   }
   var route = routeOf(location.pathname, location.search, location.hash);
   var startId = route.page === "pick" ? "" : route.slide;
