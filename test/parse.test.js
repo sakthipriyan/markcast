@@ -73,6 +73,12 @@ test('cameraDirective', ()=>{
   assert.equal(cameraDirective('# x'), null);
 });
 
+test('directives shown as examples in code are not applied', ()=>{
+  assert.equal(cameraDirective('Write `<!-- camera: full -->` in a slide.'), null);
+  assert.equal(cameraDirective('```md\n## Intro\n<!-- camera: full -->\n```\nText'), null);
+  assert.equal(cameraDirective('```md\n<!-- camera: full -->\n```\n<!-- camera: off -->'), 'off');
+});
+
 test('render is called per card and errors are counted', ()=>{
   let calls = 0;
   // reveal.js and +++ decks count cards that failed to render

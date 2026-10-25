@@ -51,7 +51,7 @@ From https://slidetake.com, OBS must run on the same computer (`?obs=localhost:4
 
 ## Decks
 
-Plain markdown (each heading is a card), the older `+++` format, and reveal.js decks (`---` and `--` separators) all open as they are. Press `?` in the app for the full reference: layouts, fragments, camera directives, recording, review and the ffmpeg cut.
+Plain markdown (each heading is a card), the older `+++` format, and reveal.js decks (`---` and `--` separators) all open as they are. The full guide is itself a deck: [slidetake.com/help](https://slidetake.com/help) ([src/help.md](src/help.md)). In the app, `?` shows the keys.
 
 ## Develop
 

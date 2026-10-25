@@ -34,12 +34,27 @@ import {slugify, plainText, decodeEntities, attrsOf, splitOutsideFences} from '.
  * @typedef {(markdown: string) => {html: string, err: string|null}} Render
  */
 
+/** The text that can hold directives: fenced code blocks and `inline code` show examples, not settings. @param {string} body */
+function directiveText(body){
+  /** @type {string|null} */
+  let fence = null;
+  return body.split('\n').filter(line=>{
+    const f = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+    if (f){
+      if (!fence) fence = f[1];
+      else if (f[1][0] === fence[0] && f[1].length >= fence.length) fence = null;
+      return false;
+    }
+    return !fence;
+  }).join('\n').replace(/`[^`\n]*`/g, '');
+}
+
 /** <!-- view: overview --> @param {string} body */
-export function mapDirective(body){ return /<!--\s*view\s*:\s*(overview|map)\s*-->/i.test(body); }
+export function mapDirective(body){ return /<!--\s*view\s*:\s*(overview|map)\s*-->/i.test(directiveText(body)); }
 
 /** <!-- camera: full, on --> → "full, on" @param {string} body */
 export function cameraDirective(body){
-  const m = body.match(/<!--\s*camera\s*:\s*([\s\S]*?)\s*-->/i);
+  const m = directiveText(body).match(/<!--\s*camera\s*:\s*([\s\S]*?)\s*-->/i);
   return m ? m[1].trim() : null;
 }
 

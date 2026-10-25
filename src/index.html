@@ -40,7 +40,7 @@
     </div>
     <button class="btn" id="btn-edit-toggle" title="Editor: write, open, share (E)">✎ Editor</button>
     <button class="btn icon" id="btn-mode" title="Light / dark (L)" aria-label="Light / dark"></button>
-    <button class="btn icon" id="btn-help" title="Help (?)" aria-label="Help">?</button>
+    <button class="btn icon" id="btn-help" title="Help: the full guide (? for keys)" aria-label="Help">?</button>
   </div>
 </header>
 
@@ -93,72 +93,20 @@
 <div id="help">
   <div class="panel">
     <button class="close" id="help-close" aria-label="Close">✕</button>
-    <h2>Writing a deck</h2>
-    <p>A deck is an ordinary markdown file — no separators, no frontmatter. <strong>Every heading becomes a card</strong>, and a heading branches off the nearest shallower heading above it.</p>
-    <pre># Product            ← root card
-Intro text.
-
-## Pricing           ← child of Product
-### Enterprise       ← child of Pricing
-## Roadmap {#plan}   ← child of Product, id "plan"
-
-See the [roadmap](#plan).</pre>
-    <h3>Rules</h3>
-    <ul>
-      <li>Text before the first heading becomes a root card of its own.</li>
-      <li>Headings inside fenced code blocks are ignored.</li>
-      <li>Card ids are the heading text slugified (<code>## Moving around</code> → <code>moving-around</code>), or set one with <code>{#id}</code> at the end of the heading.</li>
-      <li>A link to <code>#id</code> flies to that card. The address bar keeps the current card, so links to a card can be shared.</li>
-      <li>Older decks that separate slides with <kbd>+++</kbd> and use <code>id / parent / x / y</code> frontmatter still load.</li>
-    </ul>
-    <h3>reveal.js decks</h3>
-    <p>Decks written for reveal.js open as they are. <kbd>---</kbd> starts a new slide and <kbd>--</kbd> a vertical one beneath it; the first slide becomes the root card. Supported: fragments (<code>fade-up</code>, <code>fade-in-then-out</code>, <code>grow</code>, …, revealed one per <kbd>→</kbd>), <code>r-stack</code>, <code>&lt;!-- .element: … --&gt;</code>, <code>&lt;section&gt;</code> slides, <code>data-autoslide</code> (while presenting), Graphviz <code>```dot</code> diagrams, ECharts <code>echarts-container</code> charts, <code>data-gsap</code> entrance animations and <code>title-scramble</code>. Cards widen for wide tables, columns, diagrams and embeds, and anything wider still is scaled to fit.</p>
-    <h3>Images and loading from the web</h3>
-    <p>Open a deck with <code>slidetake/?src=https://…/deck.md</code> and its relative images load from next to it. For a file loaded from disk, add <code>base: https://…/deck-folder/</code> to the top block. <code>?edit=0</code> hides the editor and <code>?layout=tree|radial|path|focus</code> picks the layout.</p>
-    <h3>Layouts</h3>
-    <p><strong>tree</strong> is a top-down chart and <strong>radial</strong> rings out from the root. For video, <strong>path</strong> is a staircase in the order you present them: each section is a row (1 → 1.1 → 1.2), and the next section starts just below where it ended (↓ 2 → 2.1 → 2.2), so every move is a short step right or down, and <strong>focus</strong> doesn't travel at all: the next slide fades in. Both show a progress bar while presenting that moves with every press.</p>
-    <p>Text keeps one size within a section; it only changes when the section does. <code>&lt;!-- view: overview --&gt;</code> on a slide pulls back to the whole map for a moment before flying in, a good beat at the start of a chapter.</p>
-    <h3>Moving around</h3>
-    <p>Click a card. <kbd>→</kbd> <kbd>←</kbd> / <kbd>Space</kbd> walk in document order, <kbd>↓</kbd> <kbd>↑</kbd> child / parent, <kbd>O</kbd> overview, <kbd>1</kbd>–<kbd>4</kbd> switch layout, <kbd>E</kbd> editor, <kbd>F</kbd> fullscreen, <kbd>R</kbd> record and <kbd>C</kbd> camera (with <code>?obs</code>), <kbd>L</kbd> light / dark (or <code>mode: light</code> in the deck, <code>?mode=light</code> in the address).</p>
-    <p>Drag to pan. Scroll or pinch to zoom.</p>
-    <h3>Recording mode: ?obs</h3>
-    <p>The camera, recording and talk timer are for making a video, so they only appear when the address says where OBS is: <code>?obs=localhost:4455</code> or <code>?obs=host:port:password</code> (a bare <code>?obs</code> uses the connection you remembered). Without it you get the deck and <strong>Fullscreen</strong>, and camera settings in the deck are ignored, so the same deck works for readers on a website.</p>
-    <h3>Channel mark and PIP camera</h3>
-    <p>An optional block at the very top of the file sets deck-wide options:</p>
-    <pre>---
-brand: sakthipriyan.com/building-wealth   ← text in the top-right corner
-brand_style: text            ← text (default) or chip
-logo: https://…/logo.png     ← image beside it (URL or data: URI)
-pip: bottom-right            ← top-left | top-right | bottom-left | bottom-right | none
-pip_size: 24%                ← width of the camera box
-pip_shape: rect              ← rect (16:9) or circle
-pip_mirror: yes              ← mirror the webcam like a selfie view
-camera: 24%, 40%, full, off  ← layouts V cycles through
----</pre>
-    <p>Slides are always placed clear of the brand and the PIP box. With <strong>◉ Camera on</strong>, your webcam shows live inside the box (it starts when you switch it on, press <kbd>P</kbd>, or reach a camera step), so a plain screen recording captures you and the slides together. Without the webcam, the box is a dashed guide for lining up an OBS camera overlay.</p>
-    <h3>Camera per slide</h3>
-    <p>Put a comment anywhere in a slide to change the camera from that slide onward (other markdown viewers hide it):</p>
-    <pre>## Intro
-&lt;!-- camera: full --&gt;        ← camera fills the screen
-
-## Pricing
-&lt;!-- camera: 18% flip --&gt;    ← small, on the other side
-
-## Q&amp;A
-&lt;!-- camera: off --&gt;</pre>
-    <p>List several layouts with commas to step through them on one slide: <code>&lt;!-- camera: full, on --&gt;</code> opens on you full-screen, the next <kbd>→</kbd> shrinks the camera into its corner and reveals the slide, and the one after moves on. <kbd>←</kbd> steps back the same way.</p>
-    <p>Once the camera is on, <kbd>P</kbd> starts the webcam for decks that set <code>camera:</code> or have camera comments.</p>
-    <p>Words you can combine: <code>on</code> <code>off</code> <code>full</code> a size like <code>30%</code>, a corner, <code>flip</code> (other side), <code>circle</code> / <code>rect</code>, <code>mirror</code> / <code>unmirror</code>. A slide always gets the nearest setting at or before it, so going back shows the same camera as going forward.</p>
-    <p><kbd>V</kbd> steps through the <code>camera:</code> list for the current slide (default: on → full → off); the next slide goes back to its own setting. <kbd>C</kbd> or the <strong>Camera</strong> button switches the camera off for the whole deck: camera comments are ignored, steps that only change the camera are skipped, and slides use the whole screen. The camera is off every time the page opens; turn it on when you want it.</p>
-    <h3>Progress and talk timer</h3>
-    <p>While presenting, a thin bar along the bottom fills in the theme colour with every press. Give the deck a length, <code>duration: 10m</code> (or <code>90s</code>, <code>1h</code>, <code>12:30</code>, or <code>?duration=10m</code> in the address), and a half-strength layer of the same colour grows behind it with the clock: if that lighter stretch shows past the solid fill, you're behind; if it reaches the end, the bar pulses. The timer is for you, so recorded takes show progress only unless the deck says <code>timer: always</code>. <code>progress: off</code> hides the bar.</p>
-    <h3>Recording a take</h3>
-    <p>You need <a href="https://obsproject.com" target="_blank" rel="noopener">OBS Studio</a> (free) with its WebSocket server on (Tools → WebSocket Server Settings). OBS records; Slidetake drives it. On a MacBook, whose screen isn't 16:9, <a href="https://betterdisplay.pro" target="_blank" rel="noopener">BetterDisplay</a> can add a 16:9 virtual screen (say 1920×1080) to present on and record, so YouTube shows it without bars.</p>
-    <p><strong>● Record</strong> connects to OBS over its WebSocket server, counts down, starts the recording, and from then on the deck drives everything: camera layouts, reveals and slides follow <kbd>→</kbd> (a Bluetooth clicker works). Clicks, dragging and the map are locked so the take only moves forward. <kbd>←</kbd> takes the current slide again, keeping every attempt; <kbd>B</kbd> pauses; one press past the last step stops OBS.</p>
-    <p>Then the review opens: every slide with its takes (the last one picked), previews straight from the OBS file, a ready-to-run ffmpeg command for the picked takes, and the YouTube title, description with chapters and links, and tags. Sessions are kept in this browser, so a take can be reviewed again later from ● Record. <code>?obs=host:port:password</code> in the address fills in OBS and connects automatically. Deck front matter <code>summary</code>, <code>related</code> (a list of <code>[Title](url)</code>), <code>tags</code> / <code>wealth_tags</code> / <code>systems_tags</code>, and <code>permalink</code> or <code>site</code> feed the publish pack.</p>
-    <h3>Recording</h3>
-    <p>The current slide is scaled up to fill the screen. <kbd>+</kbd> <kbd>−</kbd> make slides bigger or smaller, and the size is remembered. <kbd>P</kbd> goes fullscreen; the cursor and controls hide after two seconds without mouse movement.</p>
-    <p>Your draft is kept in this browser only. Use Download to keep a file.</p>
+    <h2>Keys</h2>
+    <table class="keys">
+      <tr><td><kbd>→</kbd> <kbd>←</kbd> <kbd>Space</kbd></td><td>next / previous step</td></tr>
+      <tr><td><kbd>↓</kbd> <kbd>↑</kbd></td><td>first child / parent</td></tr>
+      <tr><td><kbd>O</kbd></td><td>the whole map</td></tr>
+      <tr><td><kbd>1</kbd>–<kbd>4</kbd></td><td>tree, radial, path, focus</td></tr>
+      <tr><td><kbd>F</kbd></td><td>fullscreen</td></tr>
+      <tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>bigger / smaller slides</td></tr>
+      <tr><td><kbd>E</kbd></td><td>editor: write, open, share</td></tr>
+      <tr><td><kbd>L</kbd></td><td>light / dark</td></tr>
+      <tr><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, record (with <code>?obs=</code>)</td></tr>
+    </table>
+    <p>Drag to pan, scroll or pinch to zoom, click a card to fly to it.</p>
+    <p><a href="/help" target="_blank" rel="noopener">The full guide →</a> writing decks, sharing, recording, camera, review and cut.</p>
   </div>
 </div>
 

@@ -1,4 +1,5 @@
 import SAMPLE_MD from './sample.md';
+import HELP_MD from './help.md';
 import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime} from './core/text.js';
 import {parseDeck as parseDeckCore, cameraDirective, mapDirective} from './core/parse.js';
 import {CORNERS, clampPipSize, applyPreset, cameraPresets, stepsFor} from './core/steps.js';
@@ -1804,7 +1805,8 @@ document.addEventListener('fullscreenchange', ()=>{
 });
 
 const help = document.getElementById('help');
-document.getElementById('btn-help').onclick = ()=>help.classList.add('open');
+// ? (the key) shows the keys; the ? button opens the full guide, itself a deck, in a new tab
+document.getElementById('btn-help').onclick = ()=>window.open('/help', '_blank', 'noopener');
 document.getElementById('help-close').onclick = ()=>help.classList.remove('open');
 help.addEventListener('click', e=>{ if (e.target===help) help.classList.remove('open'); });
 
@@ -1928,6 +1930,7 @@ if (['tree','radial','path','focus'].includes(params.get('layout'))){
 let deckSource = sourceFromPath(location.pathname) || (params.get('src') ? {kind: 'url', url: params.get('src')} : null);
 let deckEdited = false;   // changed in the editor since it was loaded
 async function fetchSource(source){
+  if (source.kind === 'builtin') return HELP_MD;
   if (source.kind === 'gist'){
     const res = await fetch('https://api.github.com/gists/' + encodeURIComponent(source.id));
     if (!res.ok) throw new Error(res.status === 404 ? 'no such gist' : res.status + ' ' + res.statusText);

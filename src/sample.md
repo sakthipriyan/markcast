@@ -80,3 +80,5 @@ Press **✎ Editor**, then **Open**, and paste a link to a markdown file:
 Slidetake is open source under the Apache 2.0 license: [github.com/sakthipriyan/slidetake](https://github.com/sakthipriyan/slidetake).
 
 The whole app is one HTML file. Download it, open it, host it anywhere.
+
+Everything else is in the guide, itself a deck: [slidetake.com/help](/help).

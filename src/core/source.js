@@ -4,6 +4,7 @@
 //   /gh/owner/repo/path/deck.md        a file on GitHub, default branch
 //   /gh/owner/repo@branch/path/deck.md a file on a branch or tag
 //   /gist/<id>                         a gist (its first markdown file)
+//   /help                              the help deck, built in
 //   ?src=<any URL>                     anything else that allows cross-site reads
 //
 // GitHub page URLs pasted by people (github.com/…/blob/…, gist.github.com/…) are turned into these.
@@ -11,7 +12,7 @@
 const RAW = 'https://raw.githubusercontent.com/';
 
 /**
- * @typedef {{kind: 'url', url: string} | {kind: 'gist', id: string, file?: string}} DeckSource
+ * @typedef {{kind: 'url', url: string} | {kind: 'gist', id: string, file?: string} | {kind: 'builtin', id: 'help'}} DeckSource
  */
 
 /**
@@ -65,6 +66,7 @@ export function sourceFromPath(pathname){
     if (!owner || !repo || !ref) return null;
     return {kind: 'url', url: RAW + [owner, repo, ref, ...rest].map(encodeURIComponent).join('/')};
   }
+  if (parts.length === 1 && parts[0] === 'help') return {kind: 'builtin', id: 'help'};
   if (parts[0] === 'gist' && parts[1] && /^[\da-f]+$/i.test(parts[1])){
     return parts[2] ? {kind: 'gist', id: parts[1], file: parts[2]} : {kind: 'gist', id: parts[1]};
   }
@@ -77,6 +79,7 @@ export function sourceFromPath(pathname){
  * @param {DeckSource} source
  */
 export function shortLink(source){
+  if (source.kind === 'builtin') return '/' + source.id;
   if (source.kind === 'gist') return '/gist/' + source.id + (source.file ? '/' + encodeURIComponent(source.file) : '');
   const m = source.url.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
   if (m){
