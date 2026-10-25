@@ -16,7 +16,10 @@
   "bugs": "https://github.com/slidetake/slidetake/issues",
   "license": "Apache-2.0",
   "author": "Sakthi Priyan H",
-  "repository": "github:slidetake/slidetake",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slidetake/slidetake.git"
+  },
   "type": "module",
   "main": "dist/slidetake.js",
   "browser": "dist/slidetake.js",

@@ -1981,9 +1981,9 @@ if (EMBED){
   credit.id = 'credit'; credit.href = 'https://slidetake.com'; credit.target = '_blank'; credit.rel = 'noopener';
   credit.title = 'Made with Slidetake'; credit.setAttribute('aria-label', 'Made with Slidetake');
   credit.innerHTML = LOGO + '<span class="word">Slide<span>take</span></span>';
-  const bar = document.getElementById('navbar');
-  bar.insertAdjacentHTML('beforeend', '<div class="divider"></div>');
-  bar.appendChild(credit);
+  // header, right side: Slidetake | layouts | light/dark (no help or keys buttons on a site page)
+  const actions = document.querySelector('header .hdr-actions');
+  actions.insertBefore(credit, actions.firstChild);
 }
 
 // ---------- the deck on this page, and the working copy ----------
