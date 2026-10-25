@@ -10,27 +10,59 @@ pip: bottom-right
 
 **Markdown to finished video.** Write a deck in markdown, present it as a map you move through, and record it take by take.
 
-Press → to walk this deck.
+Press → to walk this deck, or **O** to see its map.
 
 ## ✍️ Write
 
-Ordinary markdown: every heading is a card, and deeper headings branch off it.
+Ordinary markdown is the whole format.
+
+### Headings are cards
+
+`#` is the first card, `##` sections branch from it, `###` go a level deeper. This card is a `###`.
+
+### The tree is the map
+
+↓ goes into a section, ↑ comes back out. This deck is a tree you're walking right now.
 
 ## 🎬 Present
 
 <!-- view: overview -->
 
-The deck is a map: this slide pulls back to all of it first. ← → to move, **F** for fullscreen, and **tree**, **radial**, **path** or **focus** at the top.
+The deck is a map: this slide pulls back to all of it first.
+
+### Four layouts
+
+**Tree**, **radial**, **path** or **focus** at the top. Path is a staircase made for video; focus fades slide to slide.
+
+### Fullscreen
+
+**F** fills the screen. A thin bar along the bottom tracks your progress, and the clock if the deck has a length.
 
 ## ⏺️ Record
 
 <!-- camera: on, full, on -->
 
-With **[OBS](https://obsproject.com)**, every slide is a take: redo a slide on the spot, keep the best attempt, and get a frame-exact cut with YouTube chapters. Turn on **Camera** to see this slide move it.
+With **[OBS](https://obsproject.com)**, the deck directs the video. Turn on **Camera** and this slide moves you around the screen.
+
+### Every slide is a take
+
+Fumbled a slide? ← starts it again. Every attempt is kept; pick the best one later.
+
+### The cut
+
+Slidetake writes a frame-exact **ffmpeg** command for the takes you picked, with YouTube **chapters** and a description.
 
 ## 🔗 Open and share
 
-**✎ Editor → Load** a GitHub file or gist, or **New** from a template. Type in any deck to make your own copy; **Share** copies a link with the deck inside it.
+**✎ Editor** opens the markdown beside the deck.
+
+### Your copy
+
+Type in any deck, this one included, and it becomes your own copy. The original stays as it is.
+
+### Links
+
+**⇣ Load** a GitHub file or gist, **New** from a template, and **Share** a link with your deck inside it.
 
 ## 💛 Free and open
 
