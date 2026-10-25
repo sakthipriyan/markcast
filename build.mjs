@@ -19,8 +19,6 @@ const inlinePage = {
         .replace('<script>/*@app*/</script>', ()=>'<script>\n' + js.replace(/<\/script/gi, '<\\/script') + '</script>');
       await mkdir('dist', {recursive: true});
       await writeFile('dist/index.html', page);
-      // GitHub Pages reads the custom domain from a CNAME file in the published folder
-      await writeFile('dist/CNAME', await readFile('src/CNAME', 'utf8'));
       console.log('built dist/index.html (' + Math.round(page.length / 1024) + ' KB)');
     });
   }
