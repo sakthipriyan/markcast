@@ -1,0 +1,477 @@
+  :root{
+    --bg:#0a0f1a;
+    --grid-dot:#16233a;
+    --panel:#0d1526;
+    --panel-line:#182338;
+    --node-bg:#101b30;
+    --node-border:#24344f;
+    --accent:#e8a33d;
+    --accent-teal:#4fd1c5;
+    --text:#e8ecf1;
+    --text-muted:#7c8ca6;
+    --danger:#e0645c;
+    --code-bg:var(--code-bg);
+    --overlay:var(--overlay);        /* breadcrumbs, nav bar, minimap */
+    --on-accent:#141414;                /* text on an accent-filled button */
+    --card-shadow:0 6px 24px rgba(0,0,0,.35);
+    --brand-shadow:0 1px 6px rgba(0,0,0,.6);
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'IBM Plex Sans', sans-serif;
+  }
+  /* Tokens derived from others are declared on body, not :root: a custom property resolves var() where
+     it is declared, so on :root these would freeze the default palette's colours. */
+  body{
+    --accent-line:var(--accent-teal);   /* borders and connector lines on the active path */
+    --accent-ring:var(--accent);        /* the current slide's border, glow and the progress bar */
+    --edge:var(--node-border);          /* connector lines off the active path */
+  }
+  /* Building Wealth: the site's dark-mode zinc surfaces with the section's gold, as declared in
+     content/building-wealth/_index.md (accentInkDark #e0b024, accentFrom #f5c542, accentLineDark #966f04,
+     onAccent #1a1408) and the theme's dark tokens (#09090b page, #18181b card, #27272a border). */
+  body[data-palette="building-wealth"]{
+    --bg:#09090b; --grid-dot:#1d1d21; --panel:#111113; --panel-line:#27272a;
+    --node-bg:#18181b; --node-border:#323238;
+    --accent:#e0b024; --accent-teal:#f5c542; --accent-line:#966f04;
+    --text:#e4e4e7; --text-muted:#a1a1aa;
+    --code-bg:#0f0f12; --overlay:rgba(17,17,19,.9); --on-accent:#1a1408;
+  }
+  /* Light mode (◐, mode: light, ?mode=light). Generic light first, then Building Wealth's light
+     values from content/building-wealth/_index.md: accentInk #7a5c12 carries text (6.2:1 on white),
+     the gold gradient (#f5c542 → #d4af37) only rings and lines, which never need to be read. */
+  body[data-mode="light"]{
+    --bg:#fafaf9; --grid-dot:#e7e5e4; --panel:#ffffff; --panel-line:#e4e4e7;
+    --node-bg:#ffffff; --node-border:#e4e4e7; --edge:#d4d4d8;
+    --accent:#2471a3; --accent-teal:#0e7490; --accent-line:#7fb3d5; --accent-ring:#2471a3;
+    --text:#27272a; --text-muted:#71717a; --danger:#c2410c;
+    --code-bg:#f4f4f5; --overlay:rgba(255,255,255,.92); --on-accent:#ffffff;
+    --card-shadow:0 4px 18px rgba(24,24,27,.08); --brand-shadow:0 1px 4px rgba(255,255,255,.9);
+  }
+  body[data-palette="building-wealth"][data-mode="light"]{
+    --bg:#fafaf9; --grid-dot:#e7e5e4; --panel:#ffffff; --panel-line:#e4e4e7;
+    --node-bg:#ffffff; --node-border:#e4e4e7; --edge:#d4d4d8;
+    --accent:#7a5c12; --accent-teal:#8a6610; --accent-line:#d4af37; --accent-ring:#d4af37;
+    --text:#27272a; --text-muted:#71717a; --danger:#c2410c;
+    --code-bg:#f4f4f5; --overlay:rgba(255,255,255,.92); --on-accent:#ffffff;
+    --card-shadow:0 4px 18px rgba(24,24,27,.08); --brand-shadow:0 1px 4px rgba(255,255,255,.9);
+  }
+  body[data-mode="light"] .node .body pre code{color:var(--text);}
+  body[data-mode="light"] #help, body[data-mode="light"] .modal{background:rgba(24,24,27,.45);}
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  ::selection{background:var(--accent);color:var(--on-accent);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  button{font-family:var(--mono);}
+
+  /* ---------- header ---------- */
+  header{
+    min-height:56px;flex:none;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    padding:8px 16px;
+    background:var(--panel);
+    border-bottom:1px solid var(--panel-line);
+    z-index:20;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand .mark{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.02em;}
+  .brand .mark span{color:var(--accent);}
+  .brand .tagline{font-family:var(--mono);font-size:11px;color:var(--text-muted);}
+  .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .btn{
+    background:transparent;color:var(--text);
+    border:1px solid var(--node-border);border-radius:6px;
+    padding:7px 12px;font-size:12px;letter-spacing:.02em;cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.primary{border-color:var(--accent);color:var(--accent);}
+  .btn.primary:hover{background:var(--accent);color:var(--on-accent);}
+  .btn.active{background:var(--node-border);}
+  .seg{display:flex;border:1px solid var(--node-border);border-radius:6px;overflow:hidden;}
+  .seg-btn{
+    background:transparent;border:none;color:var(--text-muted);font-family:var(--mono);
+    font-size:12px;padding:7px 12px;cursor:pointer;transition:background .15s,color .15s;
+  }
+  .seg-btn:hover{color:var(--accent);}
+  .seg-btn.active{background:var(--node-border);color:var(--accent);}
+
+  /* ---------- main layout ---------- */
+  main{flex:1;display:flex;min-height:0;}
+  #editor-pane{
+    width:38%;min-width:300px;max-width:640px;
+    display:flex;flex-direction:column;
+    background:var(--panel);border-right:1px solid var(--panel-line);
+    transition:width .25s ease, min-width .25s ease, opacity .2s ease;
+    overflow:hidden;
+  }
+  #editor-pane.collapsed{width:0;min-width:0;opacity:0;border-right:none;}
+  .pane-label{
+    font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-muted);padding:10px 14px 6px;flex:none;
+  }
+  #editor{
+    flex:1;resize:none;border:none;outline:none;
+    background:var(--panel);color:var(--text);
+    font-family:var(--mono);font-size:12.5px;line-height:1.65;
+    padding:0 14px 14px;tab-size:2;
+  }
+  #status-line{
+    flex:none;padding:6px 14px;font-family:var(--mono);font-size:11px;
+    color:var(--text-muted);border-top:1px solid var(--panel-line);
+    display:flex;justify-content:space-between;gap:10px;
+  }
+  #status-line .err{color:var(--danger);}
+  #btn-reset{background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;padding:0;text-decoration:underline;}
+  #btn-reset:hover{color:var(--accent);}
+
+  body.presenting header, body.presenting #editor-pane{display:none;}
+  #breadcrumbs, #navbar, #minimap{transition:opacity .4s;}
+  body.presenting.idle #breadcrumbs, body.presenting.idle #navbar, body.presenting.idle #minimap{opacity:0;pointer-events:none;}
+  body.presenting.idle, body.presenting.idle *{cursor:none !important;}
+
+  /* ---------- stage ---------- */
+  #stage-wrap{flex:1;position:relative;overflow:hidden;}
+  #stage{
+    position:absolute;inset:0;
+    background-color:var(--bg);
+    background-image:radial-gradient(var(--grid-dot) 1.2px, transparent 1.2px);
+    background-size:28px 28px;
+    overflow:hidden;cursor:grab;touch-action:none;
+  }
+  #stage.dragging{cursor:grabbing;user-select:none;}
+  #world{position:absolute;left:0;top:0;transform-origin:0 0;}
+  #connectors{position:absolute;left:0;top:0;overflow:visible;pointer-events:none;}
+  #connectors path{fill:none;stroke:var(--edge);stroke-width:1.5;transition:stroke .2s;}
+  #connectors path.active{stroke:var(--accent-line);stroke-width:2;}
+
+  div.node{ /* div: Graphviz also puts class="node" on its SVG shapes */
+    position:absolute;left:0;top:0;width:440px;
+    /* centre of the card sits at (--cx, --cy); --push is Focus's settle-in scale */
+    transform:translate(calc(var(--cx,0) * 1px), calc(var(--cy,0) * 1px)) scale(var(--push,1)) translate(-50%,-50%);
+    transform-origin:0 0; /* the last translate puts the card centre at 0,0, so the scale pivots on it */
+    background:var(--node-bg);
+    border:1px solid var(--node-border);border-radius:8px;
+    padding:16px 18px 18px;cursor:pointer;
+    box-shadow:var(--card-shadow);
+    transition:border-color .18s, box-shadow .18s, opacity .3s;
+  }
+  /* Focus: every card sits at the same spot and only the current one shows; the next fades in with
+     a slight push-in instead of the camera travelling */
+  /* other cards vanish at once (no stacked fade on load or layout change); only the slide just left
+     fades out, beneath the incoming one */
+  #world.focus div.node{transition:none;}
+  #world.focus div.node:not(.current){opacity:0;pointer-events:none;}
+  #world.focus div.node.current{z-index:2;transition:opacity .55s ease, transform .8s cubic-bezier(.2,.7,.2,1), border-color .18s;}
+  #world.focus div.node.leaving{z-index:1;transition:opacity .45s ease;}
+  #world.focus div.node.entering{--push:.96;transition:none;}
+  #world.focus #connectors{display:none;}
+  /* progress: one continuous bar that moves with every press, reveals and camera steps included */
+  #progress{position:absolute;left:0;right:0;bottom:0;height:5px;z-index:9;display:none;
+    background:color-mix(in srgb, var(--text-muted) 22%, transparent);}
+  #progress.show{display:block;}
+  #progress i{position:absolute;inset:0 auto 0 0;width:0;background:var(--accent-ring);transition:width .5s ease;}
+  /* talk timer on the same bar, in the same colour: the clock grows a half-strength layer behind the
+     solid progress, so any half-strength stretch showing past the solid is how far behind the talk is */
+  #progress b{position:absolute;inset:0 auto 0 0;width:0;background:color-mix(in srgb, var(--accent-ring) 50%, transparent);transition:width 1s linear;display:none;}
+  #progress.timed b{display:block;}
+  #progress.over b{animation:over 1.4s ease-in-out infinite;}
+  @keyframes over{50%{opacity:.45;}}
+  #world.morph div.node{transition:transform .65s cubic-bezier(.65,0,.35,1), border-color .18s, opacity .3s;}
+  .node .body{overflow-wrap:anywhere;word-break:break-word;}
+  /* only the current slide is ringed in the accent; hover and the route back to the root are faint tints */
+  /* hover never touches the current slide, or its border would sit inside the ring as a second line */
+  .node:not(.current):hover{border-color:color-mix(in srgb, var(--accent-line) 35%, var(--node-border));}
+  body.presenting .node:not(.current):hover{border-color:var(--node-border);}
+  /* cards take focus on click; the current-slide ring already marks them, so no second outline
+     (Chrome re-shows :focus-visible when the window regains focus) */
+  .node:focus-visible{outline:none;}
+  .node:not(.current):focus-visible{border-color:var(--accent-line);}
+  .node.current{border-color:var(--accent-ring);box-shadow:0 0 0 1px var(--accent-ring), 0 10px 34px color-mix(in srgb, var(--accent-ring) 22%, transparent);}
+  .node.active-path:not(.current){border-color:color-mix(in srgb, var(--accent-line) 30%, var(--node-border));}
+  .node .crumb{
+    font-family:var(--mono);font-size:10px;color:var(--text-muted);overflow-wrap:anywhere;
+    letter-spacing:.06em;margin-bottom:8px;text-transform:uppercase;
+  }
+  .node .body h1,.node .body h2,.node .body h3,.node .body h4,.node .body h5,.node .body h6{
+    font-family:var(--display);color:var(--text);margin:0 0 8px;line-height:1.25;
+  }
+  .node .body h1{font-size:19px;}
+  .node .body h2{font-size:16px;}
+  .node .body h3{font-size:14px;color:var(--accent-teal);}
+  .node .body h4,.node .body h5,.node .body h6{font-size:13px;color:var(--accent-teal);}
+  .node .body p{margin:0 0 10px;font-size:13px;line-height:1.6;}
+  .node .body > :last-child{margin-bottom:0;}
+  .node .body ul,.node .body ol{margin:0 0 10px;padding-left:18px;font-size:13px;line-height:1.6;}
+  .node .body li{margin-bottom:3px;}
+  .node .body blockquote{margin:0 0 10px;padding-left:10px;border-left:2px solid var(--accent);color:var(--text-muted);font-size:13px;}
+  .node .body img{max-width:100%;border-radius:4px;}
+  .node .body table{border-collapse:collapse;font-size:12px;margin:0 0 10px;}
+  .node .body th,.node .body td{border:1px solid var(--panel-line);padding:3px 7px;}
+  .node .body code{
+    font-family:var(--mono);background:var(--code-bg);border:1px solid var(--panel-line);
+    padding:1px 5px;border-radius:4px;font-size:12px;color:var(--accent-teal);
+  }
+  .node .body pre{
+    background:var(--code-bg);border:1px solid var(--panel-line);border-radius:6px;
+    padding:10px 12px;overflow-x:auto;margin:0 0 10px;
+  }
+  .node .body pre code{border:none;background:none;padding:0;color:var(--text);}
+  .node .body strong{color:var(--accent);}
+  .node .body a{color:var(--accent-teal);}
+  .node .body a.xlink::after{content:" ↗";font-size:10px;}
+  .node .err-badge{
+    position:absolute;top:-8px;right:-8px;background:var(--danger);color:#1a0a08;
+    font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;
+  }
+
+  /* ---------- recording ---------- */
+  .modal{position:fixed;inset:0;background:rgba(4,7,13,.72);z-index:50;display:none;align-items:center;justify-content:center;padding:16px;}
+  .modal.open{display:flex;}
+  .modal .panel{
+    position:relative;width:min(620px,100%);max-height:88vh;overflow-y:auto;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:12px;padding:24px 26px;
+  }
+  .modal .panel.wide{width:min(760px,100%);}
+  .modal h2{font-family:var(--display);font-size:18px;margin:0 0 6px;color:var(--accent);}
+  .modal h3{font-family:var(--display);font-size:13px;margin:18px 0 8px;color:var(--text);display:flex;align-items:center;gap:10px;}
+  .modal p, .modal li{font-size:13px;line-height:1.6;color:var(--text-muted);margin:0 0 6px;}
+  .modal ul{padding-left:18px;margin:0;}
+  .modal .close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+  .modal .fields{display:grid;grid-template-columns:2fr 1fr 2fr;gap:10px;}
+  .modal label{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:11px;color:var(--text-muted);}
+  .modal label.check{flex-direction:row;align-items:center;gap:8px;margin-top:10px;}
+  .modal input[type=text], .modal input[type=password], .modal textarea{
+    background:var(--code-bg);border:1px solid var(--node-border);border-radius:6px;color:var(--text);
+    font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none;
+  }
+  .modal input:focus, .modal textarea:focus{border-color:var(--accent);}
+  .modal textarea{width:100%;resize:vertical;line-height:1.6;}
+  .modal .row{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;}
+  .modal .row.end{justify-content:flex-end;margin-top:20px;}
+  .modal .btn[disabled]{opacity:.4;cursor:not-allowed;}
+  .modal .btn.small{padding:3px 9px;font-size:11px;}
+  #obs-status{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+  #obs-status.ok{color:#10b981;}
+  #obs-status.err{color:var(--danger);}
+  .modal .warn{color:var(--accent);}
+  @media (max-width:560px){ .modal .fields{grid-template-columns:1fr;} }
+  #navbar #btn-record{color:#f87171;}
+  #navbar #btn-record:hover{color:#fff;background:#b91c1c;}
+  #navbar #btn-present{color:var(--accent);}
+  .no-obs #btn-camera, .no-obs #btn-record, .no-obs #pip, .no-obs .obs-only{display:none !important;}
+  /* camera: a grey camera when off; green, with a live dot, when on */
+  #btn-camera{display:inline-flex;align-items:center;gap:6px;}
+  #btn-camera svg{display:block;}
+  #btn-camera .live{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.35;}
+  #navbar #btn-camera.on{color:#22c55e;}
+  #btn-camera.on .live{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:live 1.6s ease-out infinite;}
+  @keyframes live{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);}70%{box-shadow:0 0 0 7px rgba(34,197,94,0);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}}
+  @media (prefers-reduced-motion: reduce){ #btn-camera.on .live{animation:none;} }
+  /* while a take runs nothing but the slides and the camera is on screen */
+  body.recording #breadcrumbs, body.recording #navbar, body.recording #minimap, body.recording #pip-msg{display:none !important;}
+  body.recording, body.recording *{cursor:none !important;}
+  #rec-countdown{
+    position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+    background:rgba(4,7,13,.9);font-family:var(--display);color:var(--accent);
+  }
+  #rec-countdown.show{display:flex;}
+  #rec-countdown .num{font-size:180px;font-weight:700;line-height:1;}
+  #rec-countdown .hint{font-family:var(--mono);font-size:13px;color:var(--text-muted);}
+  #rec-paused{
+    position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;
+    background:rgba(4,7,13,.94);font-family:var(--mono);font-size:15px;color:var(--text-muted);letter-spacing:.06em;
+  }
+  #rec-paused.show{display:flex;}
+  .modal .panel.xwide{width:min(1220px,100%);max-height:94vh;}
+  .rv-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px;margin-top:12px;}
+  @media (max-width:900px){ .rv-grid{grid-template-columns:1fr;} }
+  .rv-video{position:relative;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;}
+  .rv-video video{width:100%;height:100%;display:block;}
+  #rv-novideo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;}
+  #rv-novideo[hidden]{display:none;}
+  #rv-now{font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:8px;min-height:1.4em;}
+  .rv-list{max-height:52vh;overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
+  .rv-row{padding:9px 12px;border-bottom:1px solid var(--panel-line);}
+  .rv-row:last-child{border-bottom:none;}
+  .rv-row .t{font-size:12.5px;color:var(--text);margin-bottom:6px;display:flex;justify-content:space-between;gap:8px;}
+  .rv-row .t small{font-family:var(--mono);color:var(--text-muted);font-size:10.5px;white-space:nowrap;}
+  .rv-row.sec .t{color:var(--accent-teal);}
+  .rv-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .rv-chip{background:transparent;border:1px solid var(--node-border);color:var(--text-muted);border-radius:20px;
+    font-family:var(--mono);font-size:11px;padding:3px 10px;cursor:pointer;}
+  .rv-chip:hover{border-color:var(--accent-teal);color:var(--text);}
+  .rv-chip.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  .rv-chip.skip.on{border-color:var(--danger);color:var(--danger);background:rgba(224,100,92,.1);}
+  .rv-out{margin-top:6px;}
+  .rv-out .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:900px){ .rv-out .two{grid-template-columns:1fr;} }
+  .modal select{background:var(--code-bg);border:1px solid var(--node-border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11.5px;padding:4px 8px;}
+  #rec-sessions{margin-top:14px;}
+
+  /* ---------- reveal.js compatibility: fragments, stacks, diagrams, charts ---------- */
+  .node .fragment{opacity:0;visibility:hidden;transition:opacity .45s ease, transform .45s ease, visibility 0s .45s;}
+  .node .fragment.visible{opacity:1;visibility:inherit;transition:opacity .45s ease, transform .45s ease;}
+  .node .fragment.fade-up{transform:translateY(24px);}
+  .node .fragment.fade-down{transform:translateY(-24px);}
+  .node .fragment.fade-left{transform:translateX(40px);}
+  .node .fragment.fade-right{transform:translateX(-40px);}
+  .node .fragment.zoom-in{transform:scale(.1);}
+  .node .fragment.visible:is(.fade-up,.fade-down,.fade-left,.fade-right,.zoom-in){transform:none;}
+  /* these start visible and change when their step comes */
+  .node .fragment:is(.grow,.shrink,.fade-out,.semi-fade-out,.strike,.highlight-red,.highlight-green,.highlight-blue){opacity:1;visibility:inherit;}
+  /* grow: sized to its content and growing rightwards, so the card can make room for its last step */
+  .node .fragment.grow{width:fit-content;max-width:100%;transform-origin:left center;}
+  .node .fragment.grow.visible{transform:scale(1.3);}
+  .node .fragment.shrink.visible{transform:scale(.7);}
+  .node .fragment.fade-out.visible{opacity:0;visibility:hidden;}
+  .node .fragment.semi-fade-out.visible{opacity:.5;}
+  .node .fragment.strike.visible{text-decoration:line-through;}
+  .node .fragment.highlight-red.visible{color:var(--danger);}
+  .node .fragment.highlight-green.visible{color:#10b981;}
+  .node .fragment.highlight-blue.visible{color:#60a5fa;}
+  /* shown only while it is the newest step */
+  .node .fragment.visible:is(.fade-in-then-out,.current-visible):not(.current-fragment){opacity:0;visibility:hidden;}
+  .node .fragment.fade-in-then-semi-out.visible:not(.current-fragment){opacity:.5;}
+  .node .r-stack{display:grid;}
+  .node .r-stack > *{grid-area:1/1;margin:auto;}
+  .node .r-hstack{display:flex;flex-direction:row;align-items:center;justify-content:center;}
+  .node .r-vstack{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .node .body img{max-width:100%;height:auto;object-fit:contain;}
+  /* measure cards at their resting size, without grow/zoom transforms */
+  div.node.measuring .fragment{transform:none !important;transition:none !important;}
+  /* a card re-measured mid-entrance (a theme switch replays it) must not count a gsap "from" state such
+     as scale(3) as its width, or it shrinks the whole card to fit */
+  div.node.measuring [data-gsap]{transform:none !important;}
+  /* arriving at or leaving a slide snaps its fragments; only steps within the slide animate */
+  div.node.snap .fragment{transition:none !important;}
+  .node .body iframe{max-width:100%;border:0;border-radius:6px;background:#fff;}
+  .node .diagram{background:#f8fafc;border:1px solid var(--panel-line);border-radius:8px;padding:12px;margin:0 0 10px;overflow:auto;}
+  .node .diagram svg{display:block;width:100%;height:auto;max-height:640px;}
+  .node .diagram.err{background:none;color:var(--danger);font-family:var(--mono);font-size:12px;padding:0;}
+  .node .echarts-container{width:100%;height:360px;margin:0 0 10px;}
+
+  /* ---------- overlays ---------- */
+  #breadcrumbs{
+    position:absolute;top:14px;left:14px;z-index:10;
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:60%;
+    font-family:var(--mono);font-size:11.5px;
+  }
+  #breadcrumbs .crumb-btn{
+    background:var(--overlay);border:1px solid var(--panel-line);color:var(--text-muted);
+    padding:4px 9px;border-radius:5px;cursor:pointer;backdrop-filter:blur(4px);
+  }
+  #breadcrumbs .crumb-btn:hover,#breadcrumbs .crumb-btn.here{color:var(--accent);border-color:var(--accent);}
+  #breadcrumbs .sep{color:var(--text-muted);}
+
+  #navbar{
+    position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:10;
+    display:flex;align-items:center;gap:4px;
+    background:var(--overlay);border:1px solid var(--panel-line);border-radius:9px;
+    padding:6px;backdrop-filter:blur(6px);
+  }
+  #navbar button{
+    background:transparent;border:none;color:var(--text-muted);white-space:nowrap;
+    font-size:12px;padding:7px 11px;border-radius:6px;cursor:pointer;
+  }
+  #navbar button:hover{color:var(--accent);background:var(--node-bg);}
+  #navbar .divider{width:1px;height:18px;background:var(--panel-line);margin:0 2px;}
+  #nav-pos{font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:0 6px;min-width:44px;text-align:center;}
+
+  #minimap{
+    position:absolute;bottom:16px;right:14px;z-index:10;width:180px;height:130px;
+    background:var(--overlay);border:1px solid var(--panel-line);border-radius:8px;
+    backdrop-filter:blur(6px);overflow:hidden;
+  }
+  #minimap .mm-label{
+    position:absolute;top:5px;left:8px;font-family:var(--mono);font-size:9px;
+    color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;pointer-events:none;
+  }
+  #mm-svg circle{cursor:pointer;}
+  #stage-wrap[data-pip="bottom-right"] #minimap{right:auto;left:14px;}
+
+  /* channel mark: fixed in the corner, never moves with the camera */
+  #brand{
+    position:absolute;top:16px;right:18px;z-index:12;pointer-events:none;
+    display:flex;align-items:center;gap:10px;opacity:.9;
+    font-family:var(--display);font-weight:600;font-size:18px;letter-spacing:.02em;color:var(--text);
+    text-shadow:var(--brand-shadow);
+  }
+  #brand[hidden]{display:none;}
+  #brand img{height:40px;width:auto;display:block;}
+  /* optional gold chip, as on the decks' title slides (brand_style: chip); plain text is the default */
+  #brand .chip{display:inline-block;padding:5px 22px;border-radius:30px;color:#fff;font-family:var(--body);
+    font-size:15px;font-weight:600;letter-spacing:.01em;text-shadow:none;
+    background:linear-gradient(90deg, #fbbf24, #f59e0b);box-shadow:0 2px 10px rgba(0,0,0,.25);}
+
+  /* PIP camera: slides are laid out to keep clear of this box */
+  #pip{
+    position:absolute;z-index:11;pointer-events:none;aspect-ratio:16/9;
+    border:2px dashed color-mix(in srgb, var(--accent-teal) 55%, transparent);border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-teal);
+    background:color-mix(in srgb, var(--accent-teal) 4%, transparent);
+  }
+  #pip[hidden]{display:none;}
+  #pip.circle{aspect-ratio:1;border-radius:50%;}
+  #pip.top-left{top:16px;left:16px;}
+  #pip.top-right{top:16px;right:16px;}
+  #pip.bottom-left{bottom:16px;left:16px;}
+  #pip.bottom-right{bottom:16px;right:16px;}
+  /* full: the camera takes the whole stage, under the brand and the controls */
+  /* it also swallows clicks, so a click can't land on the hidden cards behind it */
+  #pip.full{inset:0;width:100% !important;height:100%;aspect-ratio:auto;border-radius:0;z-index:9;pointer-events:auto;}
+  /* while presenting the box is empty so the camera overlay sits on plain background */
+  /* while presenting, the empty box stays as a faint guide for lining up a camera overlay */
+  body.presenting #pip{border-color:color-mix(in srgb, var(--accent-teal) 30%, transparent);background:none;}
+  body.presenting #pip span{opacity:.5;}
+  /* live webcam inside the box */
+  #pip.live{border:none;background:#000;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.55), 0 0 0 1px var(--panel-line);}
+  #pip.live span{display:none;}
+  #pip video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  #pip.mirror video{transform:scaleX(-1);}
+  #pip-msg{
+    position:absolute;left:50%;top:70px;transform:translateX(-50%);z-index:30;
+    background:var(--panel);border:1px solid var(--danger);color:var(--text);
+    font-family:var(--mono);font-size:13px;line-height:1.5;padding:10px 16px;border-radius:6px;display:none;
+    width:max-content;max-width:min(620px, 90%);text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5);
+  }
+  #pip-msg.show{display:block;}
+
+  /* ---------- help popover ---------- */
+  #help{position:fixed;inset:0;background:rgba(4,7,13,.7);z-index:50;display:none;align-items:center;justify-content:center;}
+  #help.open{display:flex;}
+  #help .panel{
+    position:relative;width:min(580px,92vw);max-height:84vh;overflow-y:auto;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:12px;padding:26px 28px;
+  }
+  #help h2{font-family:var(--display);font-size:18px;margin:0 0 14px;color:var(--accent);}
+  #help h3{font-family:var(--display);font-size:13px;margin:18px 0 6px;color:var(--text);}
+  #help p, #help li{font-size:13px;line-height:1.65;color:var(--text-muted);margin:0 0 8px;}
+  #help pre{
+    background:var(--code-bg);border:1px solid var(--panel-line);border-radius:6px;
+    padding:10px 12px;font-family:var(--mono);font-size:11.5px;color:var(--text);overflow-x:auto;
+  }
+  #help .close{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+  kbd{
+    font-family:var(--mono);background:var(--node-bg);border:1px solid var(--node-border);
+    border-radius:4px;padding:1px 6px;font-size:11px;color:var(--accent);
+  }
+
+  @media (max-width:760px){
+    main{flex-direction:column;}
+    #editor-pane{width:100% !important;max-width:none;min-width:0;height:34vh;border-right:none;border-bottom:1px solid var(--panel-line);}
+    #editor-pane.collapsed{height:0;}
+    #stage-wrap{flex:1;}
+    .brand .tagline{display:none;}
+    #minimap{display:none;}
+    #navbar .lbl{display:none;}
+  }

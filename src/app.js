@@ -1,0 +1,1832 @@
+import SAMPLE_MD from './sample.md';
+import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime} from './core/text.js';
+import {parseDeck as parseDeckCore, cameraDirective, mapDirective} from './core/parse.js';
+import {CORNERS, clampPipSize, applyPreset, cameraPresets, stepsFor} from './core/steps.js';
+import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
+  finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
+
+"use strict";
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SAMPLE = SAMPLE_MD.replace(/^\n+/, '').replace(/\s+$/, '') + '\n';
+
+// ---------- DOM refs ----------
+const editor = document.getElementById('editor');
+const stage = document.getElementById('stage');
+const world = document.getElementById('world');
+const svg = document.getElementById('connectors');
+const breadcrumbs = document.getElementById('breadcrumbs');
+const statusCount = document.getElementById('status-count');
+const statusErr = document.getElementById('status-err');
+const mmSvg = document.getElementById('mm-svg');
+const mmLabel = document.getElementById('mm-label');
+const navPos = document.getElementById('nav-pos');
+const editorPane = document.getElementById('editor-pane');
+
+// ---------- layout constants ----------
+// cards are NODE_W wide unless their content needs more (wide tables, columns, diagrams, embeds)
+const NODE_W = 440, WIDE_W = 720, XWIDE_W = 960, NODE_H_EST = 180, SPACING_X = 540,
+      VERTICAL_GAP = 100, RADIAL_GAP = 110, RADIAL_MIN_STEP = 420;
+
+// how much of the screen the current slide fills; +/- adjust it, remembered per browser
+const SLIDE_FILL_MIN = 0.35, SLIDE_FILL_MAX = 1;
+let slideFill = parseFloat(load('slidetake:slideSize')) || 0.92;
+
+let nodes = new Map();   // id -> node
+let order = [];          // DFS pre-order of node ids
+let roots = [];
+let currentId = null;
+let layoutMode = 'tree'; // 'tree' | 'radial' | 'path' | 'focus'
+let presenting = false;
+let deck = {};           // settings from the deck's frontmatter: brand, logo, pip, pip_size, pip_shape, title
+// global camera switch (◉ Camera / C): when off, camera comments are ignored, camera-only steps are
+// skipped and slides get the whole screen. Every page load starts with it off; it comes on only by hand.
+let cameraOff = true;
+// Camera, recording and the talk timer are for recording a video, so they appear only when the address
+// says where OBS is: ?obs=host:port[:password] (or a bare ?obs for the remembered connection). Everyone
+// else, e.g. a reader on the website, gets the deck and a Fullscreen button, and camera settings in the
+// deck are ignored so slides use the whole screen.
+const recording = new URLSearchParams(location.search).has('obs');
+document.documentElement.classList.toggle('no-obs', !recording);
+let cameraStream = null; // live webcam shown in the PIP box (◉ Camera)
+const brandEl = document.getElementById('brand');
+const pipEl = document.getElementById('pip');
+const stageWrap = document.getElementById('stage-wrap');
+
+// camera: looks at (x, y, z); zoom is the on-screen scale of things at that point
+const cam = {x:0, y:0, zoom:0.6};
+let camTween = null;
+
+// ---------- storage (per-viewer convenience only) ----------
+// Slidetake was called Traverse, then Markcast: settings saved under an old prefix are still read
+function load(k){
+  try {
+    const v = localStorage.getItem(k);
+    if (v !== null || !k.startsWith('slidetake:')) return v;
+    const rest = k.slice(10);
+    return localStorage.getItem('slidetake:' + rest) ?? localStorage.getItem('traverse:' + rest);
+  }
+  catch(e){ return null; }
+}
+function save(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+
+function renderMd(body){
+  try { return {html: window.marked ? window.marked.parse(body) : '<pre>'+escapeHtml(body)+'</pre>', err:null}; }
+  catch(e){ return {html:'<p>(could not render)</p>', err:'render error'}; }
+}
+
+
+
+
+
+function applyDeckSettings(){
+  const name = deck.brand || '', logo = deck.logo || '';
+  const chip = /^chip$/i.test(deck.brand_style || '');
+  const html = (logo ? '<img alt="" src="'+escapeHtml(logo)+'">' : '') + (name ? '<span' + (chip ? ' class="chip"' : '') + '>'+escapeHtml(name)+'</span>' : '');
+  if (brandEl.dataset.html !== html){
+    brandEl.dataset.html = html;
+    brandEl.innerHTML = html;
+    const img = brandEl.querySelector('img');
+    if (img) img.onload = img.onerror = ()=>refocus(true);
+  }
+  brandEl.hidden = !html;
+
+  applyPipState();
+  document.title = deck.title || 'Slidetake';
+  const palette = String(deck.theme || deck.palette || '').toLowerCase() ||
+    ((deck.wealth_tags || /\/building-wealth\//.test(deckBase || '')) ? 'building-wealth' : '');
+  if (palette) document.body.dataset.palette = palette; else delete document.body.dataset.palette;
+  applyMode();
+}
+
+// ---------- light / dark ----------
+const urlMode = new URLSearchParams(location.search).get('mode');
+function currentMode(){
+  const m = String(urlMode || load('slidetake:mode') || deck.mode || 'dark').toLowerCase();
+  return m === 'light' ? 'light' : 'dark';
+}
+function applyMode(){
+  const light = currentMode() === 'light';
+  if (light) document.body.dataset.mode = 'light'; else delete document.body.dataset.mode;
+  const b = document.getElementById('btn-mode');
+  if (b) b.textContent = light ? '◑ Dark' : '◐ Light';
+}
+function toggleMode(){
+  save('slidetake:mode', currentMode() === 'light' ? 'dark' : 'light');
+  applyMode();
+  // charts are drawn for one mode; redraw them for the other
+  if (world.querySelector('.echarts-container')) rebuild(true);
+}
+
+// ---------- camera layouts ----------
+// A preset is a few words applied on top of the deck's pip settings:
+//   off · on · full · 18% (size) · top-left … bottom-right · flip (other side) · circle · rect · mirror · unmirror
+function cameraList(){
+  const raw = (deck.camera || '').replace(/^\[|\]$/g, '');
+  const list = raw.split(',').map(x=>x.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+  return list.length ? list : ['on', 'full', 'off'];
+}
+// a slide's directive can list several layouts, "full, on": → steps through them before leaving the slide
+function cameraSteps(n){
+  return !cameraOff && n ? cameraPresets(n.camera) : [];
+}
+// A slide's steps are its camera layouts and its fragments (reveal-one-at-a-time items). Camera layouts
+// up to the first one that shows the slide come first, then the fragments, then any remaining layouts,
+// so "full, on" opens on camera and "on, full" ends on camera after everything is revealed.
+let stepPos = 0;         // which of the current slide's steps is showing
+function slideSteps(n){
+  return stepsFor(cameraSteps(n), n && n.frags ? n.frags.length : 0);
+}
+function currentStep(){
+  const steps = slideSteps(nodes.get(currentId));
+  return steps[Math.min(stepPos, steps.length - 1)] || {cam:0, frag:0};
+}
+// the layout in force for the current slide: its own current step, otherwise the final step
+// of the nearest directive before it in document order
+function slideCameraPreset(){
+  if (!currentId) return null;
+  const own = cameraSteps(nodes.get(currentId));
+  if (own.length) return own[Math.min(currentStep().cam, own.length - 1)];
+  for (let i = order.indexOf(currentId) - 1; i >= 0; i--){
+    const steps = cameraSteps(nodes.get(order[i])); // order can be stale for a moment while the deck re-parses
+    if (steps.length) return steps[steps.length - 1];
+  }
+  return null;
+}
+let camManual = null;    // preset picked with V; cleared when the slide changes
+let camCycle = -1;
+let pipState = null;
+function computePipState(){
+  const st = {
+    corner: (deck.pip || 'none').toLowerCase(),
+    size: clampPipSize(parseFloat(deck.pip_size) || 24),
+    circle: (deck.pip_shape || '').toLowerCase() === 'circle',
+    mirror: !/^(no|false|off)$/i.test(deck.pip_mirror || ''),
+    full: false, off: false, flip: false, used: false
+  };
+  applyPreset(st, slideCameraPreset());
+  applyPreset(st, camManual);
+  // a live camera or a camera preset needs somewhere to go even if the deck didn't set a corner
+  if (!CORNERS.includes(st.corner) && (cameraStream || st.used)) st.corner = 'bottom-right';
+  if (st.flip && CORNERS.includes(st.corner))
+    st.corner = st.corner.includes('left') ? st.corner.replace('left', 'right') : st.corner.replace('right', 'left');
+  return st;
+}
+function applyPipState(){
+  const first = (!pipEl.hidden && pipEl.offsetWidth) ? pipEl.getBoundingClientRect() : null;
+  const st = pipState = computePipState();
+  const valid = CORNERS.includes(st.corner);
+  pipEl.className = valid ? [st.corner, st.circle && 'circle', cameraStream && 'live', st.mirror && 'mirror', st.full && 'full'].filter(Boolean).join(' ') : '';
+  pipEl.style.width = st.size + '%';
+  pipEl.hidden = !valid || cameraOff || st.off;
+  stageWrap.dataset.pip = pipEl.hidden || st.full ? 'none' : st.corner;
+  if (pipEl.hidden || reduceMotion || !pipEl.animate) return;
+  const ease = 'cubic-bezier(.65,0,.35,1)';
+  if (!first){
+    pipEl.animate([{opacity:0}, {opacity:1}], {duration:300, easing:'ease-out'});
+    return;
+  }
+  // FLIP: start from where the box was and glide to where it is now (full ↔ corner, resize, flip)
+  const last = pipEl.getBoundingClientRect();
+  if (Math.abs(first.left - last.left) + Math.abs(first.top - last.top) + Math.abs(first.width - last.width) + Math.abs(first.height - last.height) < 2) return;
+  pipEl.animate([
+    {transformOrigin:'0 0', transform:'translate('+(first.left - last.left)+'px,'+(first.top - last.top)+'px) scale('+(first.width / last.width)+','+(first.height / last.height)+')'},
+    {transformOrigin:'0 0', transform:'none'}
+  ], {duration:600, easing:ease});
+}
+// where the PIP box will be once its CSS transition finishes, in stage coordinates
+function pipRect(){
+  const st = pipState;
+  if (!st || pipEl.hidden || st.full) return null;
+  const vw = stage.clientWidth, vh = stage.clientHeight, m = 16;
+  const w = vw * st.size / 100, h = st.circle ? w : w * 9/16;
+  const x0 = st.corner.includes('left') ? m : vw - m - w;
+  const y0 = st.corner.includes('top') ? m : vh - m - h;
+  return {x0, y0, x1:x0 + w, y1:y0 + h};
+}
+function cycleCamera(){
+  if (!recording) return;
+  if (cameraOff){ setCameraEnabled(true); return; }
+  const list = cameraList();
+  camCycle = (camCycle + 1) % list.length;
+  camManual = list[camCycle];
+  applyPipState();
+  if (!presenting) showPipMsg('Camera: ' + camManual);
+  if (!cameraStream && !pipEl.hidden) startWebcam(); // first visible layout opens the webcam
+  else refocus();
+}
+
+function parseDeck(src){
+  const parsed = parseDeckCore(src, {render: renderMd});
+  deck = parsed.deck; nodes = parsed.nodes;
+  applyDeckSettings();
+  const format = {'+++': '+++ format', reveal: 'reveal.js format', headings: 'headings'}[parsed.format];
+  statusCount.textContent = nodes.size + (nodes.size===1?' card':' cards') + ' · ' + format;
+  statusErr.textContent = parsed.errCount ? (parsed.errCount + ' card(s) had errors') : '';
+}
+
+// ---------- topology (depth, leaf slots, DFS order) ----------
+function computeTopology(){
+  roots = [...nodes.values()].filter(n=>!n.parent).map(n=>n.id);
+  let leafCounter = 0;
+  function assign(id, depth){
+    const n = nodes.get(id);
+    n.depth = depth;
+    if (n.children.length === 0){
+      n._slot = leafCounter++;
+    } else {
+      n.children.forEach(c=>assign(c, depth+1));
+      const slots = n.children.map(c=>nodes.get(c)._slot);
+      n._slot = (Math.min(...slots) + Math.max(...slots)) / 2;
+    }
+  }
+  roots.forEach(r=>assign(r, 0));
+  order = [];
+  function dfs(id){ order.push(id); nodes.get(id).children.forEach(dfs); }
+  roots.forEach(dfs);
+  return Math.max(1, leafCounter);
+}
+
+// ---------- layouts: every layout sets each node's centre (cx, cy, cz) ----------
+function depthStats(){
+  const maxH = [], maxW = [], count = [];
+  nodes.forEach(n=>{
+    maxH[n.depth] = Math.max(maxH[n.depth] || 0, n._h);
+    maxW[n.depth] = Math.max(maxW[n.depth] || 0, n._w);
+    count[n.depth] = (count[n.depth] || 0) + 1;
+  });
+  return {maxH, maxW, count, maxDepth: maxH.length - 1};
+}
+function applyManual(n){
+  if (n.x !== null && !isNaN(n.x)) n.cx = n.x + n._w/2;
+  if (n.y !== null && !isNaN(n.y)) n.cy = n.y + n._h/2;
+}
+
+// Top-down tree with cards of different widths: leaves are packed left to right per row, each parent
+// is centred over its children, and a subtree slides right when it would overlap its row neighbour.
+function layoutTree(){
+  const {maxH, maxDepth} = depthStats();
+  const rowTop = [0];
+  for (let d=1; d<=maxDepth; d++) rowTop[d] = rowTop[d-1] + maxH[d-1] + VERTICAL_GAP;
+  const GAP = SPACING_X - NODE_W;
+  const rightEdge = [];   // rightmost card edge placed so far in each row
+  const shift = (id, dx)=>{ const n = nodes.get(id); n.cx += dx; n.children.forEach(c=>shift(c, dx)); };
+  const mark = id=>{ const n = nodes.get(id); rightEdge[n.depth] = Math.max(rightEdge[n.depth] ?? -Infinity, n.cx + n._w/2); n.children.forEach(mark); };
+  function place(id){
+    const n = nodes.get(id);
+    const minLeft = rightEdge[n.depth] !== undefined ? rightEdge[n.depth] + GAP : -Infinity;
+    if (!n.children.length){
+      n.cx = (minLeft === -Infinity ? 0 : minLeft) + n._w/2;
+    } else {
+      n.children.forEach(place);
+      n.cx = (nodes.get(n.children[0]).cx + nodes.get(n.children[n.children.length - 1]).cx) / 2;
+      if (n.cx - n._w/2 < minLeft) shift(id, minLeft - (n.cx - n._w/2));
+    }
+    mark(id);
+  }
+  roots.forEach(place);
+  nodes.forEach(n=>{
+    n.cy = rowTop[n.depth] + n._h/2;
+    applyManual(n);
+  });
+}
+
+function layoutRadial(totalLeaves){
+  const angleStep = (Math.PI * 2) / totalLeaves;
+  // place ring by ring, each starting just outside the last and growing in small steps until none of
+  // its cards overlap anything placed so far: the tightest rings the slot angles allow
+  const GAP = 32;
+  const placed = [];
+  const overlaps = (a, b)=>Math.abs(a.cx - b.cx) < (a._w + b._w)/2 + GAP && Math.abs(a.cy - b.cy) < (a._h + b._h)/2 + GAP;
+  const maxDepth = Math.max(0, ...[...nodes.values()].map(n=>n.depth));
+  let prevR = 0;
+  for (let d=0; d<=maxDepth; d++){
+    const ring = [...nodes.values()].filter(n=>n.depth === d);
+    if (!ring.length) continue;
+    let radius = (d === 0) ? (roots.length > 1 ? RADIAL_MIN_STEP * 0.5 : 0) : prevR + RADIAL_GAP;
+    for (let tries = 0; tries < 400; tries++){
+      ring.forEach(n=>{
+        const angle = (n._slot + 0.5) * angleStep - Math.PI/2;
+        n.cx = radius * Math.cos(angle);
+        n.cy = radius * Math.sin(angle);
+        applyManual(n);
+      });
+      const clash = ring.some((n, i)=>ring.some((m, j)=>j > i && overlaps(n, m)) || placed.some(m=>overlaps(n, m)));
+      if (!clash) break;
+      radius = radius * 1.02 + 10;
+    }
+    prevR = radius;
+    placed.push(...ring);
+  }
+}
+
+// ---------- reveal.js markup inside a card ----------
+// "<!-- .element: class=… -->" applies to the element just before it, or to its parent when nothing is
+function applyElementComments(root){
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
+  const list = [];
+  while (walker.nextNode()) list.push(walker.currentNode);
+  list.forEach(c=>{
+    const m = c.data.match(/^\s*\.element:\s*([\s\S]*)$/);
+    if (!m) return;
+    let prev = c.previousSibling;
+    while (prev && prev.nodeType === 3 && !prev.data.trim()) prev = prev.previousSibling;
+    const target = (prev && prev.nodeType === 1) ? prev : c.parentElement;
+    if (!target) return;
+    Object.entries(attrsOf(m[1])).forEach(([k, v])=>{
+      if (k === 'class') target.classList.add(...v.split(/\s+/).filter(Boolean));
+      else if (k === 'style') target.style.cssText += ';' + v;
+      else target.setAttribute(k, v);
+    });
+  });
+}
+// fragments in reveal order: by data-fragment-index when given, otherwise document order
+function collectFragments(root){
+  const items = [...root.querySelectorAll('.fragment')].map((e, i)=>({e, i, k:e.dataset.fragmentIndex}));
+  if (items.every(x=>x.k === undefined)) return items.map(x=>[x.e]);
+  let next = 0;
+  items.forEach(x=>{ x.k = x.k === undefined ? next : parseFloat(x.k); next = Math.max(next, x.k) + 1; });
+  items.sort((a, b)=>a.k - b.k || a.i - b.i);
+  const groups = [];
+  items.forEach((x, j)=>{
+    if (j && items[j-1].k === x.k) groups[groups.length-1].push(x.e);
+    else groups.push([x.e]);
+  });
+  return groups;
+}
+function applyFragments(n, count, snap){
+  if (!n || !n.frags) return;
+  if (snap) n.el.classList.add('snap');
+  n.frags.forEach((g, i)=>g.forEach(e=>{
+    e.classList.toggle('visible', i < count);
+    e.classList.toggle('current-fragment', i === count - 1);
+  }));
+  if (snap){ void n.el.offsetWidth; n.el.classList.remove('snap'); }
+}
+// relative image and link paths resolve against the deck's own location (?src= or base:)
+let deckBase = null;
+function deckBaseUrl(){
+  try { return deck.base ? new URL(deck.base, deckBase || location.href) : (deckBase ? new URL(deckBase) : null); }
+  catch(e){ return null; }
+}
+function resolveUrls(root){
+  const base = deckBaseUrl();
+  let unresolved = 0;
+  root.querySelectorAll('img[src], source[src], video[src], iframe[src], a[href]').forEach(el=>{
+    const attr = el.hasAttribute('src') ? 'src' : 'href';
+    const v = el.getAttribute(attr);
+    if (!v || /^(#|[a-z][a-z0-9+.-]*:|\/\/)/i.test(v)) return;
+    if (!base){ if (attr === 'src') unresolved++; return; }
+    let site = base;
+    try { if (deck.site) site = new URL(deck.site, base); } catch(e){}
+    el.setAttribute(attr, new URL(v, v.startsWith('/') ? site : base).href);
+  });
+  return unresolved;
+}
+// width the card needs: wide tables, columns, logo grids, diagrams, charts and embeds get more room
+function sizeCard(n){
+  const el = n.el, b = el.querySelector('.body');
+  el.classList.add('measuring');
+  b.style.zoom = '';
+  let w = NODE_W;
+  // a chart, diagram or embed is a picture: its zoom shouldn't set the section's text size
+  n.visual = !!b.querySelector('iframe, .echarts-container, pre > code.language-dot, .diagram');
+  if (n.visual) w = XWIDE_W;
+  else if (b.querySelector('[style*="flex"], [style*="grid"], .r-hstack') || b.querySelectorAll('img').length >= 4) w = WIDE_W;
+  // tables get the width they naturally need (laid out with the widest card's room), not a tier by
+  // column count, so a compact table doesn't leave a third of the card empty
+  const tables = b.querySelectorAll('table');
+  if (tables.length){
+    el.style.width = XWIDE_W + 'px';
+    const pad = el.offsetWidth - b.clientWidth;   // card padding and border
+    // long cell text wraps rather than stretching the card past WIDE_W; real overflow is handled below
+    // (+12: offsetWidth rounds down, and a table at its exact width starts wrapping)
+    tables.forEach(t=>{ w = Math.max(w, Math.min(WIDE_W, Math.ceil(t.offsetWidth) + pad + 12)); });
+  }
+  // a "grow" fragment ends up 1.3x its size; leave room so its last step stays inside the card
+  const growers = b.querySelectorAll('.fragment.grow');
+  if (growers.length){
+    el.style.width = w + 'px';
+    const pad = el.offsetWidth - b.clientWidth;
+    growers.forEach(g=>{ w = Math.max(w, Math.min(XWIDE_W, Math.ceil(g.offsetWidth * 1.3) + pad)); });
+  }
+  el.style.width = w + 'px';
+  if (el.scrollWidth > w + 2) el.style.width = (w = Math.min(XWIDE_W, el.scrollWidth + 24)) + 'px';
+  if (b.scrollWidth > b.clientWidth + 2) b.style.zoom = (b.clientWidth / b.scrollWidth).toFixed(3);
+  n._w = w;
+  n._h = el.offsetHeight || NODE_H_EST;
+  el.classList.remove('measuring');
+}
+// images arrive after the first layout; re-measure once they settle
+let relayoutTimer = null;
+function relayoutSoon(){
+  clearTimeout(relayoutTimer);
+  relayoutTimer = setTimeout(()=>{ nodes.forEach(sizeCard); position(); refocus(true); }, 200);
+}
+
+// ---------- diagrams (Graphviz dot) and charts (ECharts), loaded only when a deck uses them ----------
+const VIZ_URL = 'https://cdn.jsdelivr.net/npm/@viz-js/viz@3.4.0/lib/viz-standalone.js';
+const ECHARTS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js';
+const scripts = {};
+function loadScript(url){
+  return scripts[url] || (scripts[url] = new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = url; s.onload = resolve;
+    s.onerror = ()=>{ delete scripts[url]; reject(new Error('could not load ' + url)); };
+    document.head.appendChild(s);
+  }));
+}
+let buildGen = 0, viz = null;
+async function renderRich(){
+  const gen = buildGen;
+  const dots = [...world.querySelectorAll('.node pre > code.language-dot')];
+  const charts = [...world.querySelectorAll('.node .echarts-container[data-chart]')];
+  if (!dots.length && !charts.length) return;
+  const problems = [];
+  if (dots.length){
+    try {
+      await loadScript(VIZ_URL);
+      viz = viz || await Viz.instance();
+      if (gen !== buildGen) return;
+      dots.forEach(code=>{
+        const box = document.createElement('div');
+        box.className = 'diagram';
+        try { box.appendChild(viz.renderSVGElement(code.textContent)); }
+        catch(e){ box.className = 'diagram err'; box.textContent = 'Diagram error: ' + e.message; }
+        code.parentElement.replaceWith(box);
+      });
+    } catch(e){ problems.push('diagrams'); }
+  }
+  if (charts.length){
+    try {
+      await loadScript(ECHARTS_URL);
+      if (gen !== buildGen) return;
+      charts.forEach(div=>{
+        let opt;
+        try { opt = JSON.parse(div.dataset.chart); }
+        catch(e){ div.textContent = 'Chart data is not valid JSON.'; return; }
+        // SVG stays sharp however far the camera zooms in
+        echarts.init(div, currentMode() === 'light' ? null : 'dark', {renderer:'svg'}).setOption(Object.assign({backgroundColor:'transparent', animation:!reduceMotion}, opt));
+      });
+    } catch(e){ problems.push('charts'); }
+  }
+  if (gen !== buildGen) return;
+  if (problems.length) statusErr.textContent = 'Could not load the ' + problems.join(' and ') + ' renderer (offline?)';
+  // diagrams and charts change card sizes
+  nodes.forEach(sizeCard);
+  position();
+  refocus(true);
+}
+
+// Path: a staircase in presenting order. Each section is one row read left to right (1 → 1.1 → 1.2);
+// the next section starts on a new row directly beneath where the last one ended (1.2 ↓ 2 → 2.1 → 2.2),
+// so every move is a short step right or a short step down.
+function sectionRuns(){
+  const runs = [];
+  order.forEach(id=>{
+    const sec = sectionOf(id), last = runs[runs.length - 1];
+    if (last && last.sec === sec) last.ids.push(id); else runs.push({sec, ids:[id]});
+  });
+  return runs;
+}
+function layoutPath(){
+  const GAP = 90, ROW_GAP = 120;
+  let y = 0, startX = 0, prevH = 0;
+  sectionRuns().forEach((run, ri)=>{
+    const h = Math.max(...run.ids.map(id=>nodes.get(id)._h));
+    if (ri) y += prevH / 2 + ROW_GAP + h / 2;
+    let x = startX, lastCx = startX;
+    run.ids.forEach((id, i)=>{
+      const n = nodes.get(id);
+      // the row's first card is centred under the previous row's last card
+      if (i) x += GAP + n._w / 2;
+      n.cx = x; n.cy = y;
+      lastCx = x;
+      x += n._w / 2;
+    });
+    startX = lastCx;
+    prevH = h;
+  });
+}
+// Focus: every card in the same place; only the current one is shown
+function layoutFocus(){
+  nodes.forEach(n=>{ n.cx = 0; n.cy = 0; });
+}
+
+// ---------- render ----------
+function build(){
+  buildGen++;
+  if (window.echarts) world.querySelectorAll('.echarts-container').forEach(d=>{ const c = echarts.getInstanceByDom(d); if (c) c.dispose(); });
+  world.querySelectorAll('div.node').forEach(el=>el.remove());
+  const totalLeaves = computeTopology();
+  let unresolved = 0;
+  nodes.forEach(n=>{
+    const el = document.createElement('div');
+    el.className = 'node';
+    el.tabIndex = 0;
+    el.dataset.id = n.id;
+    const crumb = n.parent ? breadcrumbPath(n.id).slice(0,-1).map(id=>nodes.get(id).title).join(' / ') : '';
+    el.innerHTML =
+      (crumb ? '<div class="crumb">'+escapeHtml(crumb)+'</div>' : '') +
+      '<div class="body">'+n.html+'</div>' +
+      (n.err ? '<div class="err-badge">!</div>' : '');
+    const body = el.querySelector('.body');
+    applyElementComments(body);
+    // a markdown table needs a header row; a blank one (| | |) is only there to satisfy the syntax
+    body.querySelectorAll('thead').forEach(h=>{ if (!h.textContent.trim()) h.remove(); });
+    unresolved += resolveUrls(body);
+    n.frags = collectFragments(body);
+    body.querySelectorAll('img').forEach(img=>{ if (!img.complete) img.addEventListener('load', relayoutSoon, {once:true}); });
+    el.querySelectorAll('a[href]').forEach(a=>{
+      const href = a.getAttribute('href');
+      if (href.startsWith('#')){
+        const target = decodeURIComponent(href.slice(1));
+        if (nodes.has(target)){
+          a.classList.add('xlink');
+          a.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); if (!rec.active) navigate(target); });
+        }
+      } else {
+        a.target = '_blank'; a.rel = 'noopener';
+        a.addEventListener('click', e=>e.stopPropagation());
+      }
+    });
+    el.addEventListener('click', ()=>{ if (!rec.active) navigate(n.id); });
+    el.addEventListener('keydown', e=>{ if (e.key === 'Enter' && e.target === el) navigate(n.id); });
+    world.appendChild(el);
+    n.el = el;
+    // cards that aren't the current slide show their finished state
+    applyFragments(n, n.frags.length);
+  });
+  if (unresolved && !statusErr.textContent) statusErr.textContent = unresolved + ' image(s) use relative paths: add base: to the deck, or open it with ?src=';
+  // measure real card sizes before laying out, so spacing clears actual content
+  nodes.forEach(sizeCard);
+  position(totalLeaves);
+  renderRich();
+}
+
+function position(totalLeaves){
+  if (totalLeaves === undefined) totalLeaves = computeTopology();
+  if (layoutMode === 'radial') layoutRadial(totalLeaves);
+  else if (layoutMode === 'path') layoutPath();
+  else if (layoutMode === 'focus') layoutFocus();
+  else layoutTree();
+  world.classList.toggle('focus', layoutMode === 'focus');
+  nodes.forEach(n=>{
+    const s = n.el.style;
+    s.setProperty('--cx', n.cx); s.setProperty('--cy', n.cy);
+  });
+  drawEdges();
+  updateActivePath();
+  updateMinimap();
+}
+
+function drawEdges(){
+  let path = '';
+  if (layoutMode === 'focus'){ svg.innerHTML = ''; return; }
+  if (layoutMode === 'path'){
+    for (let i = 1; i < order.length; i++){
+      const a = nodes.get(order[i - 1]), b = nodes.get(order[i]);
+      path += '<path data-from="'+a.id+'" data-to="'+b.id+'" d="M '+a.cx+' '+a.cy+' L '+b.cx+' '+b.cy+'"/>';
+    }
+    svg.innerHTML = path;
+    return;
+  }
+  nodes.forEach(n=>{
+    if (!n.parent) return;
+    const p = nodes.get(n.parent);
+    if (layoutMode === 'radial'){
+      path += '<path data-from="'+p.id+'" data-to="'+n.id+'" d="M '+p.cx+' '+p.cy+' L '+n.cx+' '+n.cy+'"/>';
+    } else {
+      const py = p.cy + p._h/2, cy = n.cy - n._h/2, my = py + (cy - py) / 2;
+      path += '<path data-from="'+p.id+'" data-to="'+n.id+'" d="M '+p.cx+' '+py+' L '+p.cx+' '+my+' L '+n.cx+' '+my+' L '+n.cx+' '+cy+'"/>';
+    }
+  });
+  svg.innerHTML = path;
+}
+
+
+function breadcrumbPath(id){
+  const p = [];
+  let cur = id;
+  while (cur){ p.unshift(cur); cur = nodes.get(cur).parent; }
+  return p;
+}
+
+// ---------- camera ----------
+function applyCamera(){
+  const vw = stage.clientWidth, vh = stage.clientHeight;
+  world.style.transform = 'translate('+vw/2+'px,'+vh/2+'px) scale('+cam.zoom+') translate('+(-cam.x)+'px,'+(-cam.y)+'px)';
+  updateMinimapViewport();
+}
+
+function stopCamera(){ if (camTween){ camTween.kill(); camTween = null; } }
+
+// Fly to a target. Far jumps pull the camera back mid-flight so both ends stay in view.
+function flyTo(t, instant){
+  stopCamera();
+  if (instant || reduceMotion || !window.gsap){ Object.assign(cam, t); applyCamera(); return; }
+  const vw = stage.clientWidth;
+  const dist = Math.hypot(t.x - cam.x, t.y - cam.y);
+  const endZoom = t.zoom;
+  const tl = gsap.timeline({onUpdate:applyCamera, onComplete:()=>{ camTween = null; }});
+  const {zoom, ...rest} = t;
+  // short hops are quick, long journeys take longer; only long ones pull back to keep both ends in view
+  const travel = dist * Math.min(cam.zoom, endZoom);
+  const dur = Math.max(0.55, Math.min(1.3, 0.55 + travel / vw * 0.3));
+  tl.to(cam, {...rest, duration:dur, ease:'power2.inOut'}, 0);
+  if (travel > vw * 1.2){
+    const dip = Math.max(0.06, Math.min(cam.zoom, endZoom, (vw * 0.9) / (dist + NODE_W)));
+    tl.to(cam, {zoom:dip, duration:dur / 2, ease:'sine.out'}, 0)
+      .to(cam, {zoom:endZoom, duration:dur / 2, ease:'sine.in'}, dur / 2);
+  } else {
+    tl.to(cam, {zoom:endZoom, duration:dur, ease:'power2.inOut'}, 0);
+  }
+  camTween = tl;
+}
+
+// ---------- safe area: the screen minus toolbars, the brand mark and the PIP camera ----------
+function obstacles(){
+  const sr = stage.getBoundingClientRect(), pad = 14, out = [];
+  if (!brandEl.hidden && brandEl.offsetWidth){
+    const r = brandEl.getBoundingClientRect();
+    out.push({x0:r.left-sr.left-pad, y0:r.top-sr.top-pad, x1:r.right-sr.left+pad, y1:r.bottom-sr.top+pad});
+  }
+  const p = pipRect();
+  if (p) out.push({x0:p.x0-pad, y0:p.y0-pad, x1:p.x1+pad, y1:p.y1+pad});
+  return out;
+}
+// free rectangles left after cutting each obstacle out of the usable area
+function safeRegions(){
+  const vw = stage.clientWidth, vh = stage.clientHeight;
+  let regions = [{x0:16, y0:presenting ? 20 : 56, x1:vw-16, y1:vh - (presenting ? 20 : 74)}];
+  obstacles().forEach(o=>{
+    const next = [];
+    regions.forEach(r=>{
+      if (o.x1 <= r.x0 || o.x0 >= r.x1 || o.y1 <= r.y0 || o.y0 >= r.y1){ next.push(r); return; }
+      [{...r, x1:Math.min(r.x1, o.x0)}, {...r, x0:Math.max(r.x0, o.x1)},
+       {...r, y1:Math.min(r.y1, o.y0)}, {...r, y0:Math.max(r.y0, o.y1)}]
+        .forEach(s=>{ if (s.x1 - s.x0 > 80 && s.y1 - s.y0 > 80) next.push(s); });
+    });
+    if (next.length) regions = next;
+  });
+  return regions;
+}
+// the region that lets content of size w×h appear largest; sx/sy is its centre's offset from screen centre
+function fitInSafe(w, h, fill){
+  const vw = stage.clientWidth, vh = stage.clientHeight;
+  let best = null;
+  safeRegions().forEach(r=>{
+    const zoom = fill * Math.min((r.x1 - r.x0) / w, (r.y1 - r.y0) / h);
+    if (!best || zoom > best.zoom) best = {zoom, sx:(r.x0 + r.x1)/2 - vw/2, sy:(r.y0 + r.y1)/2 - vh/2};
+  });
+  return best;
+}
+// camera target that puts world point (x, y) at screen offset (sx, sy) at a given zoom
+function aimAt(x, y, f, zoom){
+  return {x:x - f.sx / zoom, y:y - f.sy / zoom};
+}
+
+function focusOn(id, instant){
+  const n = nodes.get(id);
+  if (!n) return;
+  // scale the card up until it fills slideFill of the safe area in its tighter dimension, but keep
+  // text one size across a section: cards share the section's typical zoom, and only a card that
+  // wouldn't fit at it (a big table or chart) goes smaller. Charts and embeds don't vote: a section
+  // of two charts and a list would otherwise show the list at the charts' small zoom
+  const f = fitInSafe(n._w, n._h, slideFill);
+  const sec = sectionOf(id);
+  const peers = order.filter(x=>sectionOf(x) === sec && !nodes.get(x).visual).map(x=>{ const m = nodes.get(x); return fitInSafe(m._w, m._h, slideFill).zoom; }).sort((a, b)=>a - b);
+  const steady = peers.length ? peers[Math.floor((peers.length - 1) / 2)] : f.zoom;
+  const zoom = Math.max(0.2, Math.min(5, f.zoom, steady));
+  flyTo(Object.assign(aimAt(n.cx, n.cy, f, zoom), {zoom}), instant);
+}
+
+function fitAll(instant){
+  const all = [...nodes.values()];
+  if (!all.length) return;
+  const vw = stage.clientWidth, vh = stage.clientHeight;
+  const minX = Math.min(...all.map(n=>n.cx - n._w/2)), maxX = Math.max(...all.map(n=>n.cx + n._w/2));
+  const minY = Math.min(...all.map(n=>n.cy - n._h/2)),  maxY = Math.max(...all.map(n=>n.cy + n._h/2));
+  const f = fitInSafe(maxX-minX, maxY-minY, 0.94);
+  const zoom = Math.max(0.05, Math.min(1, f.zoom));
+  flyTo(Object.assign(aimAt((minX+maxX)/2, (minY+maxY)/2, f, zoom), {zoom}), instant);
+}
+
+function refocus(instant){ if (currentId && nodes.has(currentId)) focusOn(currentId, instant); else fitAll(instant); }
+
+// ---------- active path / dimming ----------
+function updateActivePath(){
+  const path = currentId ? breadcrumbPath(currentId) : [];
+  nodes.forEach(n=>{
+    const el = n.el;
+    el.classList.toggle('current', n.id === currentId);
+    el.classList.toggle('active-path', path.includes(n.id));
+  });
+  world.querySelectorAll('#connectors path').forEach(p=>{
+    const lit = (layoutMode === 'path')
+      ? !!currentId && order.indexOf(p.dataset.to) <= order.indexOf(currentId)
+      : path.includes(p.dataset.from) && path.includes(p.dataset.to);
+    p.classList.toggle('active', lit);
+  });
+  renderBreadcrumbs(path);
+  updateProgress();
+  const nSteps = currentId ? slideSteps(nodes.get(currentId)).length : 0;
+  navPos.textContent = currentId
+    ? (order.indexOf(currentId) + 1) + ' / ' + order.length + (nSteps > 1 ? ' · ' + (Math.min(stepPos, nSteps - 1) + 1) + '/' + nSteps : '')
+    : order.length + ' cards';
+}
+
+// shown while presenting in the path and focus layouts; it counts every press (reveals and camera
+// steps as well as slides), so it moves evenly with the talk rather than jumping per slide
+const progressEl = document.getElementById('progress');
+progressEl.innerHTML = '<b></b><i></i>';
+const talk = {start:0, timer:null};
+function talkLength(){ return parseDuration(new URLSearchParams(location.search).get('duration') ?? deck.duration); }
+// the timer is for the presenter: a take's footage shows progress only, unless the deck says timer: always
+function timerVisible(){ return recording && presenting && talkLength() > 0 && (!rec.active || /^always$/i.test(deck.timer || '')); }
+function updateTimer(){
+  const on = timerVisible() && talk.start > 0;
+  progressEl.classList.toggle('timed', on);
+  if (!on){ progressEl.classList.remove('over'); return; }
+  const elapsed = rec.active && rec.t0 ? recNow() : performance.now() - talk.start;
+  const frac = elapsed / talkLength();
+  progressEl.firstChild.style.width = Math.min(100, frac * 100) + '%';
+  progressEl.classList.toggle('over', frac >= 1);
+}
+function startTalkClock(){
+  talk.start = performance.now();
+  clearInterval(talk.timer);
+  talk.timer = setInterval(updateTimer, 1000);
+  updateTimer();
+}
+function stopTalkClock(){
+  clearInterval(talk.timer);
+  talk.timer = null; talk.start = 0;
+  updateTimer();
+}
+function updateProgress(){
+  const on = presenting && order.length > 1 && !/^(off|no|false)$/i.test(deck.progress || '');
+  progressEl.classList.toggle('show', on);
+  if (!on) return;
+  updateTimer();
+  const at = order.indexOf(currentId);
+  let total = 0, done = 0;
+  order.forEach((id, i)=>{
+    const n = slideSteps(nodes.get(id)).length;
+    total += n;
+    if (i < at) done += n;
+    else if (i === at) done += Math.min(stepPos, n - 1) + 1;
+  });
+  progressEl.lastChild.style.width = (total ? done / total * 100 : 0) + '%';
+}
+function renderBreadcrumbs(path){
+  breadcrumbs.innerHTML = path.map((id,i)=>{
+    const sep = i>0 ? '<span class="sep">›</span>' : '';
+    return sep + '<button class="crumb-btn'+(id===currentId?' here':'')+'" data-id="'+escapeHtml(id)+'">'+escapeHtml(nodes.get(id).title)+'</button>';
+  }).join('');
+  breadcrumbs.querySelectorAll('.crumb-btn').forEach(b=>b.addEventListener('click', ()=>{ if (!rec.active) navigate(b.dataset.id); }));
+}
+
+// ---------- what the current slide shows: fragments, camera, entrance animations, autoslide ----------
+function applyStepState(snap){
+  const n = nodes.get(currentId);
+  if (!n) return;
+  applyFragments(n, currentStep().frag, snap);
+  applyPipState();
+  // entrance animations wait until the slide is actually on screen, not behind a full-screen camera
+  if (pipEl.hidden || !pipState || !pipState.full) playEntrances(n);
+  scheduleAutoslide(n);
+}
+// data-gsap='{"from":{…},"duration":1,"delay":2,"ease":"…"}' and .title-scramble, as on the site
+const TRANSFORM_PROPS = ['x','y','xPercent','yPercent','scale','scaleX','scaleY','rotation','rotate','skewX','skewY'];
+function playEntrances(n){
+  if (n._played || !window.gsap || reduceMotion) return;
+  n._played = true;
+  n.el.querySelectorAll('[data-gsap]').forEach(el=>{
+    let cfg;
+    try { cfg = JSON.parse(el.dataset.gsap); } catch(e){ return; }
+    const timing = {duration:cfg.duration ?? 1, delay:cfg.delay ?? 0, ease:cfg.ease || 'power2.out'};
+    if (cfg.to) gsap.fromTo(el, cfg.from || {}, Object.assign({}, cfg.to, timing));
+    else if (cfg.from) gsap.from(el, Object.assign({}, cfg.from, timing));
+  });
+  n.el.querySelectorAll('.title-scramble').forEach(scramble);
+}
+function resetEntrances(n){
+  if (!n || !n._played) return;
+  n._played = false;
+  if (!window.gsap) return;
+  n.el.querySelectorAll('[data-gsap]').forEach(el=>{
+    gsap.killTweensOf(el);
+    let cfg = {};
+    try { cfg = JSON.parse(el.dataset.gsap); } catch(e){}
+    const props = new Set(Object.keys(Object.assign({}, cfg.from, cfg.to)).map(k=>TRANSFORM_PROPS.includes(k) ? 'transform' : k));
+    // clear only what the animation touched, so the element keeps its own inline styles
+    if (props.size) gsap.set(el, {clearProps:[...props].join(',')});
+  });
+  n.el.querySelectorAll('.title-scramble').forEach(el=>{
+    if (el._scramble) el._scramble.kill();
+    if (el.dataset.text) el.textContent = el.dataset.text;
+  });
+}
+function scramble(el){
+  const text = el.dataset.text || (el.dataset.text = el.textContent);
+  const chars = Array.from(text), pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*+=?';
+  const st = {p:0};
+  el._scramble = gsap.to(st, {p:1, duration:1.4, ease:'none',
+    onUpdate(){
+      const done = Math.floor(st.p * chars.length);
+      el.textContent = chars.map((c, i)=>i < done || /\s/.test(c) ? c : pool[(Math.random() * pool.length) | 0]).join('');
+    },
+    onComplete(){ el.textContent = text; }});
+}
+// <section data-autoslide="2500"> / <!-- .slide: data-autoslide="5000" --> advance on their own while presenting
+let autoTimer = null;
+function scheduleAutoslide(n){
+  clearTimeout(autoTimer);
+  if (!presenting || !n || !n.autoslide || (rec.active && (!rec.t0 || rec.paused))) return;
+  autoTimer = setTimeout(()=>{ if (currentId === n.id) step(1); }, n.autoslide);
+}
+
+// ---------- navigation ----------
+function setHash(id){
+  try { history.replaceState(null, '', id ? '#' + encodeURIComponent(id) : location.pathname + location.search); } catch(e){}
+}
+function navigate(id, instant, atLastStep){
+  if (!nodes.has(id)) return;
+  if (id !== currentId){
+    camManual = null; camCycle = -1;
+    stepPos = atLastStep ? slideSteps(nodes.get(id)).length - 1 : 0;
+    // in Focus the slide being left fades out under the incoming one
+    const prev = nodes.get(currentId);
+    if (prev && layoutMode === 'focus' && !instant){
+      prev.el.classList.add('leaving');
+      setTimeout(()=>prev.el.classList.remove('leaving'), 600);
+    }
+    leaveSlide();
+  }
+  const arriving = id !== currentId;
+  currentId = id;
+  clearTimeout(mapTimer);
+  if (arriving && layoutMode === 'focus' && !instant && !reduceMotion){
+    // start a touch small, then settle while it fades in
+    const el = nodes.get(id).el;
+    el.classList.add('entering'); void el.offsetWidth; el.classList.remove('entering');
+  }
+  applyStepState(arriving);
+  if (arriving) logTake('slide', id);
+  const n = nodes.get(id);
+  if (arriving && n.mapFirst && !atLastStep && !instant && layoutMode !== 'focus'){
+    // a map moment: show the whole deck for a beat, then fly in
+    fitAll();
+    mapTimer = setTimeout(()=>{ if (currentId === id) focusOn(id); }, 1900);
+  } else focusOn(id, instant);
+  updateActivePath();
+  updateMinimap();
+  setHash(id);
+}
+let mapTimer = null;
+// the slide being left goes back to its finished state
+function leaveSlide(){
+  const prev = nodes.get(currentId);
+  if (!prev) return;
+  applyFragments(prev, prev.frags.length, true);
+  resetEntrances(prev);
+}
+function overview(){
+  if (layoutMode === 'focus'){ setMode('path'); }
+  leaveSlide();
+  clearTimeout(autoTimer);
+  currentId = null;
+  updateActivePath();
+  updateMinimap();
+  fitAll();
+  setHash(null);
+}
+function step(dir){
+  if (!currentId){ if (order.length) navigate(order[dir > 0 ? 0 : order.length-1]); return; }
+  const steps = slideSteps(nodes.get(currentId));
+  const ns = Math.min(stepPos, steps.length - 1) + dir;
+  if (ns >= 0 && ns < steps.length){
+    stepPos = ns; camManual = null; camCycle = -1;
+    applyStepState();
+    if (!cameraStream && !pipEl.hidden && pipState.used) startWebcam(); else refocus();
+    updateActivePath();
+    return;
+  }
+  const ni = order.indexOf(currentId) + dir;
+  if (ni >= 0 && ni < order.length) navigate(order[ni], false, dir < 0);
+}
+function toParent(){
+  const n = nodes.get(currentId);
+  if (n && n.parent) navigate(n.parent);
+}
+function toChild(){
+  const n = nodes.get(currentId);
+  if (n && n.children.length) navigate(n.children[0]);
+  else if (!currentId && order.length) navigate(order[0]);
+}
+
+// ---------- minimap ----------
+let mm = null;
+function updateMinimap(){
+  const all = [...nodes.values()];
+  if (!all.length){ mmSvg.innerHTML=''; mm = null; return; }
+  mmLabel.textContent = 'map';
+  const px = n=>n.cx, py = n=>n.cy;
+  const minX = Math.min(...all.map(px)) - NODE_W/2, maxX = Math.max(...all.map(px)) + NODE_W/2;
+  const minY = Math.min(...all.map(py)) - NODE_H_EST/2, maxY = Math.max(...all.map(py)) + NODE_H_EST/2;
+  const pad = 16, W = 180, H = 130;
+  const s = Math.min((W-2*pad)/Math.max(1, maxX-minX), (H-2*pad-6)/Math.max(1, maxY-minY));
+  const ox = W/2 - (minX+maxX)/2*s, oy = H/2 + 5 - (minY+maxY)/2*s;
+  const path = currentId ? breadcrumbPath(currentId) : [];
+  let out = '';
+  all.forEach(n=>{
+    if (!n.parent) return;
+    const p = nodes.get(n.parent);
+    out += '<line x1="'+(px(p)*s+ox)+'" y1="'+(py(p)*s+oy)+'" x2="'+(px(n)*s+ox)+'" y2="'+(py(n)*s+oy)+'" stroke="var(--panel-line)" stroke-width="1"/>';
+  });
+  all.forEach(n=>{
+    const color = n.id===currentId ? 'var(--accent)' : (path.includes(n.id) ? 'var(--accent-teal)' : 'var(--node-border)');
+    out += '<circle data-id="'+escapeHtml(n.id)+'" cx="'+(px(n)*s+ox)+'" cy="'+(py(n)*s+oy)+'" r="'+(n.id===currentId?4:3)+'" fill="'+color+'"><title>'+escapeHtml(n.title)+'</title></circle>';
+  });
+  out += '<rect id="mm-viewport" fill="none" stroke="var(--accent)" stroke-width="1" opacity="0.7"/>';
+  mmSvg.innerHTML = out;
+  mm = {s, ox, oy};
+  updateMinimapViewport();
+}
+function updateMinimapViewport(){
+  const rect = document.getElementById('mm-viewport');
+  if (!rect || !mm) return;
+  const ww = stage.clientWidth / cam.zoom, wh = stage.clientHeight / cam.zoom;
+  rect.setAttribute('x', (cam.x - ww/2)*mm.s + mm.ox);
+  rect.setAttribute('y', (cam.y - wh/2)*mm.s + mm.oy);
+  rect.setAttribute('width', Math.max(2, ww*mm.s));
+  rect.setAttribute('height', Math.max(2, wh*mm.s));
+}
+mmSvg.addEventListener('click', e=>{
+  const c = e.target.closest('circle');
+  if (c && !rec.active) navigate(c.dataset.id);
+});
+
+// ---------- pipeline ----------
+let debounceTimer = null;
+function rebuild(instant){
+  parseDeck(editor.value);
+  if (currentId && !nodes.has(currentId)) currentId = null;
+  build();
+  if (currentId) navigate(currentId, instant);
+  else if (order.length) navigate(order[0], instant);
+  else { currentId = null; fitAll(true); }
+}
+editor.addEventListener('input', ()=>{
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(()=>{ save('slidetake:draft', editor.value); rebuild(true); }, 300);
+});
+
+// ---------- layout switching ----------
+function setMode(mode, instant){
+  layoutMode = mode;
+  save('slidetake:layout', mode);
+  document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === mode));
+  if (!nodes.size) return;
+  if (!instant && !reduceMotion){
+    world.classList.add('morph');
+    setTimeout(()=>world.classList.remove('morph'), 700);
+  }
+  position();
+  applyCamera();
+  if (currentId) focusOn(currentId, instant);
+  else fitAll(instant);
+}
+document.querySelectorAll('#layout-toggle .seg-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{ if (b.dataset.mode !== layoutMode) setMode(b.dataset.mode); });
+});
+
+// ---------- pointer: drag to pan / orbit, pinch to zoom ----------
+(function(){
+  const ptrs = new Map();
+  let moved = 0, dragged = false, pinch = null;
+  const pinchDist = ()=>{ const [a,b] = [...ptrs.values()]; return Math.hypot(a.x-b.x, a.y-b.y) || 1; };
+  stage.addEventListener('pointerdown', e=>{
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (rec.active || e.target.closest('a, pre, code, input, textarea')) return;
+    ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    moved = 0; dragged = false;
+    if (ptrs.size === 2) pinch = {d:pinchDist(), zoom:cam.zoom};
+  });
+  window.addEventListener('pointermove', e=>{
+    const prev = ptrs.get(e.pointerId);
+    if (!prev) return;
+    const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+    ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    moved += Math.abs(dx) + Math.abs(dy);
+    if (!dragged && moved > 5){ dragged = true; stopCamera(); stage.classList.add('dragging'); }
+    if (!dragged) return;
+    if (ptrs.size === 2 && pinch){
+      cam.zoom = clampZoom(pinch.zoom * pinchDist() / pinch.d);
+    } else {
+      cam.x -= dx / cam.zoom;
+      cam.y -= dy / cam.zoom;
+    }
+    applyCamera();
+  });
+  const end = e=>{
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinch = null;
+    if (!ptrs.size) stage.classList.remove('dragging');
+  };
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+  // a drag must not also count as a click on the card it started on
+  stage.addEventListener('click', e=>{ if (dragged){ e.stopPropagation(); e.preventDefault(); dragged = false; } }, true);
+})();
+
+function clampZoom(z){ return Math.max(0.04, Math.min(5, z)); }
+function setSlideFill(f){
+  slideFill = Math.round(Math.max(SLIDE_FILL_MIN, Math.min(SLIDE_FILL_MAX, f)) * 100) / 100;
+  save('slidetake:slideSize', slideFill);
+  if (currentId) focusOn(currentId);
+}
+// +/- resize the slide when one is selected, and zoom the map in the overview
+function sizeStep(dir){
+  if (currentId) setSlideFill(slideFill + dir * 0.1);
+  else zoomBy(dir > 0 ? 1.2 : 1/1.2);
+}
+function zoomBy(f, clientX, clientY){
+  stopCamera();
+  const nz = clampZoom(cam.zoom * f);
+  if (clientX !== undefined){
+    // keep the point under the cursor fixed
+    const r = stage.getBoundingClientRect();
+    const px = clientX - r.left - r.width/2, py = clientY - r.top - r.height/2;
+    cam.x += px/cam.zoom - px/nz;
+    cam.y += py/cam.zoom - py/nz;
+  }
+  cam.zoom = nz;
+  applyCamera();
+}
+stage.addEventListener('wheel', e=>{
+  e.preventDefault();
+  if (rec.active) return;
+  zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), e.clientX, e.clientY);
+}, {passive:false});
+
+// ---------- controls ----------
+document.getElementById('nav-prev').onclick = ()=>step(-1);
+document.getElementById('nav-next').onclick = ()=>step(1);
+document.getElementById('nav-parent').onclick = toParent;
+document.getElementById('nav-child').onclick = toChild;
+document.getElementById('nav-overview').onclick = overview;
+
+document.getElementById('btn-load').onclick = ()=>document.getElementById('file-input').click();
+document.getElementById('file-input').addEventListener('change', e=>{
+  const f = e.target.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{ editor.value = reader.result; deckBase = null; save('slidetake:draft', editor.value); currentId = null; rebuild(true); };
+  reader.readAsText(f);
+  e.target.value = '';
+});
+document.getElementById('btn-download').onclick = ()=>{
+  const blob = new Blob([editor.value], {type:'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (roots[0] ? slugify(nodes.get(roots[0]).title) : 'deck') + '.md';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+};
+document.getElementById('btn-reset').onclick = ()=>{
+  if (editor.value !== SAMPLE && !confirm('Replace the editor contents with the sample deck?')) return;
+  editor.value = SAMPLE; save('slidetake:draft', SAMPLE); currentId = null; rebuild(true);
+};
+
+function toggleEditor(){
+  editorPane.classList.toggle('collapsed');
+  document.getElementById('btn-edit-toggle').classList.toggle('active', !editorPane.classList.contains('collapsed'));
+}
+document.getElementById('btn-edit-toggle').onclick = toggleEditor;
+document.getElementById('btn-mode').onclick = toggleMode;
+
+function setPresent(on){
+  presenting = on;
+  document.body.classList.toggle('presenting', on);
+  markActive();
+  const de = document.documentElement;
+  if (on && de.requestFullscreen && !document.fullscreenElement) de.requestFullscreen().catch(()=>{});
+  if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+  if (on && !currentId && order.length) navigate(order[0]);
+  // decks that script the camera get the webcam as soon as presenting starts
+  const usesCamera = deck.camera || [...nodes.values()].some(n=>n.camera);
+  if (on && usesCamera && !cameraStream && !cameraOff) startWebcam();
+  if (on) scheduleAutoslide(nodes.get(currentId)); else clearTimeout(autoTimer);
+  if (on) startTalkClock(); else stopTalkClock();
+  updateProgress();
+}
+document.getElementById('btn-present').onclick = ()=>setPresent(!presenting);
+
+// ---------- recording a take: OBS only records, the deck drives everything ----------
+const OBS_URL = 'https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.5/dist/obs-ws.min.js';
+const NEXT_KEYS = ['ArrowRight', 'PageDown', ' ', 'ArrowDown', 'Enter'];
+const BACK_KEYS = ['ArrowLeft', 'PageUp', 'ArrowUp', 'r', 'R'];
+const PAUSE_KEYS = ['b', 'B', '.'];
+const recDialog = document.getElementById('rec-dialog'), reviewDialog = document.getElementById('review');
+const countdownEl = document.getElementById('rec-countdown'), pausedEl = document.getElementById('rec-paused');
+const obsHost = document.getElementById('obs-host'), obsPort = document.getElementById('obs-port'), obsPass = document.getElementById('obs-pass');
+const obsRemember = document.getElementById('obs-remember'), obsStatus = document.getElementById('obs-status');
+const recStartBtn = document.getElementById('rec-start');
+let obs = null, obsConnected = false, recStartResolve = null, obsFps = null;
+// t0/pausedMs give "time into the recording"; log holds slide arrivals and retakes; cuts are the bad parts
+// t0/pausedMs give "time into the recording"; every slide start (first attempt or retake) is an event,
+// stamped with OBS's own recording time when OBS is connected so cut points match the file exactly
+const rec = {active:false, withObs:false, counting:false, paused:false, finishing:false, t0:0, pauseAt:0, pausedMs:0, events:[], outputPath:null};
+const wait = ms=>new Promise(r=>setTimeout(r, ms));
+// two painted frames (so an overlay is really gone), but never hang if the tab isn't painting
+const nextFrame = ()=>Promise.race([new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))), wait(100)]);
+function recNow(){ return (rec.paused ? rec.pauseAt : performance.now()) - rec.t0 - rec.pausedMs; }
+
+function openModal(m){ m.classList.add('open'); }
+function closeModals(){ document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open')); }
+document.querySelectorAll('.modal').forEach(m=>{
+  m.addEventListener('click', e=>{ if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('open'); });
+});
+document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click', ()=>{
+  const ta = document.getElementById(b.dataset.copy);
+  ta.select();
+  (navigator.clipboard ? navigator.clipboard.writeText(ta.value) : Promise.reject()).catch(()=>document.execCommand('copy'));
+  b.textContent = 'Copied'; setTimeout(()=>{ b.textContent = 'Copy'; }, 1500);
+}));
+
+// OBS connection settings: ?obs=host:port[:password], else what was remembered
+function loadObsSettings(){
+  const fromUrl = new URLSearchParams(location.search).get('obs');
+  if (fromUrl){
+    const [host, port, ...rest] = fromUrl.split(':');
+    obsHost.value = host || 'localhost'; obsPort.value = port || '4455'; obsPass.value = rest.join(':');
+    return true;
+  }
+  try {
+    const saved = JSON.parse(load('slidetake:obs') || 'null');
+    if (saved){ obsHost.value = saved.host || 'localhost'; obsPort.value = saved.port || '4455'; obsPass.value = saved.password || ''; obsRemember.checked = true; }
+  } catch(e){}
+  return false;
+}
+function saveObsSettings(){
+  if (obsRemember.checked) save('slidetake:obs', JSON.stringify({host:obsHost.value.trim(), port:obsPort.value.trim(), password:obsPass.value}));
+  else { try { localStorage.removeItem('slidetake:obs'); } catch(e){} }
+}
+function setObsStatus(text, kind){ obsStatus.textContent = text; obsStatus.className = kind || ''; }
+async function connectObs(){
+  const url = 'ws://' + (obsHost.value.trim() || 'localhost') + ':' + (obsPort.value.trim() || '4455');
+  setObsStatus('Connecting to ' + url + '…');
+  try {
+    await loadScript(OBS_URL);
+    const Ctor = window.OBSWebSocket && (window.OBSWebSocket.default || window.OBSWebSocket);
+    if (obs){ try { await obs.disconnect(); } catch(e){} }
+    obs = new Ctor();
+    obs.on('ConnectionClosed', ()=>{
+      obsConnected = false;
+      setObsStatus('Disconnected from OBS', 'err');
+      recStartBtn.disabled = true;
+    });
+    obs.on('RecordStateChanged', e=>{
+      if (e.outputState === 'OBS_WEBSOCKET_OUTPUT_STARTED' && recStartResolve){ recStartResolve(); recStartResolve = null; }
+      if (e.outputState === 'OBS_WEBSOCKET_OUTPUT_STOPPED' && rec.active && rec.withObs && !rec.finishing) finishTake('Stopped in OBS');
+    });
+    const info = await obs.connect(url, obsPass.value || undefined);
+    obsConnected = true;
+    // cut points snap to OBS's exact frame rate
+    try { const v = await obs.call('GetVideoSettings'); if (v && v.fpsNumerator && v.fpsDenominator) obsFps = v.fpsNumerator / v.fpsDenominator; } catch(e){}
+    setObsStatus('Connected' + (info && info.obsWebSocketVersion ? ' · OBS WebSocket ' + info.obsWebSocketVersion : ''), 'ok');
+    saveObsSettings();
+  } catch(e){
+    obsConnected = false;
+    setObsStatus('Could not connect (' + ((e && e.message) || e) + '). Is OBS running with its WebSocket server on, and is the password right?', 'err');
+  }
+  recStartBtn.disabled = !obsConnected;
+}
+document.getElementById('obs-connect').onclick = connectObs;
+obsRemember.addEventListener('change', saveObsSettings);
+
+function openRecordDialog(){
+  if (!recording) return;
+  const total = order.reduce((a, id)=>a + slideSteps(nodes.get(id)).length, 0);
+  const usesCamera = deck.camera || [...nodes.values()].some(n=>n.camera);
+  document.getElementById('rec-deck-info').innerHTML =
+    escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : 'This deck')) + ' · ' + order.length + ' slides · ' + total + ' presses' +
+    (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C (or ○ Camera off) first if this take should include your webcam.</span>' : '');
+  recStartBtn.disabled = !obsConnected;
+  renderSessionList();
+  openModal(recDialog);
+}
+document.getElementById('btn-record').onclick = openRecordDialog;
+recStartBtn.onclick = ()=>startTake(true);
+document.getElementById('rec-rehearse').onclick = ()=>startTake(false);
+
+async function startTake(withObs){
+  if (rec.active || !order.length) return;
+  closeModals();
+  Object.assign(rec, {active:true, withObs, counting:true, paused:false, finishing:false, t0:0, pausedMs:0, events:[], outputPath:null});
+  document.body.classList.add('recording');
+  hidePipMsg();
+  const lay = document.getElementById('rec-layout').value;
+  if (lay !== 'current' && lay !== layoutMode) setMode(lay, true);
+  if (!presenting) setPresent(true);          // this click allows fullscreen
+  if (currentId === order[0]){ stepPos = 0; camManual = null; camCycle = -1; }
+  navigate(order[0], true);                   // step 0 of the first slide, its camera layout included
+  // 3-2-1 on screen; OBS only starts after it, so the countdown is never in the footage
+  for (let i = 3; i > 0; i--){
+    countdownEl.querySelector('.num').textContent = i;
+    countdownEl.classList.add('show');
+    await wait(1000);
+    if (!rec.active) return;
+  }
+  countdownEl.classList.remove('show');
+  await nextFrame();
+  if (withObs){
+    const started = new Promise(r=>{ recStartResolve = r; setTimeout(()=>{ if (recStartResolve){ recStartResolve(); recStartResolve = null; } }, 2500); });
+    try { await obs.call('StartRecord'); }
+    catch(e){ abortTake('OBS could not start recording: ' + ((e && e.message) || e)); return; }
+    await started;
+    if (!rec.active) return;
+  }
+  rec.counting = false;
+  rec.t0 = performance.now();
+  // the first slide starts now: replay its entrances on camera and log chapter 0:00
+  const first = nodes.get(currentId);
+  resetEntrances(first);
+  applyStepState(true);
+  logTake('slide', currentId);
+}
+function abortTake(message){
+  rec.active = false; rec.counting = false;
+  countdownEl.classList.remove('show');
+  document.body.classList.remove('recording');
+  if (presenting) setPresent(false);
+  showPipMsg(message);
+}
+
+function logTake(kind, id){
+  if (!rec.active || !rec.t0 || rec.finishing) return;
+  const n = nodes.get(id);
+  const ev = {id, title:n ? n.title : id, retake:kind === 'retake', t:Math.round(recNow()), obsT:null};
+  rec.events.push(ev);
+  if (rec.withObs && obsConnected){
+    obs.call('GetRecordStatus').then(r=>{ if (r && typeof r.outputDuration === 'number') ev.obsT = r.outputDuration; }).catch(()=>{});
+    // OBS 30.2+ also writes these into Hybrid MP4 recordings; other setups ignore them
+    if (n) obs.call('CreateRecordChapter', {chapterName:(ev.retake ? 'RETAKE · ' : '') + n.title}).catch(()=>{});
+  }
+}
+
+function takeKey(e){
+  const k = e.key;
+  const handled = NEXT_KEYS.includes(k) || BACK_KEYS.includes(k) || PAUSE_KEYS.includes(k) || k === 'Escape';
+  if (handled) e.preventDefault();
+  if (k === 'Escape'){ if (rec.counting) abortTake('Take cancelled'); else finishTake('Stopped early'); return; }
+  if (rec.counting || rec.finishing) return;
+  if (PAUSE_KEYS.includes(k)){ togglePause(); return; }
+  if (rec.paused) return;
+  if (NEXT_KEYS.includes(k)) takeForward();
+  else if (BACK_KEYS.includes(k)) retake();
+}
+function takeForward(){
+  const steps = slideSteps(nodes.get(currentId));
+  const lastStep = Math.min(stepPos, steps.length - 1) >= steps.length - 1;
+  if (lastStep && order.indexOf(currentId) === order.length - 1) finishTake();
+  else step(1);
+}
+// ← during a take: the slide starts over as a new take; the earlier attempt is kept to choose from
+function retake(){
+  const n = nodes.get(currentId);
+  if (!n) return;
+  logTake('retake', currentId);
+  stepPos = 0; camManual = null; camCycle = -1;
+  resetEntrances(n);
+  applyStepState(true);
+  if (!cameraStream && !pipEl.hidden && pipState.used) startWebcam(); else refocus();
+  updateActivePath();
+}
+async function togglePause(){
+  if (!rec.t0) return;
+  if (!rec.paused){
+    rec.paused = true; rec.pauseAt = performance.now();
+    clearTimeout(autoTimer);
+    if (rec.withObs) await obs.call('PauseRecord').catch(()=>{});
+    pausedEl.classList.add('show');
+  } else {
+    pausedEl.classList.remove('show');
+    await nextFrame();                      // the pause screen must be gone before OBS resumes
+    if (rec.withObs) await obs.call('ResumeRecord').catch(()=>{});
+    rec.pausedMs += performance.now() - rec.pauseAt;
+    rec.paused = false;
+    scheduleAutoslide(nodes.get(currentId));
+  }
+}
+async function finishTake(reason){
+  if (!rec.active || rec.finishing) return;
+  if (rec.counting){ abortTake('Take cancelled'); return; }
+  rec.finishing = true;
+  clearTimeout(autoTimer);
+  if (rec.paused){ rec.pausedMs += performance.now() - rec.pauseAt; rec.paused = false; pausedEl.classList.remove('show'); }
+  let total = Math.round(recNow()), totalObs = null;
+  if (rec.withObs){
+    await wait(1200);                       // hold the last frame a moment before the cut
+    total = Math.round(recNow());
+    try { const st = await obs.call('GetRecordStatus'); if (st && typeof st.outputDuration === 'number') totalObs = st.outputDuration; } catch(e){}
+    try { const r = await obs.call('StopRecord'); rec.outputPath = r && r.outputPath; }
+    catch(e){ reason = (reason ? reason + '. ' : '') + 'OBS did not confirm the stop (' + ((e && e.message) || e) + ')'; }
+  }
+  rec.active = false; rec.finishing = false;
+  document.body.classList.remove('recording');
+  if (presenting) setPresent(false);
+  const session = {
+    key:sessionKey(), deckTitle:deck.title || nodes.get(order[0]).title, date:new Date().toISOString(),
+    withObs:rec.withObs, outputPath:rec.outputPath, reason:reason || '', total, totalObs, fps:obsFps,
+    events:rec.events.map(e=>({id:e.id, title:e.title, retake:e.retake, t:e.t, obsT:e.obsT})), picks:{}
+  };
+  saveSession(session);
+  openReview(session);
+}
+
+// ---------- sessions: kept in this browser so a take can be reviewed (and re-picked) later ----------
+function sessionKey(){ return slugify(deck.title || (order[0] ? nodes.get(order[0]).title : 'deck')); }
+function loadSessions(){ try { return JSON.parse(load('slidetake:sessions') || '[]'); } catch(e){ return []; } }
+function saveSession(sess){
+  const all = loadSessions().filter(x=>x.date !== sess.date);
+  all.unshift(sess);
+  save('slidetake:sessions', JSON.stringify(all.slice(0, 12)));
+}
+function renderSessionList(){
+  const box = document.getElementById('rec-sessions');
+  const mine = loadSessions().filter(x=>x.key === sessionKey());
+  box.innerHTML = mine.length ? '<h3>Earlier takes of this deck</h3>' + mine.map((x, i)=>
+    '<div class="row"><button class="btn small" data-session="' + i + '">Review</button><span>' +
+    escapeHtml(new Date(x.date).toLocaleString()) + ' · ' + fmtTime(x.totalObs ?? x.total) + (x.withObs ? '' : ' · rehearsal') +
+    (x.outputPath ? ' · ' + escapeHtml(baseName(x.outputPath)) : '') + '</span></div>').join('') : '';
+  box.querySelectorAll('[data-session]').forEach(b=>b.onclick = ()=>{ closeModals(); openReview(mine[+b.dataset.session]); });
+}
+
+// the picked take of each slide (default: the last attempt), as ranges of the recording, in order
+// cut points sit on frame boundaries, so video and audio are cut at exactly the same moments
+// the section a slide belongs to: its ancestor just below the root (chapters, review rows, text size)
+function sectionOf(id){
+  const path = nodes.has(id) ? breadcrumbPath(id) : [id];
+  return path[Math.min(1, path.length - 1)];
+}
+
+// ---------- ffmpeg ----------
+let reviewFileName = '';
+// the section a slide belongs to (its top-level ancestor below the root) and that section's title
+function sectionInfo(id, fallbackTitle){
+  const sec = sectionOf(id);
+  return {sec, title: nodes.has(sec) ? nodes.get(sec).title : fallbackTitle};
+}
+const sectionChapters = sess=>sectionChaptersCore(sess, sectionInfo);
+const finalChapters = sess=>finalChaptersCore(sess, sectionInfo);
+const ffmpegScript = (sess, mode)=>ffmpegScriptCore(sess, mode, {
+  input: sess.outputPath || reviewFileName || 'recording.mov',
+  outputName: sessionKey() + '-final.mp4',
+  sectionOf: sectionInfo
+});
+
+// ---------- YouTube publish pack ----------
+function deckTags(){
+  const all = [].concat(deck.tags || [], deck.wealth_tags || [], deck.systems_tags || []).filter(t=>typeof t === 'string');
+  return [...new Set(all.map(t=>t.trim()).filter(Boolean))];
+}
+function relatedLinks(){
+  return [].concat(deck.related || []).map(x=>{
+    const md = String(x).match(/^\[([^\]]+)\]\(([^)]+)\)$/), pipe = String(x).split('|');
+    if (md) return md[1] + ': ' + md[2];
+    if (pipe.length === 2) return pipe[0].trim() + ': ' + pipe[1].trim();
+    return String(x);
+  });
+}
+// the deck's public page: front matter permalink/url, else site + the path it was loaded from
+function deckLink(){
+  if (deck.permalink || deck.url) return deck.permalink || deck.url;
+  const site = deck.site || load('slidetake:site');
+  if (!site || !deckBase) return '';
+  try {
+    const path = new URL(deckBase).pathname.replace(/\/index\.md$/i, '/').replace(/\.md$/i, '/');
+    return new URL(path, site).href;
+  } catch(e){ return ''; }
+}
+function describe(sess){
+  const ch = finalChapters(sess), link = document.getElementById('rv-link').value.trim(), related = relatedLinks(), tags = deckTags();
+  const parts = [];
+  if (deck.summary) parts.push(deck.summary);
+  if (link) parts.push('📑 Slides: ' + link);
+  if (ch.lines.length >= 3) parts.push('Chapters\n' + ch.lines.join('\n'));
+  if (related.length) parts.push('Related\n' + related.map(r=>'• ' + r).join('\n'));
+  if (tags.length) parts.push(tags.slice(0, 3).map(t=>'#' + t.replace(/[^\p{L}\p{N}]+/gu, '')).join(' '));
+  document.getElementById('rv-yt-desc').value = parts.join('\n\n');
+  document.getElementById('rv-chapters-note').textContent =
+    (ch.dropped ? ch.dropped + ' section' + (ch.dropped > 1 ? 's were' : ' was') + ' under 10 seconds and folded into the chapter before, as YouTube requires. ' : '') +
+    (ch.lines.length < 3 ? 'YouTube needs at least three chapters, so none are listed. ' : '') +
+    'Final length ' + fmtTime(ch.length) + '.';
+}
+
+// ---------- the review screen ----------
+let reviewing = null, playlist = null;
+const rvVideo = document.getElementById('rv-video'), rvNow = document.getElementById('rv-now');
+function openReview(sess){
+  reviewing = sess;
+  playlist = null;
+  const slides = takesOf(sess), retakes = sess.events.filter(e=>e.retake).length;
+  document.getElementById('rv-title').textContent = (sess.withObs ? 'Review the take · ' : 'Rehearsal · ') + sess.deckTitle;
+  document.getElementById('rv-info').textContent = [
+    sess.reason,
+    new Date(sess.date).toLocaleString(),
+    (sess.withObs ? 'recorded ' : 'ran ') + fmtTime(sess.totalObs ?? sess.total),
+    slides.size + ' slides',
+    retakes ? retakes + ' retake' + (retakes > 1 ? 's' : '') : 'no retakes',
+    sess.outputPath ? 'saved to ' + sess.outputPath : (sess.withObs ? '' : 'nothing was recorded')
+  ].filter(Boolean).join(' · ');
+  document.getElementById('rv-file').textContent = sess.outputPath ? ' (' + baseName(sess.outputPath) + ')' : '';
+  document.getElementById('rv-yt-title').value = sess.deckTitle;
+  // pick the listed rate nearest to the take's (OBS reports e.g. 60000/1001 for 59.94)
+  const fps = sessionFps(sess);
+  fpsSel.value = [...fpsSel.options].reduce((a, o)=>Math.abs(o.value - fps) < Math.abs(a.value - fps) ? o : a).value;
+  document.getElementById('rv-yt-tags').value = deckTags().join(', ');
+  document.getElementById('rv-link').value = deckLink();
+  if (rvVideo.src && reviewFileName !== baseName(sess.outputPath) && sess.outputPath){
+    rvVideo.removeAttribute('src'); rvVideo.load(); reviewFileName = '';
+  }
+  document.getElementById('rv-novideo').hidden = !!rvVideo.src;
+  renderReview();
+  openModal(reviewDialog);
+  autoLoadRecording(sess);
+}
+function renderReview(){
+  const sess = reviewing, list = document.getElementById('rv-list');
+  let lastSec = null;
+  list.innerHTML = [...takesOf(sess).values()].map(slide=>{
+    const pick = sess.picks[slide.id] ?? slide.takes.length, sec = sectionOf(slide.id);
+    const isSec = sec !== lastSec; lastSec = sec;
+    const chips = slide.takes.map(t=>'<button class="rv-chip' + (pick === t.no ? ' on' : '') + '" data-id="' + escapeHtml(slide.id) + '" data-take="' + t.no + '">' +
+      (slide.takes.length > 1 ? 'Take ' + t.no + ' · ' : '') + fmtTime(t.end - t.start) + '</button>').join('') +
+      '<button class="rv-chip skip' + (pick === 0 ? ' on' : '') + '" data-id="' + escapeHtml(slide.id) + '" data-take="0">Leave out</button>';
+    return '<div class="rv-row' + (isSec ? ' sec' : '') + '"><div class="t">' + escapeHtml(slide.title) +
+      '<small>' + fmtTime(slide.takes[0].start) + '</small></div><div class="rv-chips">' + chips + '</div></div>';
+  }).join('');
+  list.querySelectorAll('.rv-chip').forEach(b=>b.onclick = ()=>{
+    sess.picks[b.dataset.id] = +b.dataset.take;
+    saveSession(sess);
+    renderReview();
+    const slide = takesOf(sess).get(b.dataset.id), t = slide && slide.takes[+b.dataset.take - 1];
+    if (t) playRange([{start:t.start, end:t.end, title:slide.title + (slide.takes.length > 1 ? ' · take ' + t.no : '')}]);
+  });
+  document.getElementById('rv-ffmpeg').value = ffmpegScript(sess, document.getElementById('rv-mode').value);
+  describe(sess);
+}
+document.getElementById('rv-mode').onchange = ()=>renderReview();
+const fpsSel = document.getElementById('rv-fps');
+fpsSel.onchange = ()=>{ if (!reviewing) return; reviewing.fps = parseFloat(fpsSel.value); saveSession(reviewing); renderReview(); };
+document.getElementById('rv-link').addEventListener('input', e=>{
+  try { save('slidetake:site', new URL(e.target.value.trim()).origin); } catch(err){}
+  if (reviewing) describe(reviewing);
+});
+
+// preview: play ranges of the recording back to back
+// a take clicked while the recording is still opening plays as soon as it is ready
+let pendingPlay = null;
+function playRange(ranges){
+  if (!rvVideo.src){
+    pendingPlay = ranges;
+    rvNow.textContent = rvOpening ? 'Opening the recording… it plays when ready.' : 'Open the recording to preview.';
+    return;
+  }
+  pendingPlay = null;
+  playlist = {ranges, i:0};
+  rvNow.textContent = '▶ ' + ranges[0].title;
+  // seeking before the metadata has loaded is ignored, so wait for it
+  const go = ()=>{
+    rvVideo.currentTime = ranges[0].start / 1000;
+    rvVideo.play().catch(e=>{ if (e && e.name !== 'AbortError') rvNow.textContent = 'Could not play: ' + e.message; });
+  };
+  if (rvVideo.readyState >= 1) go(); else rvVideo.addEventListener('loadedmetadata', go, {once:true});
+}
+rvVideo.addEventListener('timeupdate', ()=>{
+  if (!playlist) return;
+  const r = playlist.ranges[playlist.i];
+  if (rvVideo.currentTime * 1000 < r.end) return;
+  playlist.i++;
+  if (playlist.i >= playlist.ranges.length){ rvVideo.pause(); playlist = null; rvNow.textContent = ''; return; }
+  const next = playlist.ranges[playlist.i];
+  rvVideo.currentTime = next.start / 1000;
+  rvNow.textContent = '▶ ' + next.title;
+});
+document.getElementById('rv-play-final').onclick = ()=>{
+  if (reviewing) playRange(pickedRanges(reviewing).map(r=>({start:r.start, end:r.end, title:r.title})));
+};
+
+// the recording: from the remembered OBS folder when the browser allows it, otherwise picked by hand
+function idb(name){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(name || 'slidetake', 1);
+    r.onupgradeneeded = ()=>r.result.createObjectStore('kv');
+    r.onsuccess = ()=>res(r.result); r.onerror = ()=>rej(r.error);
+  });
+}
+async function kvGet(k){
+  const get = async name=>{ const db = await idb(name); return await new Promise(r=>{ const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = ()=>r(q.result); q.onerror = ()=>r(null); }); };
+  // the remembered folder may still be in the database from an earlier name (Markcast, Traverse)
+  try { return (await get()) ?? (await get('markcast')) ?? (await get('traverse')) ?? null; }
+  catch(e){ return null; }
+}
+async function kvSet(k, v){ try { const db = await idb(); db.transaction('kv', 'readwrite').objectStore('kv').put(v, k); } catch(e){} }
+// a File is a snapshot: once OBS writes to the recording again (it finishes the file a moment after
+// StopRecord) the browser refuses to read the old snapshot, which shows up as a playback error.
+// With a file handle (the remembered folder, or the file picker) we simply read it again; a File from
+// the plain file input has to be picked again.
+let rvHandle = null, rvRetries = 0, rvOpening = false;
+rvVideo.addEventListener('error', async ()=>{
+  if (!rvVideo.getAttribute('src')) return;
+  if (rvHandle && rvRetries < 5){
+    rvRetries++;
+    rvNow.textContent = 'Reloading ' + reviewFileName + ' (OBS was still finishing it)…';
+    await new Promise(r=>setTimeout(r, 1500));
+    try { useRecording(await stableFile(rvHandle), rvHandle, true); return; } catch(e){}
+  }
+  rvNow.textContent = rvHandle
+    ? 'Chrome cannot play ' + reviewFileName + '. In OBS set Recording Format to Hybrid MP4 (or MP4) with H.264 video; the ffmpeg command still works with this file.'
+    : 'Could not play ' + (reviewFileName || 'this file') + '. If OBS was still finishing it when you opened it, open it again; if it still fails, set OBS to Hybrid MP4 (or MP4) with H.264 video.';
+});
+// wait until OBS has stopped writing: same size and time stamp a second apart
+async function stableFile(handle){
+  rvOpening = true;
+  try { return await settle(handle); } finally { rvOpening = false; }
+}
+async function settle(handle){
+  let f = await handle.getFile();
+  for (let i = 0; i < 10; i++){
+    await new Promise(r=>setTimeout(r, 1000));
+    const g = await handle.getFile();
+    if (g.size === f.size && g.lastModified === f.lastModified) return g;
+    f = g;
+  }
+  return f;
+}
+function useRecording(file, handle, retry){
+  if (rvVideo.src) URL.revokeObjectURL(rvVideo.src);
+  rvHandle = handle || null;
+  if (!retry) rvRetries = 0;
+  rvVideo.src = URL.createObjectURL(file);
+  reviewFileName = file.name;
+  document.getElementById('rv-novideo').hidden = true;
+  rvNow.textContent = 'Loaded ' + file.name + '. Click a take to preview it.';
+  if (pendingPlay) playRange(pendingPlay);
+  else if (retry && playlist) playRange(playlist.ranges.slice(playlist.i));
+  if (reviewing) document.getElementById('rv-ffmpeg').value = ffmpegScript(reviewing, document.getElementById('rv-mode').value);
+}
+const fileInput = document.getElementById('rv-file-input');
+fileInput.addEventListener('change', ()=>{ if (fileInput.files[0]) useRecording(fileInput.files[0]); fileInput.value = ''; });
+// a file picker must open straight from the click (browsers allow one picker per click), so the file
+// and folder options are separate buttons
+// where the browser can, pick a file handle rather than a File, so a recording OBS was still finishing
+// can be read again
+document.getElementById('rv-open').onclick = async ()=>{
+  if (!window.showOpenFilePicker) return fileInput.click();
+  try {
+    const [handle] = await window.showOpenFilePicker({id:'obs-recordings', types:[{description:'Recordings', accept:{'video/*':['.mov','.mp4','.m4v','.mkv','.webm']}}]});
+    rvNow.textContent = 'Opening ' + handle.name + '…';
+    useRecording(await stableFile(handle), handle);
+  } catch(e){ if (!e || e.name !== 'AbortError') rvNow.textContent = 'Could not open that file.'; }
+};
+const folderBtn = document.getElementById('rv-folder');
+folderBtn.hidden = !window.showDirectoryPicker;
+folderBtn.onclick = async ()=>{
+  const name = reviewing && baseName(reviewing.outputPath);
+  try {
+    const dir = await window.showDirectoryPicker({id:'obs-recordings', mode:'read'});
+    kvSet('obs-folder', dir);
+    if (!name){ rvNow.textContent = 'Folder remembered. This session has no file name from OBS; open the file instead.'; return; }
+    const handle = await dir.getFileHandle(name);
+    useRecording(await stableFile(handle), handle);
+  } catch(e){
+    if (e && e.name === 'AbortError') return;
+    rvNow.textContent = (name ? name + ' is not in that folder' : 'Could not read that folder') + '. Use “Open the recording file…” instead.';
+  }
+};
+// a remembered folder that the browser still allows reading loads the take's file without any prompt
+async function autoLoadRecording(sess){
+  const name = baseName(sess.outputPath);
+  if (!name || !window.showDirectoryPicker) return;
+  if (reviewFileName === name && rvVideo.src) return;
+  try {
+    const dir = await kvGet('obs-folder');
+    if (!dir || (await dir.queryPermission({mode:'read'})) !== 'granted') return;
+    const handle = await dir.getFileHandle(name);
+    rvNow.textContent = 'Opening ' + name + '…';
+    useRecording(await stableFile(handle), handle);
+  } catch(e){}
+}
+
+document.getElementById('rv-download').onclick = ()=>{
+  if (!reviewing) return;
+  const sess = reviewing, ch = finalChapters(sess);
+  const text = '# ' + document.getElementById('rv-yt-title').value + '\n\n' +
+    'Recorded ' + new Date(sess.date).toLocaleString() + (sess.outputPath ? ' · ' + sess.outputPath : '') + ' · final length ' + fmtTime(ch.length) + '\n\n' +
+    '## Render\n\n```sh\n' + document.getElementById('rv-ffmpeg').value + '\n```\n\n' +
+    '## YouTube title\n\n' + document.getElementById('rv-yt-title').value + '\n\n' +
+    '## YouTube description\n\n' + document.getElementById('rv-yt-desc').value + '\n\n' +
+    '## Tags\n\n' + document.getElementById('rv-yt-tags').value + '\n\n' +
+    '## Picked takes\n\n' + pickedRanges(sess).map(r=>'- ' + fmtTime(r.start) + '–' + fmtTime(r.end) + '  ' + r.title).join('\n') + '\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type:'text/markdown'}));
+  a.download = sessionKey() + '-publish.md';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+};
+if (loadObsSettings() && new URLSearchParams(location.search).get('obs')) connectObs();
+
+// ---------- webcam in the PIP box ----------
+const camBtn = document.getElementById('btn-camera');
+const pipMsg = document.getElementById('pip-msg');
+let pipMsgTimer = null;
+function showPipMsg(text, sticky){
+  if (rec.active) return;
+  pipMsg.textContent = text;
+  pipMsg.classList.add('show');
+  clearTimeout(pipMsgTimer);
+  if (!sticky) pipMsgTimer = setTimeout(()=>pipMsg.classList.remove('show'), 9000);
+}
+function hidePipMsg(){ clearTimeout(pipMsgTimer); pipMsg.classList.remove('show'); }
+// explain the usual reasons a browser refuses the camera
+function cameraHelp(){
+  let embedded = false;
+  try { embedded = window.top !== window.self; } catch(e){ embedded = true; }
+  if (embedded) return ' This page is running inside a preview frame that may not allow cameras. Open Slidetake directly in Chrome (from localhost or as a file).';
+  if (!window.isSecureContext) return ' Browsers only allow cameras on secure pages. Open it from http://localhost or as a local file in Chrome.';
+  return ' Allow camera access for this page in the browser’s site settings (the icon at the left of the address bar), then try again.';
+}
+function stopWebcam(){
+  if (cameraStream) cameraStream.getTracks().forEach(t=>t.stop());
+  cameraStream = null;
+  const v = pipEl.querySelector('video');
+  if (v) v.remove();
+}
+async function startWebcam(){
+  if (cameraStream || cameraOff) return;
+  {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      showPipMsg('Camera not available on this page.' + cameraHelp());
+      return;
+    }
+    if (camBtn.disabled) return;
+    camBtn.disabled = true;
+    showPipMsg('Waiting for camera permission — check the browser prompt near the address bar.', true);
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30}}, audio:false});
+      hidePipMsg();
+    } catch(e){
+      const name = e && e.name;
+      showPipMsg(
+        name === 'NotAllowedError' || name === 'SecurityError' ? 'Camera access was blocked.' + cameraHelp() :
+        name === 'NotFoundError' || name === 'OverconstrainedError' ? 'No camera was found. Check that a webcam is connected.' :
+        name === 'NotReadableError' ? 'The camera is busy — close other apps using it (Zoom, OBS, FaceTime) and try again.' :
+        'Could not start the camera' + (name ? ' (' + name + ')' : '') + '.' + cameraHelp());
+      return;
+    } finally {
+      camBtn.disabled = false;
+      updateCamBtn();
+    }
+    // the camera can be unplugged or revoked while live
+    cameraStream.getVideoTracks().forEach(t=>t.addEventListener('ended', ()=>{ stopWebcam(); applyDeckSettings(); refocus(); }));
+    const v = document.createElement('video');
+    v.autoplay = true; v.muted = true; v.playsInline = true;
+    v.srcObject = cameraStream;
+    pipEl.appendChild(v);
+  }
+  applyDeckSettings();
+  refocus();
+}
+const CAMERA_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10.5 22 7v10l-6-3.5z"/></svg>';
+function updateCamBtn(){
+  if (!camBtn.querySelector('svg')) camBtn.innerHTML = CAMERA_ICON + '<span class="live"></span><span class="lbl"> Camera</span>';
+  camBtn.classList.toggle('on', !cameraOff);
+  camBtn.setAttribute('aria-pressed', String(!cameraOff));
+  camBtn.title = cameraOff ? 'Camera is off for every slide (C)' : 'Camera is on and follows the deck (C)';
+}
+function setCameraEnabled(on){
+  if (on && !recording) return;
+  cameraOff = !on;
+  if (cameraOff) stopWebcam();
+  camManual = null; camCycle = -1;
+  stepPos = Math.min(stepPos, Math.max(0, slideSteps(nodes.get(currentId)).length - 1));
+  updateCamBtn();
+  applyDeckSettings();
+  applyStepState();
+  updateActivePath();
+  refocus();
+  if (!presenting) showPipMsg(on ? 'Camera on — slides follow their camera settings.' : 'Camera off — camera settings are ignored and slides use the whole screen.');
+  if (on) startWebcam();
+}
+camBtn.onclick = ()=>setCameraEnabled(cameraOff);
+updateCamBtn();
+// while presenting, the cursor and on-screen controls hide after 2s without mouse movement
+let idleTimer = null;
+function markActive(){
+  document.body.classList.remove('idle');
+  clearTimeout(idleTimer);
+  if (presenting) idleTimer = setTimeout(()=>document.body.classList.add('idle'), 2000);
+}
+window.addEventListener('pointermove', markActive);
+document.getElementById('nav-smaller').onclick = ()=>setSlideFill(slideFill - 0.1);
+document.getElementById('nav-bigger').onclick = ()=>setSlideFill(slideFill + 0.1);
+document.addEventListener('fullscreenchange', ()=>{
+  if (document.fullscreenElement) return;
+  if (rec.active) finishTake('Stopped: the browser left fullscreen');
+  else if (presenting) setPresent(false);
+});
+
+const help = document.getElementById('help');
+document.getElementById('btn-help').onclick = ()=>help.classList.add('open');
+document.getElementById('help-close').onclick = ()=>help.classList.remove('open');
+help.addEventListener('click', e=>{ if (e.target===help) help.classList.remove('open'); });
+
+window.addEventListener('keydown', e=>{
+  // a clicker's "start" button sends F5; never let it reload the page
+  if (e.key === 'F5'){ e.preventDefault(); if (!rec.active) openRecordDialog(); return; }
+  if (rec.active){ takeKey(e); return; }
+  if (document.querySelector('.modal.open')){ if (e.key === 'Escape') closeModals(); return; }
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === 'TEXTAREA' || tag === 'INPUT' || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (help.classList.contains('open')){ if (e.key==='Escape') help.classList.remove('open'); return; }
+  const k = e.key;
+  if (k==='ArrowRight' || k===' ' || k==='PageDown'){ e.preventDefault(); step(1); }
+  else if (k==='ArrowLeft' || k==='PageUp'){ e.preventDefault(); step(-1); }
+  else if (k==='ArrowDown'){ e.preventDefault(); toChild(); }
+  else if (k==='ArrowUp'){ e.preventDefault(); toParent(); }
+  else if (k==='Home'){ if (order.length) navigate(order[0]); }
+  else if (k==='End'){ if (order.length) navigate(order[order.length-1]); }
+  else if (k==='o' || k==='O'){ overview(); }
+  else if (k==='e' || k==='E'){ toggleEditor(); }
+  else if (k==='f' || k==='F' || k==='p' || k==='P'){ setPresent(!presenting); }
+  else if (k==='r' || k==='R'){ openRecordDialog(); }
+  else if (k==='1'){ setMode('tree'); }
+  else if (k==='2'){ setMode('radial'); }
+  else if (k==='3'){ setMode('path'); }
+  else if (k==='4'){ setMode('focus'); }
+  else if (k==='c' || k==='C'){ setCameraEnabled(cameraOff); }
+  else if (k==='v' || k==='V'){ cycleCamera(); }
+  else if (k==='l' || k==='L'){ toggleMode(); }
+  else if (k==='+' || k==='='){ sizeStep(1); }
+  else if (k==='-' || k==='_'){ sizeStep(-1); }
+  else if (k==='?'){ help.classList.add('open'); }
+  else if (k==='Escape' && presenting){ setPresent(false); }
+});
+
+window.addEventListener('hashchange', ()=>{
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (id && id !== currentId && nodes.has(id)) navigate(id);
+});
+
+// the stage changes size when the editor collapses, presenting starts, or the window resizes
+let lastSize = '';
+new ResizeObserver(()=>{
+  const size = stage.clientWidth + 'x' + stage.clientHeight;
+  if (size === lastSize) return;
+  lastSize = size;
+  applyCamera();
+  refocus(true);
+}).observe(stage);
+
+// ---------- boot ----------
+const savedMode = load('slidetake:layout');
+layoutMode = ['tree','radial','path','focus'].includes(savedMode) ? savedMode : 'tree';
+document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
+document.getElementById('btn-edit-toggle').classList.add('active');
+
+// ?src=<url of a .md> loads a deck from the web (relative images resolve next to it),
+// ?edit=0 starts with the editor hidden, ?layout=tree|radial|path|focus picks the layout
+const params = new URLSearchParams(location.search);
+const startId = decodeURIComponent(location.hash.slice(1));
+if (params.get('edit') === '0') toggleEditor();
+if (['tree','radial','path','focus'].includes(params.get('layout'))){
+  layoutMode = params.get('layout');
+  document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
+}
+async function loadInitialDeck(){
+  const src = params.get('src');
+  if (src){
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      deckBase = new URL(src, location.href).href;
+      return await res.text();
+    } catch(e){
+      statusErr.textContent = 'Could not load ' + src + ' (' + e.message + ')';
+    }
+  }
+  return load('slidetake:draft') || SAMPLE;
+}
+loadInitialDeck().then(text=>{
+  editor.value = text;
+  parseDeck(editor.value);
+  build();
+  // wait for web fonts before measuring card sizes
+  return document.fonts ? document.fonts.ready : null;
+}).then(()=>{
+  nodes.forEach(sizeCard);
+  position();
+  navigate(nodes.has(startId) ? startId : order[0], true);
+});
