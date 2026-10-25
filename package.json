@@ -4,7 +4,7 @@
   "description": "Markdown to finished video: a spatial deck that records itself, take by take",
   "license": "Apache-2.0",
   "author": "Sakthi Priyan H",
-  "repository": "github:sakthipriyan/slidetake",
+  "repository": "github:slidetake/slidetake",
   "type": "module",
   "private": true,
   "scripts": {

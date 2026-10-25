@@ -1237,7 +1237,7 @@ const isLoopback = host=>/^(localhost|127(\.\d+){3}|\[?::1\]?)$/i.test(host);
 function obsBlockedHere(host){ return location.protocol === 'https:' && !isLoopback(host); }
 const OBS_HTTPS_HELP = 'This page is served over https, and browsers block it from reaching OBS on another computer ' +
   '(OBS only offers plain ws://). Run OBS on this computer and use localhost, or open Slidetake from a local copy: ' +
-  'download dist/index.html from github.com/sakthipriyan/slidetake and serve it with python3 -m http.server.';
+  'download dist/index.html from github.com/slidetake/slidetake and serve it with python3 -m http.server.';
 async function connectObs(){
   const host = obsHost.value.trim() || 'localhost';
   const url = 'ws://' + host + ':' + (obsPort.value.trim() || '4455');

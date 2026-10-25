@@ -66,6 +66,6 @@ Type in any deck, this one included, and it becomes your own copy. The original 
 
 ## 💛 Free and open
 
-Open source, Apache 2.0: [github.com/sakthipriyan/slidetake](https://github.com/sakthipriyan/slidetake).
+Open source, Apache 2.0: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake).
 
 Everything else is in the guide: **[slidetake.com/help](/help)**.

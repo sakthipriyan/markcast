@@ -2,7 +2,7 @@
 
 > Markdown to finished video: a markdown file becomes a spatial deck you move through like a map, and when you record it with OBS, the deck directs the video: every slide is a take, with a frame-exact ffmpeg cut and YouTube chapters at the end.
 
-Slidetake runs in the browser at https://slidetake.com. It is open source (Apache 2.0): https://github.com/sakthipriyan/slidetake
+Slidetake runs in the browser at https://slidetake.com. It is open source (Apache 2.0): https://github.com/slidetake/slidetake
 
 ## Docs
 

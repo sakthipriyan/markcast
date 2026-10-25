@@ -50,7 +50,7 @@ Every deck opened is read-only: home `/`, help `/help`, templates `/new?template
 
 ## Decisions so far
 
-- Name: **Slidetake** (Traverse → Markcast → Slidetake). Repo: github.com/sakthipriyan/slidetake, public, Apache 2.0.
+- Name: **Slidetake** (Traverse → Markcast → Slidetake). Repo: github.com/slidetake/slidetake (the slidetake organization; moved from sakthipriyan/slidetake, which redirects), public, Apache 2.0.
 - Recording mode only with `?obs=host:port[:password]`, the same format as the reveal.js slides; otherwise a viewer with Fullscreen.
 - Plain JavaScript (no Rust/Wasm): the work is DOM, CSS, animation and browser APIs.
 - Domain: slidetake.com, registered at Spaceship, DNS on Cloudflare.

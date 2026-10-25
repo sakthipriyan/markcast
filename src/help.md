@@ -149,7 +149,7 @@ YouTube is 16:9, and many laptop screens aren't. The Record dialog checks yours:
 
 ### OBS on another computer
 
-From https://slidetake.com, OBS must be on the same computer (`localhost`): browsers block secure pages from reaching plain `ws://` addresses elsewhere. For OBS on another machine, serve a local copy of [`dist/index.html`](https://github.com/sakthipriyan/slidetake) over http.
+From https://slidetake.com, OBS must be on the same computer (`localhost`): browsers block secure pages from reaching plain `ws://` addresses elsewhere. For OBS on another machine, serve a local copy of [`dist/index.html`](https://github.com/slidetake/slidetake) over http.
 
 ### Taking a take
 
@@ -227,4 +227,4 @@ Your draft and settings stay in this browser. Decks inside links live in the par
 
 slidetake.com counts visits with Google Analytics. What it records leaves out the `#` part and `?obs=`, so neither your deck nor an OBS password reaches it. Copies you host yourself send nothing.
 
-Slidetake is open source: [github.com/sakthipriyan/slidetake](https://github.com/sakthipriyan/slidetake).
+Slidetake is open source: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake).
