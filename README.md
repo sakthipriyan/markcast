@@ -1,8 +1,8 @@
-# Markcast
+# Slidetake
 
 Markdown in, a spatial deck and a finished video out.
 
-Markcast turns a markdown file into a deck you move through like a map, and, when you are recording, drives the camera and OBS from the deck itself: every slide is a take, a slide spoken badly is retaken on the spot, and at the end you get a frame-exact ffmpeg cut, chapters and a YouTube publish pack.
+Slidetake turns a markdown file into a deck you move through like a map, and, when you are recording, drives the camera and OBS from the deck itself: every slide is a take, a slide spoken badly is retaken on the spot, and at the end you get a frame-exact ffmpeg cut, chapters and a YouTube publish pack.
 
 It is a single HTML file with no build step.
 
@@ -20,7 +20,7 @@ Then open:
 
 ## Viewing and recording
 
-Without anything else in the address, Markcast is a viewer: the deck and a **Fullscreen** button (F). Camera settings in the deck are ignored, so the same deck works for readers on a website.
+Without anything else in the address, Slidetake is a viewer: the deck and a **Fullscreen** button (F). Camera settings in the deck are ignored, so the same deck works for readers on a website.
 
 Add where OBS is to turn on recording mode, the same format the reveal.js slides use:
 
@@ -38,7 +38,7 @@ Plain markdown (each heading is a card), the older `+++` format, and reveal.js d
 
 ## Status
 
-Early. Planned: split into modules with TypeScript types, an npm package, a hugo-continuum slide layout (`engine: markcast`), and a public editor.
+Early. Planned: split into modules with TypeScript types, an npm package, a hugo-continuum slide layout (`engine: slidetake`), and a public editor.
 
 ## License
 

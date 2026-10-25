@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Markcast</title>
+<title>Slidetake</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -492,7 +492,7 @@
 
 <header>
   <div class="brand">
-    <div class="mark">Markcast<span>.</span></div>
+    <div class="mark">Slidetake<span>.</span></div>
     <div class="tagline">plain markdown → spatial deck → video</div>
   </div>
   <div class="hdr-actions">
@@ -573,7 +573,7 @@ See the [roadmap](#plan).</pre>
     <h3>reveal.js decks</h3>
     <p>Decks written for reveal.js open as they are. <kbd>---</kbd> starts a new slide and <kbd>--</kbd> a vertical one beneath it; the first slide becomes the root card. Supported: fragments (<code>fade-up</code>, <code>fade-in-then-out</code>, <code>grow</code>, …, revealed one per <kbd>→</kbd>), <code>r-stack</code>, <code>&lt;!-- .element: … --&gt;</code>, <code>&lt;section&gt;</code> slides, <code>data-autoslide</code> (while presenting), Graphviz <code>```dot</code> diagrams, ECharts <code>echarts-container</code> charts, <code>data-gsap</code> entrance animations and <code>title-scramble</code>. Cards widen for wide tables, columns, diagrams and embeds, and anything wider still is scaled to fit.</p>
     <h3>Images and loading from the web</h3>
-    <p>Open a deck with <code>markcast/?src=https://…/deck.md</code> and its relative images load from next to it. For a file loaded from disk, add <code>base: https://…/deck-folder/</code> to the top block. <code>?edit=0</code> hides the editor and <code>?layout=tree|radial|path|focus</code> picks the layout.</p>
+    <p>Open a deck with <code>slidetake/?src=https://…/deck.md</code> and its relative images load from next to it. For a file loaded from disk, add <code>base: https://…/deck-folder/</code> to the top block. <code>?edit=0</code> hides the editor and <code>?layout=tree|radial|path|focus</code> picks the layout.</p>
     <h3>Layouts</h3>
     <p><strong>tree</strong> is a top-down chart and <strong>radial</strong> rings out from the root. For video, <strong>path</strong> is a staircase in the order you present them: each section is a row (1 → 1.1 → 1.2), and the next section starts just below where it ended (↓ 2 → 2.1 → 2.2), so every move is a short step right or down, and <strong>focus</strong> doesn't travel at all: the next slide fades in. Both show a progress bar while presenting that moves with every press.</p>
     <p>Text keeps one size within a section; it only changes when the section does. <code>&lt;!-- view: overview --&gt;</code> on a slide pulls back to the whole map for a moment before flying in, a good beat at the start of a chapter.</p>
@@ -717,11 +717,11 @@ camera: 24%, 40%, full, off  ← layouts V cycles through
 <!-- The sample deck. Plain markdown, nothing else. -->
 <script type="text/markdown" id="sample-deck">
 ---
-brand: Markcast
+brand: Slidetake
 pip: none
 ---
 
-# Markcast
+# Slidetake
 
 A markdown file becomes a **spatial deck**. Every heading is a card, and deeper headings branch off the one above them.
 
@@ -814,7 +814,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
 
   // how much of the screen the current slide fills; +/- adjust it, remembered per browser
   const SLIDE_FILL_MIN = 0.35, SLIDE_FILL_MAX = 1;
-  let slideFill = parseFloat(load('markcast:slideSize')) || 0.92;
+  let slideFill = parseFloat(load('slidetake:slideSize')) || 0.92;
 
   let nodes = new Map();   // id -> node
   let order = [];          // DFS pre-order of node ids
@@ -842,9 +842,14 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   let camTween = null;
 
   // ---------- storage (per-viewer convenience only) ----------
-  // Markcast was called Traverse: settings saved under the old prefix are still read
+  // Slidetake was called Traverse, then Markcast: settings saved under an old prefix are still read
   function load(k){
-    try { const v = localStorage.getItem(k); return v ?? (k.startsWith('markcast:') ? localStorage.getItem('traverse:' + k.slice(9)) : null); }
+    try {
+      const v = localStorage.getItem(k);
+      if (v !== null || !k.startsWith('slidetake:')) return v;
+      const rest = k.slice(10);
+      return localStorage.getItem('slidetake:' + rest) ?? localStorage.getItem('traverse:' + rest);
+    }
     catch(e){ return null; }
   }
   function save(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
@@ -1064,7 +1069,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
     brandEl.hidden = !html;
 
     applyPipState();
-    document.title = deck.title || 'Markcast';
+    document.title = deck.title || 'Slidetake';
     const palette = String(deck.theme || deck.palette || '').toLowerCase() ||
       ((deck.wealth_tags || /\/building-wealth\//.test(deckBase || '')) ? 'building-wealth' : '');
     if (palette) document.body.dataset.palette = palette; else delete document.body.dataset.palette;
@@ -1074,7 +1079,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   // ---------- light / dark ----------
   const urlMode = new URLSearchParams(location.search).get('mode');
   function currentMode(){
-    const m = String(urlMode || load('markcast:mode') || deck.mode || 'dark').toLowerCase();
+    const m = String(urlMode || load('slidetake:mode') || deck.mode || 'dark').toLowerCase();
     return m === 'light' ? 'light' : 'dark';
   }
   function applyMode(){
@@ -1084,7 +1089,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
     if (b) b.textContent = light ? '◑ Dark' : '◐ Light';
   }
   function toggleMode(){
-    save('markcast:mode', currentMode() === 'light' ? 'dark' : 'light');
+    save('slidetake:mode', currentMode() === 'light' ? 'dark' : 'light');
     applyMode();
     // charts are drawn for one mode; redraw them for the other
     if (world.querySelector('.echarts-container')) rebuild(true);
@@ -2014,13 +2019,13 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   }
   editor.addEventListener('input', ()=>{
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(()=>{ save('markcast:draft', editor.value); rebuild(true); }, 300);
+    debounceTimer = setTimeout(()=>{ save('slidetake:draft', editor.value); rebuild(true); }, 300);
   });
 
   // ---------- layout switching ----------
   function setMode(mode, instant){
     layoutMode = mode;
-    save('markcast:layout', mode);
+    save('slidetake:layout', mode);
     document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === mode));
     if (!nodes.size) return;
     if (!instant && !reduceMotion){
@@ -2078,7 +2083,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   function clampZoom(z){ return Math.max(0.04, Math.min(5, z)); }
   function setSlideFill(f){
     slideFill = Math.round(Math.max(SLIDE_FILL_MIN, Math.min(SLIDE_FILL_MAX, f)) * 100) / 100;
-    save('markcast:slideSize', slideFill);
+    save('slidetake:slideSize', slideFill);
     if (currentId) focusOn(currentId);
   }
   // +/- resize the slide when one is selected, and zoom the map in the overview
@@ -2116,7 +2121,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   document.getElementById('file-input').addEventListener('change', e=>{
     const f = e.target.files[0]; if (!f) return;
     const reader = new FileReader();
-    reader.onload = ()=>{ editor.value = reader.result; deckBase = null; save('markcast:draft', editor.value); currentId = null; rebuild(true); };
+    reader.onload = ()=>{ editor.value = reader.result; deckBase = null; save('slidetake:draft', editor.value); currentId = null; rebuild(true); };
     reader.readAsText(f);
     e.target.value = '';
   });
@@ -2130,7 +2135,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   };
   document.getElementById('btn-reset').onclick = ()=>{
     if (editor.value !== SAMPLE && !confirm('Replace the editor contents with the sample deck?')) return;
-    editor.value = SAMPLE; save('markcast:draft', SAMPLE); currentId = null; rebuild(true);
+    editor.value = SAMPLE; save('slidetake:draft', SAMPLE); currentId = null; rebuild(true);
   };
 
   function toggleEditor(){
@@ -2198,14 +2203,14 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
       return true;
     }
     try {
-      const saved = JSON.parse(load('markcast:obs') || 'null');
+      const saved = JSON.parse(load('slidetake:obs') || 'null');
       if (saved){ obsHost.value = saved.host || 'localhost'; obsPort.value = saved.port || '4455'; obsPass.value = saved.password || ''; obsRemember.checked = true; }
     } catch(e){}
     return false;
   }
   function saveObsSettings(){
-    if (obsRemember.checked) save('markcast:obs', JSON.stringify({host:obsHost.value.trim(), port:obsPort.value.trim(), password:obsPass.value}));
-    else { try { localStorage.removeItem('markcast:obs'); } catch(e){} }
+    if (obsRemember.checked) save('slidetake:obs', JSON.stringify({host:obsHost.value.trim(), port:obsPort.value.trim(), password:obsPass.value}));
+    else { try { localStorage.removeItem('slidetake:obs'); } catch(e){} }
   }
   function setObsStatus(text, kind){ obsStatus.textContent = text; obsStatus.className = kind || ''; }
   async function connectObs(){
@@ -2382,11 +2387,11 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
 
   // ---------- sessions: kept in this browser so a take can be reviewed (and re-picked) later ----------
   function sessionKey(){ return slugify(deck.title || (order[0] ? nodes.get(order[0]).title : 'deck')); }
-  function loadSessions(){ try { return JSON.parse(load('markcast:sessions') || '[]'); } catch(e){ return []; } }
+  function loadSessions(){ try { return JSON.parse(load('slidetake:sessions') || '[]'); } catch(e){ return []; } }
   function saveSession(sess){
     const all = loadSessions().filter(x=>x.date !== sess.date);
     all.unshift(sess);
-    save('markcast:sessions', JSON.stringify(all.slice(0, 12)));
+    save('slidetake:sessions', JSON.stringify(all.slice(0, 12)));
   }
   function renderSessionList(){
     const box = document.getElementById('rec-sessions');
@@ -2482,15 +2487,15 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
     const esc = v=>String(v).replace(/[=;#\\\n]/g, m=>'\\' + m);
     const meta = ';FFMETADATA1\ntitle=' + esc(sess.deckTitle) + '\n' + list.map((c, i)=>
       '[CHAPTER]\nTIMEBASE=1/1000\nSTART=' + Math.round(c.t) + '\nEND=' + Math.round(list[i + 1] ? list[i + 1].t : length) + '\ntitle=' + esc(c.title)).join('\n');
-    const chapters = "cat > /tmp/markcast-chapters.txt <<'EOF'\n" + meta + "\nEOF\n";
+    const chapters = "cat > /tmp/slidetake-chapters.txt <<'EOF'\n" + meta + "\nEOF\n";
     const maps = ' -map 0:v:0 -map 0:a:0 -map_metadata 1 -map_chapters 1';
     if (mode === 'copy'){
       const cuts = ranges.map(r=>'file ' + shq(input) + '\ninpoint ' + secs(r.start) + '\noutpoint ' + secs(r.end)).join('\n');
       const warn = ranges.length > 1
         ? '# Careful: without re-encoding, cuts can only land on keyframes (OBS puts one about every 2 s),\n# so ' + (ranges.length === 2 ? 'the cut' : 'each of the ' + (ranges.length - 1) + ' cuts') + ' here may keep or lose up to ~2 s. Use a frame-accurate option for retakes.\n'
         : '';
-      return warn + "cat > /tmp/markcast-cuts.txt <<'EOF'\n" + cuts + "\nEOF\n" + chapters +
-        'ffmpeg -f concat -safe 0 -i /tmp/markcast-cuts.txt -i /tmp/markcast-chapters.txt' + maps + ' -c copy -movflags +faststart ' + shq(output);
+      return warn + "cat > /tmp/slidetake-cuts.txt <<'EOF'\n" + cuts + "\nEOF\n" + chapters +
+        'ffmpeg -f concat -safe 0 -i /tmp/slidetake-cuts.txt -i /tmp/slidetake-chapters.txt' + maps + ' -c copy -movflags +faststart ' + shq(output);
     }
     // one pass: keep frames f0 … f1-1 of each picked range, then renumber timestamps so they play back to back.
     // Video thresholds sit half a frame early so float timestamps can't land on the wrong side of a boundary;
@@ -2500,7 +2505,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
     const vKeep = ranges.map(r=>'gte(t,' + half(r.f0) + ')*lt(t,' + half(r.f1) + ')').join('+');
     const aKeep = ranges.map(r=>'gte(t,' + at(r.f0) + ')*lt(t,' + at(r.f1) + ')').join('+');
     const video = mode === 'mac' ? '-c:v h264_videotoolbox -b:v 12M' : '-c:v libx264 -crf 18 -preset medium';
-    return chapters + 'ffmpeg -i ' + shq(input) + ' -i /tmp/markcast-chapters.txt' + maps +
+    return chapters + 'ffmpeg -i ' + shq(input) + ' -i /tmp/slidetake-chapters.txt' + maps +
       ' -vf "select=\'' + vKeep + '\',setpts=N/FRAME_RATE/TB"' +
       ' -af "asetnsamples=n=48:p=0,aselect=\'' + aKeep + '\',asetpts=N/SR/TB"' +
       ' ' + video + ' -c:a aac -b:a 192k -movflags +faststart ' + shq(output);
@@ -2522,7 +2527,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   // the deck's public page: front matter permalink/url, else site + the path it was loaded from
   function deckLink(){
     if (deck.permalink || deck.url) return deck.permalink || deck.url;
-    const site = deck.site || load('markcast:site');
+    const site = deck.site || load('slidetake:site');
     if (!site || !deckBase) return '';
     try {
       const path = new URL(deckBase).pathname.replace(/\/index\.md$/i, '/').replace(/\.md$/i, '/');
@@ -2601,7 +2606,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   const fpsSel = document.getElementById('rv-fps');
   fpsSel.onchange = ()=>{ if (!reviewing) return; reviewing.fps = parseFloat(fpsSel.value); saveSession(reviewing); renderReview(); };
   document.getElementById('rv-link').addEventListener('input', e=>{
-    try { save('markcast:site', new URL(e.target.value.trim()).origin); } catch(err){}
+    try { save('slidetake:site', new URL(e.target.value.trim()).origin); } catch(err){}
     if (reviewing) describe(reviewing);
   });
 
@@ -2641,15 +2646,15 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   // the recording: from the remembered OBS folder when the browser allows it, otherwise picked by hand
   function idb(name){
     return new Promise((res, rej)=>{
-      const r = indexedDB.open(name || 'markcast', 1);
+      const r = indexedDB.open(name || 'slidetake', 1);
       r.onupgradeneeded = ()=>r.result.createObjectStore('kv');
       r.onsuccess = ()=>res(r.result); r.onerror = ()=>rej(r.error);
     });
   }
   async function kvGet(k){
     const get = async name=>{ const db = await idb(name); return await new Promise(r=>{ const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = ()=>r(q.result); q.onerror = ()=>r(null); }); };
-    // the remembered folder may still be in the database from when Markcast was called Traverse
-    try { return (await get()) ?? (await get('traverse')) ?? null; }
+    // the remembered folder may still be in the database from an earlier name (Markcast, Traverse)
+    try { return (await get()) ?? (await get('markcast')) ?? (await get('traverse')) ?? null; }
     catch(e){ return null; }
   }
   async function kvSet(k, v){ try { const db = await idb(); db.transaction('kv', 'readwrite').objectStore('kv').put(v, k); } catch(e){} }
@@ -2774,7 +2779,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   function cameraHelp(){
     let embedded = false;
     try { embedded = window.top !== window.self; } catch(e){ embedded = true; }
-    if (embedded) return ' This page is running inside a preview frame that may not allow cameras. Open Markcast directly in Chrome (from localhost or as a file).';
+    if (embedded) return ' This page is running inside a preview frame that may not allow cameras. Open Slidetake directly in Chrome (from localhost or as a file).';
     if (!window.isSecureContext) return ' Browsers only allow cameras on secure pages. Open it from http://localhost or as a local file in Chrome.';
     return ' Allow camera access for this page in the browser’s site settings (the icon at the left of the address bar), then try again.';
   }
@@ -2911,7 +2916,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
   }).observe(stage);
 
   // ---------- boot ----------
-  const savedMode = load('markcast:layout');
+  const savedMode = load('slidetake:layout');
   layoutMode = ['tree','radial','path','focus'].includes(savedMode) ? savedMode : 'tree';
   document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
   document.getElementById('btn-edit-toggle').classList.add('active');
@@ -2937,7 +2942,7 @@ A comment like `<!-- camera: full -->` in any slide switches the camera from the
         statusErr.textContent = 'Could not load ' + src + ' (' + e.message + ')';
       }
     }
-    return load('markcast:draft') || SAMPLE;
+    return load('slidetake:draft') || SAMPLE;
   }
   loadInitialDeck().then(text=>{
     editor.value = text;
