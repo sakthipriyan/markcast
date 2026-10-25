@@ -4,9 +4,9 @@ brand: slidetake
 pip: bottom-right
 ---
 
-<!-- camera: full, on -->
+<!-- camera: on, full, on -->
 
-# Slidetake
+# ![](/favicon.svg) Slidetake
 
 **Markdown to finished video.** Write a deck in markdown, present it as a map you move through, and record it take by take.
 

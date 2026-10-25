@@ -4,7 +4,7 @@ brand: slidetake
 pip: none
 ---
 
-# Slidetake help
+# ![](/favicon.svg) Slidetake help
 
 The details behind the [home deck](/): writing, sharing, presenting, recording and the camera. Press → to read in order, ↓ ↑ to go into a section and back out, or **O** for the whole map.
 
