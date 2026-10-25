@@ -1980,7 +1980,7 @@ if (EMBED){
   const credit = document.createElement('a');
   credit.id = 'credit'; credit.href = 'https://slidetake.com'; credit.target = '_blank'; credit.rel = 'noopener';
   credit.title = 'Made with Slidetake'; credit.setAttribute('aria-label', 'Made with Slidetake');
-  credit.innerHTML = LOGO;
+  credit.innerHTML = LOGO + '<span class="word">Slide<span>take</span></span>';
   const bar = document.getElementById('navbar');
   bar.insertAdjacentHTML('beforeend', '<div class="divider"></div>');
   bar.appendChild(credit);
