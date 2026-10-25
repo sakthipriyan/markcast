@@ -462,6 +462,10 @@
     text-shadow:var(--brand-shadow);
   }
   #brand[hidden]{display:none;}
+  /* embedded in a site page: one read-only deck, so no editor, links or copies */
+  html.embed #btn-edit-toggle, html.embed #continue, html.embed #editor-pane, html.embed #editor-resizer{display:none !important;}
+  html.embed .brand .mark .back{color:var(--accent);margin-right:2px;}
+  html.embed .brand .tagline a{color:inherit;}
   /* the logo written into a heading: # ![](/favicon.svg) Slidetake */
   .node .body :is(h1,h2) img[src$="favicon.svg"]{height:1em;width:auto;vertical-align:-.12em;margin-right:.25em;display:inline;}
   #brand .st-mark{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--text);}
@@ -878,6 +882,20 @@
       }
     });
     return { deck: deck2, body: src.slice(fm[0].length) };
+  }
+  function settingsBlock(settings) {
+    const plain = (v) => typeof v === "string" || typeof v === "number" || typeof v === "boolean";
+    const line = (v) => String(v).replace(/\s*\n\s*/g, " ");
+    const lines = [];
+    for (const [k, v] of Object.entries(settings || {})) {
+      if (!/^[A-Za-z_][\w-]*$/.test(k)) continue;
+      if (plain(v)) lines.push(k + ": " + line(v));
+      else if (Array.isArray(v) && v.every(plain)) {
+        lines.push(k + ":");
+        v.forEach((x) => lines.push("  - " + line(x)));
+      }
+    }
+    return lines.length ? "---\n" + lines.join("\n") + "\n---\n" : "";
   }
   function parseFrontmatter(block) {
     const lines = block.split("\n");
@@ -1415,6 +1433,8 @@
   }
 
   // src/app.js
+  var EMBED = window.SLIDETAKE || null;
+  document.documentElement.classList.toggle("embed", !!EMBED);
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var BUILTIN = { home: sample_default, help: help_default, "template:blank": blank_default, "template:talk": talk_default, "template:recording": recording_default };
   var editor = document.getElementById("editor");
@@ -1495,6 +1515,11 @@
   }
   var urlMode = new URLSearchParams(location.search).get("mode");
   function currentMode() {
+    if (EMBED && EMBED.themeKey && !urlMode) {
+      const v = load(EMBED.themeKey);
+      if (v === "light" || v === "dark") return v;
+      return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
     const m = String(urlMode || load("slidetake:mode") || deck.mode || "dark").toLowerCase();
     return m === "light" ? "light" : "dark";
   }
@@ -1510,7 +1535,11 @@
     }
   }
   function toggleMode() {
-    save("slidetake:mode", currentMode() === "light" ? "dark" : "light");
+    const next = currentMode() === "light" ? "dark" : "light";
+    if (EMBED && EMBED.themeKey) {
+      save(EMBED.themeKey, next);
+      document.documentElement.classList.toggle("dark", next === "dark");
+    } else save("slidetake:mode", next);
     applyMode();
     if (world.querySelector(".echarts-container")) rebuild(true);
   }
@@ -2608,6 +2637,7 @@
     updateDocState();
   };
   function toggleEditor() {
+    if (EMBED) return;
     editorPane.classList.toggle("collapsed");
     document.getElementById("btn-edit-toggle").classList.toggle("active", !editorPane.classList.contains("collapsed"));
   }
@@ -3409,7 +3439,7 @@
     else if (presenting) setPresent(false);
   });
   var help = document.getElementById("help");
-  document.getElementById("btn-help").onclick = () => window.open("/help", "_blank", "noopener");
+  document.getElementById("btn-help").onclick = () => window.open(EMBED ? "https://slidetake.com/help" : "/help", "_blank", "noopener");
   document.getElementById("btn-keys").onclick = () => help.classList.add("open");
   document.getElementById("help-close").onclick = () => help.classList.remove("open");
   help.addEventListener("click", (e) => {
@@ -3572,6 +3602,16 @@
     layoutMode = params.get("layout");
     document.querySelectorAll("#layout-toggle .seg-btn").forEach((x) => x.classList.toggle("active", x.dataset.mode === layoutMode));
   }
+  if (EMBED) {
+    const mark = document.querySelector("header .mark");
+    if (EMBED.back && EMBED.back.url) {
+      mark.href = EMBED.back.url;
+      mark.title = "Back to " + (EMBED.back.label || "the site");
+      mark.innerHTML = '<span class="back">\u2190</span><span class="word">' + escapeHtml(EMBED.back.label || "Back") + "</span>";
+    }
+    const tagline = document.querySelector("header .tagline");
+    if (tagline) tagline.innerHTML = 'made with <a href="https://slidetake.com" target="_blank" rel="noopener">Slidetake</a>';
+  }
   var route = routeOf(location.pathname, location.search, location.hash);
   var startId = route.page === "pick" ? "" : route.slide;
   var view = null;
@@ -3591,6 +3631,7 @@
     save("slidetake:copy", JSON.stringify(copy));
   }
   function updateDocState() {
+    if (EMBED) return;
     let html;
     if (view.kind === "copy") {
       html = '<span class="mine">Your copy of ' + escapeHtml(originLabel(copy.origin)) + "</span>" + (isEdited(copy) ? ' <span class="edited">\xB7 edited</span>' : "");
@@ -3660,6 +3701,11 @@
     return view.text;
   }
   async function loadInitialDeck() {
+    if (EMBED) {
+      deckBase = EMBED.base || location.href;
+      view = { kind: "source", source: { kind: "url", url: deckBase }, text: settingsBlock(EMBED.settings || {}) + String(EMBED.markdown || "") };
+      return view.text;
+    }
     if (route.page === "edit") {
       if (copy) {
         view = { kind: "copy" };

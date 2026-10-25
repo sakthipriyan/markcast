@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {parseDeck, parseDeckSettings, slideTitle, cameraDirective} from '../src/core/parse.js';
+import {parseDeck, parseDeckSettings, slideTitle, cameraDirective, settingsBlock} from '../src/core/parse.js';
 
 const tree = nodes=>[...nodes.values()].map(n=>[n.id, n.parent]);
 
@@ -100,4 +100,17 @@ test('example deck parses', async ()=>{
   const {nodes, deck} = parseDeck(src);
   assert.ok(nodes.size > 5);
   assert.ok(deck.title || deck.brand);
+});
+
+test('settingsBlock: frontmatter data from a host round-trips through the parser', ()=>{
+  const settings = {title: 'Talk', duration: '14m', draft: true, weight: 3, related: ['[a](b)', 'c'], tags: [], nested: {x: 1}, 'bad key': 1};
+  const block = settingsBlock(settings);
+  assert.match(block, /^---\n[\s\S]*\n---\n$/);
+  const {deck} = parseDeckSettings(block + '# Root\n');
+  assert.equal(deck.title, 'Talk');
+  assert.equal(deck.duration, '14m');
+  assert.equal(deck.draft, 'true');
+  assert.deepEqual(deck.related, ['[a](b)', 'c']);
+  assert.equal(deck.nested, undefined);
+  assert.equal(settingsBlock({}), '');
 });

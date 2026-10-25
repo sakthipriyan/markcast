@@ -4,7 +4,7 @@ import BLANK_MD from './templates/blank.md';
 import TALK_MD from './templates/talk.md';
 import RECORDING_MD from './templates/recording.md';
 import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime} from './core/text.js';
-import {parseDeck as parseDeckCore, cameraDirective, mapDirective} from './core/parse.js';
+import {parseDeck as parseDeckCore, cameraDirective, mapDirective, settingsBlock} from './core/parse.js';
 import {CORNERS, clampPipSize, applyPreset, cameraPresets, stepsFor} from './core/steps.js';
 import {normalizeSource, shortLink} from './core/source.js';
 import {encodeDeck, decodeDeck, parseHash, deckHash} from './core/share.js';
@@ -13,6 +13,10 @@ import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapte
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
 "use strict";
+// Embedded in another site's page (see src/embed.js): window.SLIDETAKE = {markdown, settings, base, back,
+// themeKey}. The page shows that one deck, read-only: no editor, links or copies.
+const EMBED = window.SLIDETAKE || null;
+document.documentElement.classList.toggle('embed', !!EMBED);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slidetake's own read-only decks
 const BUILTIN = {home: SAMPLE_MD, help: HELP_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
@@ -107,6 +111,12 @@ function applyDeckSettings(){
 // ---------- light / dark ----------
 const urlMode = new URLSearchParams(location.search).get('mode');
 function currentMode(){
+  // embedded: the host site's own choice (light, dark, or auto = the system's)
+  if (EMBED && EMBED.themeKey && !urlMode){
+    const v = load(EMBED.themeKey);
+    if (v === 'light' || v === 'dark') return v;
+    return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
   const m = String(urlMode || load('slidetake:mode') || deck.mode || 'dark').toLowerCase();
   return m === 'light' ? 'light' : 'dark';
 }
@@ -123,7 +133,9 @@ function applyMode(){
   }
 }
 function toggleMode(){
-  save('slidetake:mode', currentMode() === 'light' ? 'dark' : 'light');
+  const next = currentMode() === 'light' ? 'dark' : 'light';
+  if (EMBED && EMBED.themeKey){ save(EMBED.themeKey, next); document.documentElement.classList.toggle('dark', next === 'dark'); }
+  else save('slidetake:mode', next);
   applyMode();
   // charts are drawn for one mode; redraw them for the other
   if (world.querySelector('.echarts-container')) rebuild(true);
@@ -1134,6 +1146,7 @@ document.getElementById('btn-reset').onclick = ()=>{
 };
 
 function toggleEditor(){
+  if (EMBED) return;
   editorPane.classList.toggle('collapsed');
   document.getElementById('btn-edit-toggle').classList.toggle('active', !editorPane.classList.contains('collapsed'));
 }
@@ -1822,7 +1835,7 @@ document.addEventListener('fullscreenchange', ()=>{
 
 const help = document.getElementById('help');
 // ? (the key) shows the keys; the ? button opens the full guide, itself a deck, in a new tab
-document.getElementById('btn-help').onclick = ()=>window.open('/help', '_blank', 'noopener');
+document.getElementById('btn-help').onclick = ()=>window.open(EMBED ? 'https://slidetake.com/help' : '/help', '_blank', 'noopener');
 document.getElementById('btn-keys').onclick = ()=>help.classList.add('open');
 document.getElementById('help-close').onclick = ()=>help.classList.remove('open');
 help.addEventListener('click', e=>{ if (e.target===help) help.classList.remove('open'); });
@@ -1945,6 +1958,18 @@ if (['tree','radial','path','focus'].includes(params.get('layout'))){
   layoutMode = params.get('layout');
   document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
 }
+// ---------- embedded: the header links back to the host site, and credits Slidetake ----------
+if (EMBED){
+  const mark = document.querySelector('header .mark');
+  if (EMBED.back && EMBED.back.url){
+    mark.href = EMBED.back.url;
+    mark.title = 'Back to ' + (EMBED.back.label || 'the site');
+    mark.innerHTML = '<span class="back">←</span><span class="word">' + escapeHtml(EMBED.back.label || 'Back') + '</span>';
+  }
+  const tagline = document.querySelector('header .tagline');
+  if (tagline) tagline.innerHTML = 'made with <a href="https://slidetake.com" target="_blank" rel="noopener">Slidetake</a>';
+}
+
 // ---------- the deck on this page, and the working copy ----------
 // view: what this page shows. A read-only source (home, help, a template, a file on the web), a shared
 // deck (/share#…), or the working copy (/edit). Typing in a read-only deck forks it into the copy.
@@ -1964,6 +1989,7 @@ function earlierDraft(){
 function saveCopy(){ save('slidetake:copy', JSON.stringify(copy)); }
 // the editor bar says whose deck this is, and whether the copy has edits not yet saved or shared
 function updateDocState(){
+  if (EMBED) return;
   let html;
   if (view.kind === 'copy'){
     html = '<span class="mine">Your copy of ' + escapeHtml(originLabel(copy.origin)) + '</span>' +
@@ -2029,6 +2055,11 @@ function showHome(){
   return view.text;
 }
 async function loadInitialDeck(){
+  if (EMBED){
+    deckBase = EMBED.base || location.href;
+    view = {kind: 'source', source: {kind: 'url', url: deckBase}, text: settingsBlock(EMBED.settings || {}) + String(EMBED.markdown || '')};
+    return view.text;
+  }
   if (route.page === 'edit'){
     if (copy){ view = {kind: 'copy'}; return copy.text; }
     // no copy yet: start one from a template

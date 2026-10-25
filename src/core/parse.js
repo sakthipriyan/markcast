@@ -83,6 +83,26 @@ export function parseDeckSettings(src){
   return {deck, body: src.slice(fm[0].length)};
 }
 
+/**
+ * Frontmatter from a settings object, the reverse of parseDeckSettings: for hosts that hand over a page's
+ * frontmatter as data (a Hugo page's .Params) separately from its markdown. Strings, numbers and booleans
+ * become "key: value", lists of those become "- item" lists; anything else (nested maps) is left out.
+ * @param {Record<string, unknown>} settings
+ */
+export function settingsBlock(settings){
+  /** @param {unknown} v */
+  const plain = v=>typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
+  /** @param {unknown} v */
+  const line = v=>String(v).replace(/\s*\n\s*/g, ' ');
+  const lines = [];
+  for (const [k, v] of Object.entries(settings || {})){
+    if (!/^[A-Za-z_][\w-]*$/.test(k)) continue;
+    if (plain(v)) lines.push(k + ': ' + line(v));
+    else if (Array.isArray(v) && v.every(plain)){ lines.push(k + ':'); v.forEach(x=>lines.push('  - ' + line(x))); }
+  }
+  return lines.length ? '---\n' + lines.join('\n') + '\n---\n' : '';
+}
+
 /** A +++ slide's own frontmatter. @param {string} block */
 export function parseFrontmatter(block){
   const lines = block.split('\n');

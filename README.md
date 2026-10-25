@@ -54,6 +54,25 @@ From https://slidetake.com, OBS must run on the same computer (`localhost`): bro
 
 Plain markdown (each heading is a card), the older `+++` format, and reveal.js decks (`---` and `--` separators) all open as they are. The full guide is itself a deck: [slidetake.com/help](https://slidetake.com/help) ([src/help.md](src/help.md)). In the app, `?` shows the keys.
 
+## Embed in a site
+
+`dist/slidetake.js` is the same app as one script for other sites' pages. Describe the deck, then load it:
+
+```html
+<script>
+window.SLIDETAKE = {
+  markdown: "# My deck\n\n## A section\n…",          // the deck, without its frontmatter
+  settings: {title: "My deck", duration: "10m"},      // the frontmatter as data
+  base: location.href,                                // where relative images resolve
+  back: {url: "/talks/", label: "Talks"},             // the header's link back to the site
+  themeKey: "my-site-theme"                           // optional: the site's light/dark/auto key
+};
+</script>
+<script src="/slidetake/slidetake.js"></script>
+```
+
+The page then shows that deck, read-only, with the layouts, keys, camera, recording and fullscreen. See [examples/embed.html](examples/embed.html). The [hugo-continuum](https://github.com/sakthipriyan/hugo-continuum) theme uses it for slide pages with `engine: slidetake`.
+
 ## Develop
 
 ```sh
@@ -66,6 +85,7 @@ npm run check      # type check, tests, build
 |---|---|
 | `src/index.html`, `src/styles.css` | The page shell and styles |
 | `src/app.js` | The app: layouts, camera, presenting, recording, review |
+| `src/embed.js` | The entry for `dist/slidetake.js`, the app for other sites' pages |
 | `src/core/` | Pure modules with types and tests: parsing, camera steps, takes → cut → chapters → ffmpeg |
 | `test/` | `node --test` tests for `src/core/` |
 | `examples/` | Decks used as fixtures |

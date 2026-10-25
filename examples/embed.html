@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embed example</title>
+</head>
+<body>
+<!--
+  How a site hosts a deck with Slidetake: describe the deck in window.SLIDETAKE, then load slidetake.js.
+  The hugo-continuum theme writes exactly this for slide pages with `engine: slidetake`.
+
+    markdown   the deck, without its frontmatter
+    settings   the frontmatter as data (title, brand, duration, pip, camera, …)
+    base       where relative images resolve, usually the page's own address
+    back       {url, label}: the header's link back to the site
+    themeKey   the localStorage key the site keeps light / dark / auto under (optional)
+-->
+<script>
+window.SLIDETAKE = {
+  markdown: "# Embedded deck\n\nThis page hosts a Slidetake deck.\n\n## A section\n\nWith a detail below it.\n\n### A detail\n\nPress ↑ to go back up.\n\n## Another section\n\n- one\n- two\n",
+  settings: {title: "Embedded deck", brand: "example.com", duration: "5m", tags: ["demo"]},
+  base: location.href,
+  back: {url: "../", label: "Example site"},
+  themeKey: "example-theme"
+};
+</script>
+<script src="../dist/slidetake.js"></script>
+</body>
+</html>

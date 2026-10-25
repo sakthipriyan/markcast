@@ -1,5 +1,9 @@
-// Builds dist/index.html: the page shell with the styles and the bundled app inlined, so the result is
-// still one file you can open, copy or host anywhere. `node build.mjs --watch` rebuilds on every change.
+// Builds two things from src/:
+//   dist/index.html    the page shell with the styles and the bundled app inlined: one file you can open,
+//                      copy or host anywhere (slidetake.com serves it)
+//   dist/slidetake.js  the same app as one script for other sites' pages (src/embed.js), which adds the
+//                      markup, styles and fonts itself; the hugo-continuum theme vendors it
+// `node build.mjs --watch` rebuilds both on every change.
 import * as esbuild from 'esbuild';
 import {readFile, writeFile, mkdir, cp} from 'node:fs/promises';
 
@@ -29,6 +33,35 @@ const inlinePage = {
   }
 };
 
+// the embed script carries the page's markup and font links, read from the same src/index.html
+/** @type {import('esbuild').Plugin} */
+const shellModules = {
+  name: 'shell-modules',
+  setup(build){
+    build.onResolve({filter: /^slidetake:(shell|head)$/}, args=>({path: args.path, namespace: 'slidetake'}));
+    build.onLoad({filter: /.*/, namespace: 'slidetake'}, async args=>{
+      const page = await readFile('src/index.html', 'utf8');
+      const text = args.path === 'slidetake:shell'
+        ? page.slice(page.indexOf('<body>') + 6, page.indexOf('<script>/*@app*/</script>'))
+        : (page.match(/<link rel="preconnect"[^>]*>\s*<link href="https:\/\/fonts[^>]*>/) || [''])[0];
+      return {contents: text, loader: 'text', watchFiles: ['src/index.html']};
+    });
+  }
+};
+const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+const embed = await esbuild.context({
+  entryPoints: ['src/embed.js'],
+  bundle: true,
+  format: 'iife',
+  target: 'es2022',
+  minify: true,
+  loader: {'.md': 'text', '.css': 'text'},
+  outfile: 'dist/slidetake.js',
+  banner: {js: '/* Slidetake ' + pkg.version + ' · https://slidetake.com · Apache-2.0 */'},
+  logLevel: 'warning',
+  plugins: [shellModules, {name: 'report', setup(b){ b.onEnd(r=>{ if (!r.errors.length) console.log('built dist/slidetake.js'); }); }}]
+});
+
 const ctx = await esbuild.context({
   entryPoints: ['src/app.js'],
   bundle: true,
@@ -42,9 +75,9 @@ const ctx = await esbuild.context({
 });
 
 if (watch){
-  await ctx.watch();
+  await Promise.all([ctx.watch(), embed.watch()]);
   console.log('watching src/ …');
 } else {
-  await ctx.rebuild();
-  await ctx.dispose();
+  await Promise.all([ctx.rebuild(), embed.rebuild()]);
+  await Promise.all([ctx.dispose(), embed.dispose()]);
 }
