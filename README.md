@@ -54,6 +54,8 @@ npm run check      # type check, tests, build
 
 `dist/index.html` is committed so the app works straight from the repo; rebuild it with `npm run build` before committing.
 
+Every push to `main` deploys to [slidetake.com](https://slidetake.com): `.github/workflows/deploy.yml` runs the checks and `wrangler deploy`, publishing `dist/` as an assets-only Cloudflare Worker (`wrangler.jsonc`). Pull requests run the checks and `wrangler deploy --dry-run`.
+
 ## Status
 
 Early. See [PLAN.md](PLAN.md): an embed view for websites (and a hugo-continuum layout, `engine: slidetake`), a hosted Studio at slidetake.com, and an npm package with `npx slidetake`.

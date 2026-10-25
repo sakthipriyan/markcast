@@ -29,7 +29,7 @@ The **core** is shared: parsing (headings, `+++`, reveal.js), layouts, camera mo
 - Switch the three new decks over, compare with reveal.js on the Hugo server, decide deck by deck.
 
 ### 3. Hosted Studio at slidetake.com
-- Deploy from the repo (Cloudflare Pages or GitHub Pages): free, HTTPS, custom domain.
+- Deployed from GitHub Actions with wrangler as an assets-only Cloudflare Worker on slidetake.com, the same setup as xfina-labs. Any path serves the app (single-page-application), so short links need no redirect rules.
 - `slidetake.com/?src=<any URL>` already works, including GitHub raw URLs (raw.githubusercontent.com sends `Access-Control-Allow-Origin: *`). Add short links: `/gh/owner/repo/path/deck.md` and `/gist/<id>`.
 - A landing page that is itself a Slidetake deck.
 
@@ -50,4 +50,4 @@ Docs, an example gallery, themes, versioned releases; later a browser-based reco
 - Name: **Slidetake** (Traverse → Markcast → Slidetake). Repo: github.com/sakthipriyan/slidetake, public, Apache 2.0.
 - Recording mode only with `?obs=host:port[:password]`, the same format as the reveal.js slides; otherwise a viewer with Fullscreen.
 - Plain JavaScript (no Rust/Wasm): the work is DOM, CSS, animation and browser APIs.
-- Domain: slidetake.com is unregistered (also .dev, .io); buy the .com.
+- Domain: slidetake.com, registered at Spaceship, DNS on Cloudflare.

@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "slidetake",
+  "compatibility_date": "2026-10-25",
+
+  // Assets-only Worker (same pattern as xfina-labs and xsteer): no script, so requests are served
+  // straight from the edge with no Worker invocation and no per-request cost.
+  "assets": {
+    "directory": "./dist",
+    // Any path serves the app, so it can read links like /gh/owner/repo/deck.md itself.
+    "not_found_handling": "single-page-application"
+  },
+
+  "routes": [{ "pattern": "slidetake.com", "custom_domain": true }]
+}
