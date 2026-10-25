@@ -1,6 +1,6 @@
 ---
 title: Slidetake help
-brand: slidetake.com/help
+brand: slidetake
 pip: none
 ---
 
@@ -44,7 +44,13 @@ Decks that separate slides with `+++` and use `id`, `parent`, `x`, `y` frontmatt
 
 Cards widen for wide tables, columns, diagrams and embeds; anything wider still is scaled to fit.
 
-## 🔗 Opening and sharing
+## 🔗 Opening, editing and sharing
+
+Every deck you open is **read-only**: Slidetake's own decks, templates, files on the web and shared links. Viewing one never changes anything.
+
+**Type in it**, and it becomes **your copy**, at `/edit`. Your copy lives in this browser, remembers where it came from, and is there whenever you come back: the **Your copy →** button at the top takes you to it.
+
+### Where decks come from
 
 Press **✎ Editor**, then **⇣ Load**, and paste a link: a GitHub file or folder, a gist, or any URL that lets other sites read it. Or link straight to a deck:
 
@@ -54,18 +60,23 @@ Press **✎ Editor**, then **⇣ Load**, and paste a link: a GitHub file or fold
 | `/gh/owner/repo@branch/deck.md` | another branch or tag |
 | `/gist/<id>` | a gist's first markdown file |
 | `/?src=https://…/deck.md` | anything else |
+| `/share#deflate:…` | a shared deck, carried inside the link |
+| `/new` | a template: blank, talk or recording |
 
-Images next to the deck load as they are.
+Images next to the deck load as they are. **Open** opens a markdown file from your computer, straight into your copy.
 
-### Decks inside links
+### Your copy
 
-A deck you write or change in the editor lives in the address itself, compressed: `slidetake.com/#deflate:…`. Nothing is uploaded, and the address stays up to date as you type, so a reload keeps your work.
+There's one working copy at a time. The editor bar says whose copy it is, and marks **edited** while it has changes you haven't saved or shared.
 
-**Share** copies the short link for an unchanged online deck, and the deck-inside link otherwise. Shared links never include `?obs=`.
+- **Reset to original** throws your edits away and goes back to the deck you started from.
+- Starting a new copy, by typing in another deck or opening a file, asks first if the old one has edits you haven't kept.
 
-### Files on your computer
+### Saving and sharing
 
-**Open** opens a markdown file from your computer; **Save** saves the editor's markdown to one. For a file loaded from disk, add `base: https://…/deck-folder/` to its top block so its images load.
+**Save** downloads your markdown as a file. **Share** copies a link: the short link while your copy still matches an online original, and otherwise a `/share#deflate:…` link with the whole deck compressed inside it. That part of a link is never sent to a server, so nothing is uploaded. Shared links never include `?obs=`.
+
+For a file from your computer whose images sit next to it online, add `base: https://…/deck-folder/` to its top block.
 
 ### Address options
 
@@ -126,8 +137,6 @@ The timer is for you, so recordings show progress only, unless the deck says `ti
 
 Recording needs **[OBS Studio](https://obsproject.com)** (free) with its WebSocket server on: in OBS, Tools → WebSocket Server Settings. OBS records; Slidetake drives it.
 
-On a MacBook, whose screen isn't 16:9, **[BetterDisplay](https://betterdisplay.pro)** can add a 16:9 virtual screen (say 1920×1080) to present on and record, so the video fits YouTube without bars.
-
 ### Connecting to OBS
 
 Press **● Record** and enter where OBS is: host, port and the password from OBS's WebSocket settings. Tick *Remember* to skip this next time.
@@ -136,7 +145,7 @@ Press **● Record** and enter where OBS is: host, port and the password from OB
 
 ### A 16:9 screen
 
-The Record dialog checks your screen. If it isn't 16:9, present on one that is, or add a 1920×1080 virtual screen with BetterDisplay and press **F** there.
+YouTube is 16:9, and many laptop screens aren't. The Record dialog checks yours: if it isn't 16:9, move the window to a screen that is, physical or virtual (say 1920×1080), and press **F** there.
 
 ### OBS on another computer
 
@@ -209,7 +218,7 @@ The review fills the YouTube description from the deck's top block:
 | `title` | the video title |
 | `summary` | the description's first paragraph |
 | `related` | a list of `[Title](url)` links |
-| `tags`, `wealth_tags`, `systems_tags` | tags |
+| `tags` | tags (any other list ending in `_tags` is added too) |
 | `permalink` or `site` | the link back to the deck |
 
 ## 🔒 Your data

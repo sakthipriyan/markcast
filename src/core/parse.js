@@ -191,7 +191,13 @@ export function parseDeck(src, {render = md=>({html: md, err: null})} = {}){
         sections.push(cur);
       } else (cur || preface).lines.push(line);
     });
-    if (preface.lines.join('').trim()) sections.unshift(preface);
+    // a preface of nothing but comments (say <!-- camera: full, on --> above the first heading) belongs to
+    // the first card rather than becoming a card of its own
+    const prefaceText = preface.lines.join('\n');
+    if (prefaceText.trim()){
+      if (sections.length && !prefaceText.replace(/<!--[\s\S]*?-->/g, '').trim()) sections[0].lines.splice(1, 0, ...preface.lines);
+      else sections.unshift(preface);
+    }
 
     /** @type {Section[]} */
     const stack = [];

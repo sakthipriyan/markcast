@@ -17,6 +17,14 @@ test('headings inside code fences are not cards', ()=>{
   assert.equal(nodes.size, 1);
 });
 
+test('directive comments above the first heading belong to the first card', ()=>{
+  const {nodes} = parseDeck('<!-- camera: full, on -->\n\n# Root\n\nHi\n\n## Two\n');
+  assert.deepEqual([...nodes.keys()], ['root', 'two']);
+  assert.equal(nodes.get('root').camera, 'full, on');
+  // real text before the first heading is still a card of its own
+  assert.equal(parseDeck('Hello\n\n# Root\n').nodes.size, 2);
+});
+
 test('duplicate titles get unique ids; {#id} sets one', ()=>{
   const {nodes} = parseDeck('# A\n## Same\n## Same\n## Custom {#mine}\n');
   assert.deepEqual([...nodes.keys()], ['a', 'same', 'same-2', 'mine']);

@@ -21,3 +21,9 @@ Slidetake runs in the browser at https://slidetake.com. It is open source (Apach
 - https://slidetake.com/gh/OWNER/REPO/PATH.md opens a file on GitHub (default branch); /gh/OWNER/REPO@BRANCH/PATH.md another branch.
 - https://slidetake.com/gist/ID opens a gist.
 - https://slidetake.com/?src=URL opens any markdown URL that allows cross-origin reads.
+- https://slidetake.com/share#deflate:DATA opens a deck carried inside the link (deflate-raw, base64url).
+- https://slidetake.com/new?template=blank (or talk, recording) opens a starting template.
+
+## Editing
+
+Every deck opened is read-only. Typing in one makes the user's working copy at https://slidetake.com/edit, kept in the browser; Save downloads it as markdown and Share copies a link.

@@ -12,7 +12,8 @@
 const RAW = 'https://raw.githubusercontent.com/';
 
 /**
- * @typedef {{kind: 'url', url: string} | {kind: 'gist', id: string, file?: string} | {kind: 'builtin', id: 'help'}} DeckSource
+ * @typedef {{kind: 'url', url: string} | {kind: 'gist', id: string, file?: string} | {kind: 'builtin', id: string}} DeckSource
+ *   builtin ids: home, help, template:<name>
  */
 
 /**
@@ -79,7 +80,11 @@ export function sourceFromPath(pathname){
  * @param {DeckSource} source
  */
 export function shortLink(source){
-  if (source.kind === 'builtin') return '/' + source.id;
+  if (source.kind === 'builtin'){
+    if (source.id === 'home') return '/';
+    if (source.id.startsWith('template:')) return '/new?template=' + source.id.slice(9);
+    return '/' + source.id;
+  }
   if (source.kind === 'gist') return '/gist/' + source.id + (source.file ? '/' + encodeURIComponent(source.file) : '');
   const m = source.url.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
   if (m){

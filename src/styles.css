@@ -1,18 +1,20 @@
+  /* One palette, Slidetake gold, at two levels: bright gold on zinc in dark mode, deep gold on white in
+     light mode (the same values as sakthipriyan.com's Building Wealth section, so its decks match). */
   :root{
-    --bg:#0a0f1a;
-    --grid-dot:#16233a;
-    --panel:#0d1526;
-    --panel-line:#182338;
-    --node-bg:#101b30;
-    --node-border:#24344f;
-    --accent:#e8a33d;
-    --accent-teal:#4fd1c5;
-    --text:#e8ecf1;
-    --text-muted:#7c8ca6;
+    --bg:#09090b;
+    --grid-dot:#1d1d21;
+    --panel:#111113;
+    --panel-line:#27272a;
+    --node-bg:#18181b;
+    --node-border:#323238;
+    --accent:#e0b024;
+    --accent-teal:#f5c542;              /* headings below h2 */
+    --text:#e4e4e7;
+    --text-muted:#a1a1aa;
     --danger:#e0645c;
-    --code-bg:var(--code-bg);
-    --overlay:var(--overlay);        /* breadcrumbs, nav bar, minimap */
-    --on-accent:#141414;                /* text on an accent-filled button */
+    --code-bg:#0f0f12;
+    --overlay:rgba(17,17,19,.9);       /* breadcrumbs, nav bar, minimap */
+    --on-accent:#1a1408;               /* text on an accent-filled button */
     --card-shadow:0 6px 24px rgba(0,0,0,.35);
     --brand-shadow:0 1px 6px rgba(0,0,0,.6);
     --mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -22,32 +24,13 @@
   /* Tokens derived from others are declared on body, not :root: a custom property resolves var() where
      it is declared, so on :root these would freeze the default palette's colours. */
   body{
-    --accent-line:var(--accent-teal);   /* borders and connector lines on the active path */
+    --accent-line:#966f04;             /* borders and connector lines on the active path */
     --accent-ring:var(--accent);        /* the current slide's border, glow and the progress bar */
     --edge:var(--node-border);          /* connector lines off the active path */
   }
-  /* Building Wealth: the site's dark-mode zinc surfaces with the section's gold, as declared in
-     content/building-wealth/_index.md (accentInkDark #e0b024, accentFrom #f5c542, accentLineDark #966f04,
-     onAccent #1a1408) and the theme's dark tokens (#09090b page, #18181b card, #27272a border). */
-  body[data-palette="building-wealth"]{
-    --bg:#09090b; --grid-dot:#1d1d21; --panel:#111113; --panel-line:#27272a;
-    --node-bg:#18181b; --node-border:#323238;
-    --accent:#e0b024; --accent-teal:#f5c542; --accent-line:#966f04;
-    --text:#e4e4e7; --text-muted:#a1a1aa;
-    --code-bg:#0f0f12; --overlay:rgba(17,17,19,.9); --on-accent:#1a1408;
-  }
-  /* Light mode (◐, mode: light, ?mode=light). Generic light first, then Building Wealth's light
-     values from content/building-wealth/_index.md: accentInk #7a5c12 carries text (6.2:1 on white),
-     the gold gradient (#f5c542 → #d4af37) only rings and lines, which never need to be read. */
+  /* Light mode (L, mode: light, ?mode=light): #7a5c12 carries text (6.2:1 on white); the brighter gold
+     only rings and lines, which never need to be read. */
   body[data-mode="light"]{
-    --bg:#fafaf9; --grid-dot:#e7e5e4; --panel:#ffffff; --panel-line:#e4e4e7;
-    --node-bg:#ffffff; --node-border:#e4e4e7; --edge:#d4d4d8;
-    --accent:#2471a3; --accent-teal:#0e7490; --accent-line:#7fb3d5; --accent-ring:#2471a3;
-    --text:#27272a; --text-muted:#71717a; --danger:#c2410c;
-    --code-bg:#f4f4f5; --overlay:rgba(255,255,255,.92); --on-accent:#ffffff;
-    --card-shadow:0 4px 18px rgba(24,24,27,.08); --brand-shadow:0 1px 4px rgba(255,255,255,.9);
-  }
-  body[data-palette="building-wealth"][data-mode="light"]{
     --bg:#fafaf9; --grid-dot:#e7e5e4; --panel:#ffffff; --panel-line:#e4e4e7;
     --node-bg:#ffffff; --node-border:#e4e4e7; --edge:#d4d4d8;
     --accent:#7a5c12; --accent-teal:#8a6610; --accent-line:#d4af37; --accent-ring:#d4af37;
@@ -93,6 +76,7 @@
     display:flex;align-items:center;gap:6px;
     transition:border-color .15s, color .15s, background .15s;
   }
+  a.btn{text-decoration:none;}
   .btn:hover{border-color:var(--accent);color:var(--accent);}
   .btn.primary{border-color:var(--accent);color:var(--accent);}
   .btn.primary:hover{background:var(--accent);color:var(--on-accent);}
@@ -123,8 +107,16 @@
   #editor-resizer:has(+ #editor-pane.collapsed){display:none;}
   .pane-bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--panel-line);}
   .pane-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
-  .pane-label .edited{display:none;color:var(--accent);}
-  #editor-pane.unsaved .pane-label .edited{display:inline;}
+  #doc-state{text-transform:none;letter-spacing:.02em;font-size:11px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #doc-state .ro{color:var(--text-muted);}
+  #doc-state .mine{color:var(--text);}
+  #doc-state .edited{color:var(--accent);}
+  #continue{color:var(--accent);border-color:var(--accent-line);}
+  #continue[hidden]{display:none;}
+  .modal ul.templates{list-style:none;padding:0;display:grid;gap:8px;margin:12px 0;}
+  .modal ul.templates a{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--panel-line);border-radius:8px;text-decoration:none;color:var(--text);}
+  .modal ul.templates a:hover{border-color:var(--accent);}
+  .modal ul.templates span{font-size:12px;color:var(--text-muted);}
   #editor-pane.unsaved .pane-bar{box-shadow:inset 0 -2px 0 var(--accent);}
   #editor-pane.unsaved #btn-share, #editor-pane.unsaved #btn-save{border-color:var(--accent);color:var(--accent);}
   .btn.small{padding:3px 9px;font-size:11px;}
@@ -298,11 +290,7 @@
   /* camera: a grey camera when off; green, with a live dot, when on */
   #btn-camera{display:inline-flex;align-items:center;gap:6px;}
   #btn-camera svg{display:block;}
-  #btn-camera .live{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.35;}
   #navbar #btn-camera.on{color:#22c55e;}
-  #btn-camera.on .live{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:live 1.6s ease-out infinite;}
-  @keyframes live{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);}70%{box-shadow:0 0 0 7px rgba(34,197,94,0);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}}
-  @media (prefers-reduced-motion: reduce){ #btn-camera.on .live{animation:none;} }
   /* while a take runs nothing but the slides and the camera is on screen */
   body.recording #breadcrumbs, body.recording #navbar, body.recording #minimap, body.recording #pip-msg{display:none !important;}
   body.recording, body.recording *{cursor:none !important;}
@@ -435,6 +423,9 @@
     text-shadow:var(--brand-shadow);
   }
   #brand[hidden]{display:none;}
+  #brand .st-mark{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--text);}
+  #brand .st-mark .logo{width:24px;height:24px;fill:var(--accent);}
+  #brand .st-mark .word > span{color:var(--accent);}
   #brand img{height:40px;width:auto;display:block;}
   /* optional gold chip, as on the decks' title slides (brand_style: chip); plain text is the default */
   #brand .chip{display:inline-block;padding:5px 22px;border-radius:30px;color:#fff;font-family:var(--body);

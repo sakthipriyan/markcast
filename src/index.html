@@ -53,6 +53,7 @@
       <button class="seg-btn" data-mode="path" title="Path: slides in presenting order (3)">path</button>
       <button class="seg-btn" data-mode="focus" title="Focus: one slide at a time, no travel (4)">focus</button>
     </div>
+    <a class="btn" id="continue" href="/edit" hidden></a>
     <button class="btn" id="btn-edit-toggle" title="Editor: write, open, share (E)">✎ Editor</button>
     <button class="btn icon" id="btn-mode" title="Light / dark (L)" aria-label="Light / dark"></button>
     <button class="btn icon" id="btn-help" title="Help: the full guide (? for keys)" aria-label="Help">?</button>
@@ -85,8 +86,9 @@
   <div id="editor-resizer" role="separator" aria-orientation="vertical" aria-label="Resize the editor" title="Drag to resize"></div>
   <div id="editor-pane" class="collapsed">
     <div class="pane-bar">
-      <span class="pane-label">Markdown<span class="edited" title="Changed since it was loaded, shared or saved. Share or Save keeps it."> · edited</span></span>
+      <span class="pane-label" id="doc-state" aria-live="polite"></span>
       <span class="pane-actions">
+        <a class="btn small" id="btn-new" href="/new" title="Start from a template">New</a>
         <button class="btn small" id="btn-load" title="Load a deck from a link: GitHub, a gist or any URL">⇣ Load</button>
         <button class="btn small" id="btn-open" title="Open a markdown file from this computer">Open</button>
         <button class="btn small" id="btn-save" title="Save the markdown to a file on this computer">Save</button>
@@ -94,7 +96,7 @@
       </span>
     </div>
     <textarea id="editor" spellcheck="false"></textarea>
-    <div id="status-line"><span id="status-count"></span><span id="status-err" class="err"></span><button id="btn-reset">reset to sample</button></div>
+    <div id="status-line"><span id="status-count"></span><span id="status-err" class="err"></span><button id="btn-reset" hidden title="Discard your edits and go back to the original">reset to original</button></div>
   </div>
 </main>
 
@@ -115,6 +117,20 @@
     </table>
     <p>Drag to pan, scroll or pinch to zoom, click a card to fly to it.</p>
     <p><a href="/help" target="_blank" rel="noopener">The full guide →</a> writing decks, sharing, recording, camera, review and cut.</p>
+  </div>
+</div>
+
+<div id="new-dialog" class="modal" role="dialog" aria-labelledby="new-title">
+  <div class="panel">
+    <button class="close" data-close aria-label="Close">✕</button>
+    <h2 id="new-title">Start a new deck</h2>
+    <p>Pick a template. It opens as it is; start typing and it becomes your own copy at <code>/edit</code>.</p>
+    <ul class="templates">
+      <li><a href="/new?template=blank"><strong>Blank</strong><span>A first card, a section and a detail.</span></a></li>
+      <li><a href="/new?template=talk"><strong>Talk</strong><span>Why it matters, the idea, trade-offs, summary.</span></a></li>
+      <li><a href="/new?template=recording"><strong>Recording</strong><span>Camera steps, an overview moment and a closing on camera.</span></a></li>
+    </ul>
+    <p>Or <strong>⇣ Load</strong> a deck from a link, or <strong>Open</strong> a file from this computer.</p>
   </div>
 </div>
 

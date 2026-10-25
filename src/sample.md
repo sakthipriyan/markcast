@@ -1,8 +1,10 @@
 ---
 title: Slidetake — markdown to finished video
-brand: slidetake.com
-pip: none
+brand: slidetake
+pip: bottom-right
 ---
+
+<!-- camera: full, on -->
 
 # Slidetake
 
@@ -12,19 +14,23 @@ Press → to walk this deck.
 
 ## ✍️ Write
 
-Ordinary markdown: every heading is a card, and deeper headings branch off it. reveal.js decks open as they are.
+Ordinary markdown: every heading is a card, and deeper headings branch off it.
 
 ## 🎬 Present
 
-← → to move, **F** for fullscreen. Pick **tree**, **radial**, **path** or **focus** at the top.
+<!-- view: overview -->
+
+The deck is a map: this slide pulls back to all of it first. ← → to move, **F** for fullscreen, and **tree**, **radial**, **path** or **focus** at the top.
 
 ## ⏺️ Record
 
-With **[OBS](https://obsproject.com)**, every slide is a take: redo a slide on the spot, keep the best attempt, and get a frame-exact cut with YouTube chapters.
+<!-- camera: on, full, on -->
+
+With **[OBS](https://obsproject.com)**, every slide is a take: redo a slide on the spot, keep the best attempt, and get a frame-exact cut with YouTube chapters. Turn on **Camera** to see this slide move it.
 
 ## 🔗 Open and share
 
-**✎ Editor → Load** a GitHub file or gist. **Share** copies a link; a deck you wrote here travels inside the link itself.
+**✎ Editor → Load** a GitHub file or gist, or **New** from a template. Type in any deck to make your own copy; **Share** copies a link with the deck inside it.
 
 ## 💛 Free and open
 

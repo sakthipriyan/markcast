@@ -44,6 +44,10 @@ Docs, an example gallery, themes, versioned releases; later a browser-based reco
 - OBS on the same computer: `slidetake.com/?obs=localhost:4455&src=…` works, since browsers let a secure page talk to `localhost`.
 - OBS on another machine: browsers block a secure (https) page from opening a plain `ws://` connection on the network, and OBS has no secure WebSocket of its own. Use `npx slidetake` (http, local) for that setup.
 
+## Decks: read-only sources, one working copy
+
+Every deck opened is read-only: home `/`, help `/help`, templates `/new?template=…`, GitHub `/gh/…`, gists `/gist/…`, `?src=` URLs and shared links `/share#deflate:…`. Typing in one forks it, silently with a toast, into the working copy at `/edit`, kept in the browser with its origin (`src/core/doc.js`). One copy at a time; replacing one with unsaved edits asks first. Save (a file) and Share (a link) clear the *edited* mark; Reset to original goes back to the origin.
+
 ## Decisions so far
 
 - Name: **Slidetake** (Traverse → Markcast → Slidetake). Repo: github.com/sakthipriyan/slidetake, public, Apache 2.0.

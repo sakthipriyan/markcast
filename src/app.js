@@ -1,16 +1,21 @@
 import SAMPLE_MD from './sample.md';
 import HELP_MD from './help.md';
+import BLANK_MD from './templates/blank.md';
+import TALK_MD from './templates/talk.md';
+import RECORDING_MD from './templates/recording.md';
 import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime} from './core/text.js';
 import {parseDeck as parseDeckCore, cameraDirective, mapDirective} from './core/parse.js';
 import {CORNERS, clampPipSize, applyPreset, cameraPresets, stepsFor} from './core/steps.js';
-import {normalizeSource, sourceFromPath, shortLink} from './core/source.js';
+import {normalizeSource, shortLink} from './core/source.js';
 import {encodeDeck, decodeDeck, parseHash, deckHash} from './core/share.js';
+import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from './core/doc.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
 "use strict";
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const SAMPLE = SAMPLE_MD.replace(/^\n+/, '').replace(/\s+$/, '') + '\n';
+// Slidetake's own read-only decks
+const BUILTIN = {home: SAMPLE_MD, help: HELP_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
 
 // ---------- DOM refs ----------
 const editor = document.getElementById('editor');
@@ -80,7 +85,10 @@ function renderMd(body){
 function applyDeckSettings(){
   const name = deck.brand || '', logo = deck.logo || '';
   const chip = /^chip$/i.test(deck.brand_style || '');
-  const html = (logo ? '<img alt="" src="'+escapeHtml(logo)+'">' : '') + (name ? '<span' + (chip ? ' class="chip"' : '') + '>'+escapeHtml(name)+'</span>' : '');
+  // brand: slidetake is Slidetake's own mark, the logo and the two-tone name, as in the header
+  const html = /^slidetake$/i.test(name)
+    ? '<span class="st-mark">' + document.querySelector('header .mark .logo').outerHTML + '<span class="word">Slide<span>take</span></span></span>'
+    : (logo ? '<img alt="" src="'+escapeHtml(logo)+'">' : '') + (name ? '<span' + (chip ? ' class="chip"' : '') + '>'+escapeHtml(name)+'</span>' : '');
   if (brandEl.dataset.html !== html){
     brandEl.dataset.html = html;
     brandEl.innerHTML = html;
@@ -91,8 +99,7 @@ function applyDeckSettings(){
 
   applyPipState();
   document.title = deck.title || 'Slidetake';
-  const palette = String(deck.theme || deck.palette || '').toLowerCase() ||
-    ((deck.wealth_tags || /\/building-wealth\//.test(deckBase || '')) ? 'building-wealth' : '');
+  const palette = String(deck.theme || deck.palette || '').toLowerCase();
   if (palette) document.body.dataset.palette = palette; else delete document.body.dataset.palette;
   applyMode();
 }
@@ -847,17 +854,14 @@ function scheduleAutoslide(n){
 }
 
 // ---------- navigation ----------
+// On /share the deck itself is in the hash (#deflate:…), and the slide goes after it (~id)
 function setHash(id){
-  try { history.replaceState(null, '', id ? '#' + encodeURIComponent(id) : location.pathname + location.search); } catch(e){}
+  const slide = id && id !== order[0] ? id : '';
+  try {
+    if (view && view.kind === 'share') history.replaceState(null, '', location.pathname + location.search + deckHash(view.data, slide));
+    else history.replaceState(null, '', id ? '#' + encodeURIComponent(id) : location.pathname + location.search);
+  } catch(e){}
 }
-// Edits not yet shared or saved: the editor bar says so, and leaving the page asks first. Share (which puts
-// the deck in the link) and Save (a file) both clear it.
-let unsaved = false;
-function setUnsaved(on){
-  unsaved = on;
-  document.getElementById('editor-pane').classList.toggle('unsaved', on);
-}
-window.addEventListener('beforeunload', e=>{ if (unsaved){ e.preventDefault(); e.returnValue = ''; } });
 function navigate(id, instant, atLastStep){
   if (!nodes.has(id)) return;
   if (id !== currentId){
@@ -985,10 +989,13 @@ function rebuild(instant){
   else if (order.length) navigate(order[0], instant);
   else { currentId = null; fitAll(true); }
 }
+// a read-only deck forks into the working copy on the first keystroke; the copy is kept as you type
 editor.addEventListener('input', ()=>{
+  if (view.kind !== 'copy' && !forkToCopy()) return;
+  copy.text = editor.value;
+  updateDocState();
   clearTimeout(debounceTimer);
-  deckEdited = true; setUnsaved(true);
-  debounceTimer = setTimeout(()=>{ save('slidetake:draft', editor.value); rebuild(true); }, 300);
+  debounceTimer = setTimeout(()=>{ saveCopy(); rebuild(true); }, 300);
 });
 
 // ---------- layout switching ----------
@@ -1087,7 +1094,14 @@ document.getElementById('btn-open').onclick = ()=>document.getElementById('file-
 document.getElementById('file-input').addEventListener('change', e=>{
   const f = e.target.files[0]; if (!f) return;
   const reader = new FileReader();
-  reader.onload = ()=>{ editor.value = reader.result; deckBase = null; deckSource = null; save('slidetake:draft', editor.value); currentId = null; deckEdited = true; setUnsaved(false); rebuild(true); };
+  // a file from this computer goes straight to the working copy, already saved (it's a file)
+  reader.onload = ()=>{
+    if (!confirmReplaceCopy('a copy of ' + f.name)) return;
+    copy = makeCopy(String(reader.result), {kind: 'file', name: f.name}, {exported: true});
+    saveCopy();
+    deckBase = null; currentId = null;
+    showCopy();
+  };
   reader.readAsText(f);
   e.target.value = '';
 });
@@ -1098,13 +1112,13 @@ document.getElementById('btn-save').onclick = ()=>{
   a.download = (roots[0] ? slugify(nodes.get(roots[0]).title) : 'deck') + '.md';
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
-  setUnsaved(false);
+  if (view.kind === 'copy'){ copy.exported = copy.text; saveCopy(); updateDocState(); }
 };
 document.getElementById('btn-reset').onclick = ()=>{
-  if (editor.value !== SAMPLE && !confirm('Replace the editor contents with the sample deck?')) return;
-  editor.value = SAMPLE; save('slidetake:draft', SAMPLE); currentId = null; deckSource = null; deckEdited = false; setUnsaved(false); rebuild(true);
-  const q = new URLSearchParams(location.search); q.delete('src');
-  history.replaceState(null, '', '/' + (q.toString() ? '?' + q : ''));
+  if (view.kind !== 'copy' || matchesOrigin(copy)) return;
+  if (!confirm('Discard your edits and go back to ' + originLabel(copy.origin) + ' as it was?')) return;
+  copy.text = copy.originText; saveCopy();
+  editor.value = copy.text; currentId = null; rebuild(true); updateDocState();
 };
 
 function toggleEditor(){
@@ -1261,8 +1275,7 @@ function showScreenAdvice(){
   const [name, r] = shapes.reduce((a, b)=>Math.abs(b[1] - w / h) < Math.abs(a[1] - w / h) ? b : a);
   const shape = Math.abs(r - w / h) < 0.005 ? name : 'about ' + name;
   el.innerHTML = '<span class="warn">This screen is ' + shape + ' (' + w + '×' + h + '), not 16:9, so the video will have bars or be cropped. ' +
-    'Move this window to a 16:9 screen, or add one with <a href="https://betterdisplay.pro" target="_blank" rel="noopener">BetterDisplay</a> ' +
-    '(a 1920×1080 virtual screen works well), then press F there.</span>';
+    'Move this window to a 16:9 screen, physical or virtual (say 1920×1080), then press F there.</span>';
 }
 function openRecordDialog(){
   const total = order.reduce((a, id)=>a + slideSteps(nodes.get(id)).length, 0);
@@ -1447,7 +1460,8 @@ const ffmpegScript = (sess, mode)=>ffmpegScriptCore(sess, mode, {
 
 // ---------- YouTube publish pack ----------
 function deckTags(){
-  const all = [].concat(deck.tags || [], deck.wealth_tags || [], deck.systems_tags || []).filter(t=>typeof t === 'string');
+  // tags, plus any other *_tags list a site keeps (Hugo sites often split tags by section)
+  const all = Object.keys(deck).filter(k=>k === 'tags' || /_tags$/.test(k)).flatMap(k=>[].concat(deck[k])).filter(t=>typeof t === 'string');
   return [...new Set(all.map(t=>t.trim()).filter(Boolean))];
 }
 function relatedLinks(){
@@ -1760,7 +1774,7 @@ async function startWebcam(){
 }
 const CAMERA_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10.5 22 7v10l-6-3.5z"/></svg>';
 function updateCamBtn(){
-  if (!camBtn.querySelector('svg')) camBtn.innerHTML = CAMERA_ICON + '<span class="live"></span><span class="lbl"> Camera</span>';
+  if (!camBtn.querySelector('svg')) camBtn.innerHTML = CAMERA_ICON + '<span class="lbl"> Camera</span>';
   camBtn.classList.toggle('on', !cameraOff);
   camBtn.setAttribute('aria-pressed', String(!cameraOff));
   camBtn.title = cameraOff ? 'Camera is off for every slide (C)' : 'Camera is on and follows the deck (C)';
@@ -1835,7 +1849,7 @@ window.addEventListener('keydown', e=>{
 
 window.addEventListener('hashchange', ()=>{
   const {data, slide} = parseHash(location.hash);
-  if (data){ location.reload(); return; }   // a deck link was pasted into the address of this tab
+  if (data && !(view && view.kind === 'share' && data === view.data)){ location.reload(); return; }   // another shared deck was pasted in
   if (slide && slide !== currentId && nodes.has(slide)) navigate(slide);
 });
 
@@ -1885,23 +1899,26 @@ document.getElementById('open-form').onsubmit = e=>{
   if (!source){ openError.textContent = 'That doesn\'t look like a link.'; openError.hidden = false; return; }
   location.href = deckAddress(source);
 };
-// a shared link never carries the OBS address (it can hold a password) or the editor state
+// A shared link never carries the OBS address (it can hold a password) or the editor state. A read-only
+// deck shares its own short link; the working copy shares its origin's short link while it still matches
+// it, and otherwise the deck itself, inside a /share# link.
+async function shareLink(slide){
+  const keep = {keepObs: false, keepEdit: false, slide};
+  if (view.kind === 'source') return {link: deckAddress(view.source, keep), inside: false};
+  const linkable = view.kind === 'copy' && matchesOrigin(copy) && ['url', 'gist', 'builtin'].includes(copy.origin.kind);
+  if (linkable) return {link: deckAddress(copy.origin, keep), inside: false};
+  const data = view.kind === 'share' ? view.data : await encodeDeck(editor.value);
+  const q = new URLSearchParams(location.search); ['src', 'obs', 'edit'].forEach(k=>q.delete(k));
+  return {link: location.origin + '/share' + (q.toString() ? '?' + q : '') + deckHash(data, slide), inside: true};
+}
 document.getElementById('btn-share').onclick = async ()=>{
-  const slide = currentId && currentId !== order[0] ? currentId : '';
-  let link, note;
-  if (deckSource && !deckEdited){
-    link = deckAddress(deckSource, {keepObs: false, keepEdit: false, slide});
-    note = 'Link copied.';
-  } else {
-    const data = await encodeDeck(editor.value);
-    const q = new URLSearchParams(location.search); ['src', 'obs', 'edit'].forEach(k=>q.delete(k));
-    link = location.origin + '/' + (q.toString() ? '?' + q : '') + deckHash(data, slide);
-    note = 'Link copied, with the whole deck inside it (' + (link.length / 1024).toFixed(1) + ' KB)' +
+  const {link, inside} = await shareLink(currentId && currentId !== order[0] ? currentId : '');
+  const note = !inside ? 'Link copied.'
+    : 'Link copied, with the whole deck inside it (' + (link.length / 1024).toFixed(1) + ' KB)' +
       (link.length > 8000 ? '. Some chat apps cut long links short: a GitHub file or gist makes a shorter one.' : '.');
-  }
   try { await navigator.clipboard.writeText(link); showToast(note, 5000); }
   catch(err){ prompt('Copy this link:', link); }
-  setUnsaved(false);
+  if (view.kind === 'copy'){ copy.exported = copy.text; saveCopy(); updateDocState(); }
 };
 
 // ---------- boot ----------
@@ -1912,17 +1929,75 @@ document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.togg
 // ?src=<url of a .md> loads a deck from the web (relative images resolve next to it),
 // ?edit=0 starts with the editor hidden, ?layout=tree|radial|path|focus picks the layout
 const params = new URLSearchParams(location.search);
-const startHash = parseHash(location.hash);
-const startId = startHash.slide;
 if (['tree','radial','path','focus'].includes(params.get('layout'))){
   layoutMode = params.get('layout');
   document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
 }
-// where the deck came from: a short-link path (/gh/…, /gist/…), ?src=, or nothing (the draft or the sample)
-let deckSource = sourceFromPath(location.pathname) || (params.get('src') ? {kind: 'url', url: params.get('src')} : null);
-let deckEdited = false;   // changed in the editor since it was loaded
+// ---------- the deck on this page, and the working copy ----------
+// view: what this page shows. A read-only source (home, help, a template, a file on the web), a shared
+// deck (/share#…), or the working copy (/edit). Typing in a read-only deck forks it into the copy.
+const route = routeOf(location.pathname, location.search, location.hash);
+const startId = route.page === 'pick' ? '' : route.slide;
+let view = null;
+let copy = parseCopy(load('slidetake:copy')) || earlierDraft();
+// a draft from before working copies existed becomes the copy
+function earlierDraft(){
+  const old = load('slidetake:draft');
+  if (!old || old === SAMPLE_MD) return null;
+  const c = makeCopy(old, {kind: 'file', name: 'your earlier draft'}, {exported: true});
+  save('slidetake:copy', JSON.stringify(c));
+  try { localStorage.removeItem('slidetake:draft'); } catch(e){}
+  return c;
+}
+function saveCopy(){ save('slidetake:copy', JSON.stringify(copy)); }
+// the editor bar says whose deck this is, and whether the copy has edits not yet saved or shared
+function updateDocState(){
+  let html;
+  if (view.kind === 'copy'){
+    html = '<span class="mine">Your copy of ' + escapeHtml(originLabel(copy.origin)) + '</span>' +
+      (isEdited(copy) ? ' <span class="edited">· edited</span>' : '');
+  } else {
+    const name = view.kind === 'share' ? 'a shared deck' : originLabel(view.source);
+    html = '<span class="mine">' + escapeHtml(name.charAt(0).toUpperCase() + name.slice(1)) + '</span> <span class="ro">· read-only, typing makes your copy</span>';
+  }
+  document.getElementById('doc-state').innerHTML = html;
+  editorPane.classList.toggle('unsaved', view.kind === 'copy' && isEdited(copy));
+  document.getElementById('btn-reset').hidden = !(view.kind === 'copy' && !matchesOrigin(copy));
+  const cont = document.getElementById('continue');
+  cont.hidden = view.kind === 'copy' || !copy;
+  if (copy){ cont.textContent = 'Your copy →'; cont.title = 'Continue your copy of ' + originLabel(copy.origin); }
+}
+// a working copy with edits that aren't saved or shared is only replaced after asking
+function confirmReplaceCopy(what){
+  if (!copy || !isEdited(copy)) return true;
+  return confirm('Your copy of ' + originLabel(copy.origin) + ' has edits you haven\'t saved or shared. Replace it with ' + what + '?');
+}
+function editAddress(){
+  const q = new URLSearchParams(location.search); q.delete('src'); q.delete('template');
+  return '/edit' + (q.toString() ? '?' + q : '');
+}
+// the first keystroke in a read-only deck: the deck as it was becomes the copy's original, then the edit applies
+function forkToCopy(){
+  const origin = view.kind === 'share' ? {kind: 'shared'} : view.source;
+  if (!confirmReplaceCopy('a copy of ' + originLabel(origin))){ editor.value = view.text; return false; }
+  copy = makeCopy(view.text, origin);
+  view = {kind: 'copy'};
+  history.pushState(null, '', editAddress() + (currentId && currentId !== order[0] ? '#' + encodeURIComponent(currentId) : ''));
+  showToast('Editing your own copy of ' + originLabel(origin) + '. The original is unchanged.', 4000);
+  return true;
+}
+// switch this page to the working copy (after opening a file)
+function showCopy(){
+  view = {kind: 'copy'};
+  history.pushState(null, '', editAddress());
+  if (editorPane.classList.contains('collapsed')) toggleEditor();
+  editor.value = copy.text; rebuild(true); updateDocState();
+}
+// back and forward move between pages (a deck and your copy of it): load what the address says
+window.addEventListener('popstate', ()=>location.reload());
+
 async function fetchSource(source){
-  if (source.kind === 'builtin') return HELP_MD;
+  if (source.kind === 'builtin') return BUILTIN[source.id] ?? BUILTIN.home;
   if (source.kind === 'gist'){
     const res = await fetch('https://api.github.com/gists/' + encodeURIComponent(source.id));
     if (!res.ok) throw new Error(res.status === 404 ? 'no such gist' : res.status + ' ' + res.statusText);
@@ -1937,32 +2012,38 @@ async function fetchSource(source){
   deckBase = new URL(source.url, location.href).href;
   return await res.text();
 }
-async function loadInitialDeck(){
-  if (startHash.data){
-    try {
-      // the deck is now in the editor (and saved as the draft), so the long #deflate: part leaves the address
-      const text = await decodeDeck(startHash.data);
-      deckSource = null; deckEdited = true;
-      save('slidetake:draft', text);
-      history.replaceState(null, '', location.pathname + location.search);
-      return text;
-    }
-    catch(e){ showToast('This link\'s deck is damaged or cut short, so it could not be opened.', 6000); }
-  }
-  if (deckSource){
-    try { return await fetchSource(deckSource); }
-    catch(e){
-      statusErr.textContent = 'Could not load the deck (' + e.message + ')';
-      showToast('Could not load ' + (deckSource.kind === 'gist' ? 'the gist' : deckSource.url) + ': ' + e.message, 6000);
-      deckSource = null;
-    }
-  }
-  return load('slidetake:draft') || SAMPLE;
+function showHome(){
+  view = {kind: 'source', source: {kind: 'builtin', id: 'home'}, text: BUILTIN.home};
+  return view.text;
 }
-// the editor starts closed; E, the Editor button or ?edit=1 opens it
-if (params.get('edit') === '1') toggleEditor();
+async function loadInitialDeck(){
+  if (route.page === 'edit'){
+    if (copy){ view = {kind: 'copy'}; return copy.text; }
+    // no copy yet: start one from a template
+    history.replaceState(null, '', '/new' + location.search);
+    route.page = 'pick';
+  }
+  if (route.page === 'pick'){
+    openModal(document.getElementById('new-dialog'));
+    view = {kind: 'source', source: {kind: 'builtin', id: 'template:blank'}, text: BUILTIN['template:blank']};
+    return view.text;
+  }
+  if (route.page === 'share'){
+    try { const text = await decodeDeck(route.data); view = {kind: 'share', data: route.data, text}; return text; }
+    catch(e){ showToast('This link\'s deck is damaged or cut short, so it could not be opened.', 6000); return showHome(); }
+  }
+  try { const text = await fetchSource(route.source); view = {kind: 'source', source: route.source, text}; return text; }
+  catch(e){
+    statusErr.textContent = 'Could not load the deck (' + e.message + ')';
+    showToast('Could not load ' + originLabel(route.source) + ': ' + e.message, 6000);
+    return showHome();
+  }
+}
+// the editor starts closed, except on your copy; E, the Editor button or ?edit=1 opens it
+if (params.get('edit') === '1' || (route.page === 'edit' && copy && params.get('edit') !== '0')) toggleEditor();
 loadInitialDeck().then(text=>{
   editor.value = text;
+  updateDocState();
   parseDeck(editor.value);
   build();
   // wait for web fonts before measuring card sizes
