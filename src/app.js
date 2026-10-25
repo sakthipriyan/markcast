@@ -877,7 +877,7 @@ function navigate(id, instant, atLastStep){
   }
   const arriving = id !== currentId;
   currentId = id;
-  clearTimeout(mapTimer);
+  clearTimeout(mapTimer); mapTimer = null;
   if (arriving && layoutMode === 'focus' && !instant && !reduceMotion){
     // start a touch small, then settle while it fades in
     const el = nodes.get(id).el;
@@ -889,7 +889,7 @@ function navigate(id, instant, atLastStep){
   if (arriving && n.mapFirst && !atLastStep && !instant && layoutMode !== 'focus'){
     // a map moment: show the whole deck for a beat, then fly in
     fitAll();
-    mapTimer = setTimeout(()=>{ if (currentId === id) focusOn(id); }, 1900);
+    mapTimer = setTimeout(()=>{ mapTimer = null; if (currentId === id) focusOn(id); }, 1900);
   } else focusOn(id, instant);
   updateActivePath();
   updateMinimap();
@@ -915,6 +915,8 @@ function overview(){
 }
 function step(dir){
   if (!currentId){ if (order.length) navigate(order[dir > 0 ? 0 : order.length-1]); return; }
+  // a press during a map moment finishes it, flying into the slide, rather than skipping past the slide
+  if (mapTimer && dir > 0){ clearTimeout(mapTimer); mapTimer = null; focusOn(currentId); return; }
   const steps = slideSteps(nodes.get(currentId));
   const ns = Math.min(stepPos, steps.length - 1) + dir;
   if (ns >= 0 && ns < steps.length){

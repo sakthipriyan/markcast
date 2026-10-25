@@ -2306,6 +2306,7 @@
     const arriving = id !== currentId;
     currentId = id;
     clearTimeout(mapTimer);
+    mapTimer = null;
     if (arriving && layoutMode === "focus" && !instant && !reduceMotion) {
       const el = nodes.get(id).el;
       el.classList.add("entering");
@@ -2318,6 +2319,7 @@
     if (arriving && n.mapFirst && !atLastStep && !instant && layoutMode !== "focus") {
       fitAll();
       mapTimer = setTimeout(() => {
+        mapTimer = null;
         if (currentId === id) focusOn(id);
       }, 1900);
     } else focusOn(id, instant);
@@ -2347,6 +2349,12 @@
   function step(dir) {
     if (!currentId) {
       if (order.length) navigate(order[dir > 0 ? 0 : order.length - 1]);
+      return;
+    }
+    if (mapTimer && dir > 0) {
+      clearTimeout(mapTimer);
+      mapTimer = null;
+      focusOn(currentId);
       return;
     }
     const steps = slideSteps(nodes.get(currentId));
