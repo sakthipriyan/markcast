@@ -213,6 +213,8 @@ The review fills the YouTube description from the deck's top block:
 
 ## 🔒 Your data
 
-Your draft and settings stay in this browser. Decks inside links live in the address, which browsers never send to the server. Slidetake has no accounts and stores nothing.
+Your draft and settings stay in this browser. Decks inside links live in the part of the address after `#`, which browsers never send to a server. Slidetake has no accounts and stores no decks.
+
+slidetake.com counts visits with Google Analytics. What it records leaves out the `#` part and `?obs=`, so neither your deck nor an OBS password reaches it. Copies you host yourself send nothing.
 
 Slidetake is open source: [github.com/sakthipriyan/slidetake](https://github.com/sakthipriyan/slidetake).
