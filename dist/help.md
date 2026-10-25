@@ -100,7 +100,7 @@ For a file from your computer whose images sit next to it online, add `base: htt
 | + − | bigger / smaller slides (remembered) |
 | E | editor |
 | L | light / dark |
-| ? | keys (also ⌨ in the bottom bar) |
+| K or ? | keys (also ⌨ Keys on screen) |
 | C · V · R | camera, camera layouts, record |
 
 Click a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch screen, the bottom bar adds ← → buttons.

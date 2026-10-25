@@ -1877,7 +1877,7 @@ window.addEventListener('keydown', e=>{
   else if (k==='l' || k==='L'){ toggleMode(); }
   else if (k==='+' || k==='='){ sizeStep(1); }
   else if (k==='-' || k==='_'){ sizeStep(-1); }
-  else if (k==='?'){ help.classList.add('open'); }
+  else if (k==='?' || k==='k' || k==='K'){ help.classList.add('open'); }
   else if (k==='Escape'){ if (!backFromOverview() && presenting) setPresent(false); }
 });
 
@@ -1987,8 +1987,8 @@ if (EMBED){
   actions.insertBefore(credit, actions.firstChild);
   if (!RECORDING_UI){
     actions.insertAdjacentHTML('beforeend',
-      '<button class="btn icon" id="hdr-keys" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">⌨</button>' +
-      '<button class="btn icon" id="hdr-full" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button>');
+      '<button class="btn" id="hdr-keys" title="Keyboard shortcuts (K)">⌨ Keys</button>' +
+      '<button class="btn" id="hdr-full" title="Fullscreen (F)">⛶ Fullscreen</button>');
     document.getElementById('hdr-keys').onclick = ()=>document.getElementById('help').classList.add('open');
     document.getElementById('hdr-full').onclick = ()=>setPresent(!presenting);
   }
