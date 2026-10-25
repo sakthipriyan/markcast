@@ -2,6 +2,7 @@ import SAMPLE_MD from './sample.md';
 import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime} from './core/text.js';
 import {parseDeck as parseDeckCore, cameraDirective, mapDirective} from './core/parse.js';
 import {CORNERS, clampPipSize, applyPreset, cameraPresets, stepsFor} from './core/steps.js';
+import {normalizeSource, sourceFromPath, shortLink} from './core/source.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
@@ -979,6 +980,7 @@ function rebuild(instant){
 }
 editor.addEventListener('input', ()=>{
   clearTimeout(debounceTimer);
+  deckEdited = true;
   debounceTimer = setTimeout(()=>{ save('slidetake:draft', editor.value); rebuild(true); }, 300);
 });
 
@@ -1081,7 +1083,7 @@ document.getElementById('btn-load').onclick = ()=>document.getElementById('file-
 document.getElementById('file-input').addEventListener('change', e=>{
   const f = e.target.files[0]; if (!f) return;
   const reader = new FileReader();
-  reader.onload = ()=>{ editor.value = reader.result; deckBase = null; save('slidetake:draft', editor.value); currentId = null; rebuild(true); };
+  reader.onload = ()=>{ editor.value = reader.result; deckBase = null; deckSource = null; save('slidetake:draft', editor.value); currentId = null; rebuild(true); };
   reader.readAsText(f);
   e.target.value = '';
 });
@@ -1173,8 +1175,21 @@ function saveObsSettings(){
   else { try { localStorage.removeItem('slidetake:obs'); } catch(e){} }
 }
 function setObsStatus(text, kind){ obsStatus.textContent = text; obsStatus.className = kind || ''; }
+// A secure (https) page may only open plain ws:// connections to this computer: browsers block them to any
+// other address, and OBS has no secure WebSocket of its own. Say so instead of failing with a vague error.
+const isLoopback = host=>/^(localhost|127(\.\d+){3}|\[?::1\]?)$/i.test(host);
+function obsBlockedHere(host){ return location.protocol === 'https:' && !isLoopback(host); }
+const OBS_HTTPS_HELP = 'This page is served over https, and browsers block it from reaching OBS on another computer ' +
+  '(OBS only offers plain ws://). Run OBS on this computer and use localhost, or open Slidetake from a local copy: ' +
+  'download dist/index.html from github.com/sakthipriyan/slidetake and serve it with python3 -m http.server.';
 async function connectObs(){
-  const url = 'ws://' + (obsHost.value.trim() || 'localhost') + ':' + (obsPort.value.trim() || '4455');
+  const host = obsHost.value.trim() || 'localhost';
+  const url = 'ws://' + host + ':' + (obsPort.value.trim() || '4455');
+  if (obsBlockedHere(host)){
+    obsConnected = false; recStartBtn.disabled = true;
+    setObsStatus(OBS_HTTPS_HELP, 'err');
+    return;
+  }
   setObsStatus('Connecting to ' + url + '…');
   try {
     await loadScript(OBS_URL);
@@ -1790,6 +1805,53 @@ new ResizeObserver(()=>{
   refocus(true);
 }).observe(stage);
 
+// ---------- open a deck from a link, share a link to it ----------
+const toastEl = document.createElement('div');
+toastEl.id = 'toast'; toastEl.setAttribute('role', 'status');
+document.body.appendChild(toastEl);
+let toastTimer = null;
+function showToast(text, ms){
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toastEl.classList.remove('show'), ms || 2500);
+}
+// the address for a deck, keeping this view's settings (layout, editor, theme, OBS) but not the slide
+function deckAddress(source, {keepObs = true, keepEdit = true, slide = ''} = {}){
+  const link = new URL(shortLink(source), location.origin);
+  new URLSearchParams(location.search).forEach((v, k)=>{
+    if (k === 'src' || (k === 'obs' && !keepObs) || (k === 'edit' && !keepEdit)) return;
+    link.searchParams.set(k, v);
+  });
+  if (slide) link.hash = slide;
+  // URL writes the @ of owner/repo@branch as %40; the short form reads better
+  return link.href.replace(link.pathname, link.pathname.replace(/%40/g, '@'));
+}
+const openDialog = document.getElementById('open-dialog');
+const openUrl = document.getElementById('open-url');
+const openError = document.getElementById('open-error');
+document.getElementById('btn-open').onclick = ()=>{
+  openError.hidden = true;
+  openModal(openDialog);
+  openUrl.focus(); openUrl.select();
+};
+document.getElementById('open-form').onsubmit = e=>{
+  e.preventDefault();
+  const source = normalizeSource(openUrl.value);
+  if (!source){ openError.textContent = 'That doesn\'t look like a link.'; openError.hidden = false; return; }
+  location.href = deckAddress(source);
+};
+// a shared link never carries the OBS address (it can hold a password) or the editor state
+document.getElementById('btn-share').onclick = async ()=>{
+  if (!deckSource){
+    showToast('This deck is only on this computer. Put the markdown on GitHub or in a gist, open it here, then share.', 6000);
+    return;
+  }
+  const link = deckAddress(deckSource, {keepObs: false, keepEdit: false, slide: currentId && currentId !== order[0] ? currentId : ''});
+  try { await navigator.clipboard.writeText(link); showToast(deckEdited ? 'Link copied. It opens the online version, without your edits here.' : 'Link copied: ' + link, 4000); }
+  catch(err){ prompt('Copy this link:', link); }
+};
+
 // ---------- boot ----------
 const savedMode = load('slidetake:layout');
 layoutMode = ['tree','radial','path','focus'].includes(savedMode) ? savedMode : 'tree';
@@ -1800,25 +1862,42 @@ document.getElementById('btn-edit-toggle').classList.add('active');
 // ?edit=0 starts with the editor hidden, ?layout=tree|radial|path|focus picks the layout
 const params = new URLSearchParams(location.search);
 const startId = decodeURIComponent(location.hash.slice(1));
-if (params.get('edit') === '0') toggleEditor();
 if (['tree','radial','path','focus'].includes(params.get('layout'))){
   layoutMode = params.get('layout');
   document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
 }
+// where the deck came from: a short-link path (/gh/…, /gist/…), ?src=, or nothing (the draft or the sample)
+let deckSource = sourceFromPath(location.pathname) || (params.get('src') ? {kind: 'url', url: params.get('src')} : null);
+let deckEdited = false;   // changed in the editor since it was loaded
+async function fetchSource(source){
+  if (source.kind === 'gist'){
+    const res = await fetch('https://api.github.com/gists/' + encodeURIComponent(source.id));
+    if (!res.ok) throw new Error(res.status === 404 ? 'no such gist' : res.status + ' ' + res.statusText);
+    const files = Object.values((await res.json()).files || {});
+    const file = files.find(f=>f.filename === source.file) || files.find(f=>/\.(md|markdown)$/i.test(f.filename)) || files[0];
+    if (!file) throw new Error('the gist has no files');
+    deckBase = file.raw_url;
+    return file.truncated ? await (await fetch(file.raw_url)).text() : file.content;
+  }
+  const res = await fetch(source.url);
+  if (!res.ok) throw new Error(res.status === 404 ? 'not found' : res.status + ' ' + res.statusText);
+  deckBase = new URL(source.url, location.href).href;
+  return await res.text();
+}
 async function loadInitialDeck(){
-  const src = params.get('src');
-  if (src){
-    try {
-      const res = await fetch(src);
-      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
-      deckBase = new URL(src, location.href).href;
-      return await res.text();
-    } catch(e){
-      statusErr.textContent = 'Could not load ' + src + ' (' + e.message + ')';
+  if (deckSource){
+    try { return await fetchSource(deckSource); }
+    catch(e){
+      statusErr.textContent = 'Could not load the deck (' + e.message + ')';
+      showToast('Could not load ' + (deckSource.kind === 'gist' ? 'the gist' : deckSource.url) + ': ' + e.message, 6000);
+      deckSource = null;
     }
   }
   return load('slidetake:draft') || SAMPLE;
 }
+// the editor starts open on your own draft, and closed on the landing deck or a deck from a link;
+// ?edit=1 / ?edit=0 decide it outright
+if (params.get('edit') === '0' || (params.get('edit') !== '1' && (deckSource || !load('slidetake:draft')))) toggleEditor();
 loadInitialDeck().then(text=>{
   editor.value = text;
   parseDeck(editor.value);

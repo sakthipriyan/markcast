@@ -18,6 +18,19 @@ Then open:
 - `http://localhost:8765/dist/?src=https://…/deck.md` for a deck on the web, including GitHub raw URLs (relative images load from next to it)
 - `?edit=0` hides the editor, `?layout=tree|radial|path|focus` picks the layout, `?mode=light` the light theme
 
+## Open a deck from a link
+
+On [slidetake.com](https://slidetake.com), press **Open** and paste a GitHub file or folder link, a gist, or any URL that lets other sites read it. Or link straight to it:
+
+```
+https://slidetake.com/gh/owner/repo/path/deck.md          a file on GitHub (default branch)
+https://slidetake.com/gh/owner/repo@branch/path/deck.md   another branch or tag
+https://slidetake.com/gist/<id>                           a gist
+https://slidetake.com/?src=https://…/deck.md              anything else
+```
+
+**Share** copies the short link to the deck and slide you're on (never the OBS address).
+
 ## Viewing and recording
 
 Without anything else in the address, Slidetake is a viewer: the deck and a **Fullscreen** button (F). Camera settings in the deck are ignored, so the same deck works for readers on a website.
@@ -31,6 +44,8 @@ Add where OBS is to turn on recording mode, the same format the reveal.js slides
 ```
 
 Recording mode adds the camera (C), recording (R) and the talk timer, and follows `pip`, `camera` and per-slide `<!-- camera: … -->` settings.
+
+From https://slidetake.com, OBS must run on the same computer (`?obs=localhost:4455`): browsers block secure pages from plain `ws://` connections to other machines. To record with OBS on another machine, serve `dist/index.html` locally over http.
 
 ## Decks
 

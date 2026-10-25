@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Slidetake</title>
+<meta name="description" content="Markdown to finished video: a spatial deck that records itself, take by take. Open any markdown deck, present it, and record it with OBS.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#09090b">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Slidetake">
+<meta property="og:title" content="Slidetake: markdown to finished video">
+<meta property="og:description" content="A spatial deck that records itself, take by take. Open any markdown deck, present it, record it with OBS, and get a frame-exact cut with chapters.">
+<meta property="og:url" content="https://slidetake.com/">
+<meta property="og:image" content="https://slidetake.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -92,7 +105,8 @@
     z-index:20;
   }
   .brand{display:flex;align-items:baseline;gap:10px;}
-  .brand .mark{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.02em;}
+  .brand .mark{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.02em;color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:7px;align-self:center;}
+  .brand .mark .logo{width:20px;height:20px;fill:var(--accent);flex:none;}
   .brand .mark span{color:var(--accent);}
   .brand .tagline{font-family:var(--mono);font-size:11px;color:var(--text-muted);}
   .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
@@ -258,6 +272,13 @@
   .modal ul{padding-left:18px;margin:0;}
   .modal .close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
   .modal .fields{display:grid;grid-template-columns:2fr 1fr 2fr;gap:10px;}
+  #open-form{display:flex;gap:8px;margin:12px 0 6px;}
+  #open-url{flex:1;min-width:0;}
+  .modal p.warn{color:var(--danger);}
+  #toast{position:fixed;left:50%;top:64px;transform:translateX(-50%) translateY(-8px);opacity:0;pointer-events:none;z-index:60;
+    background:var(--panel, #18181b);color:var(--text);border:1px solid var(--accent-line, var(--accent));border-radius:8px;
+    padding:8px 14px;font-family:var(--mono);font-size:12px;transition:opacity .2s, transform .2s;max-width:min(560px,calc(100vw - 32px));}
+  #toast.show{opacity:1;transform:translateX(-50%);}
   .modal label{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:11px;color:var(--text-muted);}
   .modal label.check{flex-direction:row;align-items:center;gap:8px;margin-top:10px;}
   .modal input[type=text], .modal input[type=password], .modal textarea{
@@ -492,7 +513,7 @@
 
 <header>
   <div class="brand">
-    <div class="mark">Slidetake<span>.</span></div>
+    <a class="mark" href="/" title="Slidetake home"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M 10 8 H 38 C 41.3 8 44 10.7 44 14 V 18 H 22 C 16.5 18 12 22.5 12 28 V 36 H 10 C 6.7 36 4 33.3 4 30 V 14 C 4 10.7 6.7 8 10 8 Z" opacity="0.4"/><path fill-rule="evenodd" d="M 22 22 H 54 C 57.3 22 60 24.7 60 28 V 50 C 60 53.3 57.3 56 54 56 H 22 C 18.7 56 16 53.3 16 50 V 28 C 16 24.7 18.7 22 22 22 Z M 26 34 C 28.2 34 30 32.2 30 30 C 30 27.8 28.2 26 26 26 C 23.8 26 22 27.8 22 30 C 22 32.2 23.8 34 26 34 Z M 38 40 C 36.9 40 36 40.9 36 42 V 48 C 36 49.1 36.9 50 38 50 H 50 C 51.1 50 52 49.1 52 48 V 42 C 52 40.9 51.1 40 50 40 H 38 Z"/></svg>Slidetake<span>.</span></a>
     <div class="tagline">plain markdown → spatial deck → video</div>
   </div>
   <div class="hdr-actions">
@@ -503,7 +524,9 @@
       <button class="seg-btn" data-mode="path" title="Path: slides in presenting order (3)">path</button>
       <button class="seg-btn" data-mode="focus" title="Focus: one slide at a time, no travel (4)">focus</button>
     </div>
-    <button class="btn" id="btn-load">↑ Load .md</button>
+    <button class="btn" id="btn-open" title="Open a deck from a link">Open</button>
+    <button class="btn" id="btn-share" title="Copy a link to this deck">Share</button>
+    <button class="btn" id="btn-load" title="Open a markdown file from this computer">↑ Load .md</button>
     <button class="btn" id="btn-download">↓ Download</button>
     <button class="btn" id="btn-edit-toggle" title="Editor (E)">Editor</button>
     <button class="btn" id="btn-mode" title="Light / dark (L)">◐ Light</button>
@@ -620,6 +643,27 @@ camera: 24%, 40%, full, off  ← layouts V cycles through
   </div>
 </div>
 
+<div id="open-dialog" class="modal" role="dialog" aria-labelledby="open-title">
+  <div class="panel">
+    <button class="close" data-close aria-label="Close">✕</button>
+    <h2 id="open-title">Open a deck</h2>
+    <p>Paste a link to a markdown file: a GitHub file or folder, a gist, or any URL that allows other sites to read it.</p>
+    <form id="open-form" class="row">
+      <input type="text" id="open-url" placeholder="https://github.com/you/repo/blob/main/talk.md" spellcheck="false" autocomplete="off">
+      <button class="btn primary" type="submit">Open</button>
+    </form>
+    <p id="open-error" class="warn" hidden></p>
+    <h3>Try one</h3>
+    <ul id="open-examples">
+      <li><a href="/gh/sakthipriyan/slidetake/examples/why-debt-is-not-bad.md">Why debt is a tool, not an enemy</a> (headings format)</li>
+      <li><a href="/gh/sakthipriyan/sakthipriyan.github.io/content/building-wealth/slides/2025/invest-in-gold/index.md">Invest in gold</a> (a reveal.js deck)</li>
+    </ul>
+    <h3>Short links</h3>
+    <p><code>slidetake.com/gh/owner/repo/path/deck.md</code> opens a file on GitHub (add <code>@branch</code> after the repo for another branch), and <code>slidetake.com/gist/&lt;id&gt;</code> a gist. Images next to the deck load as they are.</p>
+    <p>Opening a file from this computer instead? Use <strong>↑ Load .md</strong>.</p>
+  </div>
+</div>
+
 <div id="rec-dialog" class="modal" role="dialog" aria-labelledby="rec-title">
   <div class="panel">
     <button class="close" data-close aria-label="Close">✕</button>
@@ -719,7 +763,7 @@ camera: 24%, 40%, full, off  ← layouts V cycles through
 "use strict";
 (() => {
   // src/sample.md
-  var sample_default = "---\nbrand: Slidetake\npip: none\n---\n\n# Slidetake\n\nA markdown file becomes a **spatial deck**. Every heading is a card, and deeper headings branch off the one above them.\n\nPress \u2192 to walk the deck, or switch between **tree**, **radial**, **path** and **focus** at the top.\n\n## Writing a deck\n\nThere is no special syntax. Write ordinary markdown:\n\n- `#` is the root\n- `##` sections branch from it\n- `###` and deeper branch from those\n\n### Code is safe\n\nHeadings inside fenced code are left alone:\n\n```md\n# not a card\n```\n\n### Ids and links\n\nEnd a heading with `{#some-id}` to name its card, then link to it like any anchor \u2014 [fly to Path and Focus](#video).\n\nWithout one, the id is the heading slug, so [this goes to Moving around](#moving-around).\n\n## Moving around\n\n- Click a card to jump to it\n- \u2190 \u2192 walk in document order\n- \u2191 \u2193 go to the parent or first child\n- Drag to pan, scroll to zoom\n- O shows the whole map\n\n### Deep links\n\nThe address bar tracks the current card, so a copied URL opens right here.\n\n## Path and Focus {#video}\n\nMade for recording. **Path** is a staircase in presenting order: each section is a row, and the next section starts just below where it ended, so every move is a short step right or down.\n\n**Focus** doesn't travel at all: the next slide fades in where the last one was.\n\n### Steady text\n\nText keeps one size across a section and only changes when the section does.\n\n### Progress\n\nWhile presenting, a bar along the bottom fills with every press. Add `duration: 10m` to the deck and a lighter layer behind it tracks the clock.\n\n## Editing\n\nEdits redraw live and keep your place. The draft is saved in this browser; **Download** keeps a file.\n\nOld decks with `+++` separators and frontmatter still open.\n\n### Channel mark and camera\n\nAn optional block at the top of the file sets a corner **brand** (text and/or logo) and a **PIP** box for your webcam. Slides always stay clear of both.\n\nA comment like `<!-- camera: full -->` in any slide switches the camera from there on: `full`, `off`, a size like `30%`, or `flip` to swap sides. `<!-- camera: full, on -->` starts on camera and reveals the slide on the next \u2192. See **?** for the keys.\n";
+  var sample_default = "---\ntitle: Slidetake \u2014 markdown to finished video\nbrand: slidetake.com\npip: none\n---\n\n# Slidetake\n\n**Markdown to finished video.** A markdown file becomes a deck you move through like a map, and when you record, the deck directs the video itself: every slide is a take.\n\nPress \u2192 to walk this deck, or switch between **tree**, **radial**, **path** and **focus** at the top.\n\n## \u270D\uFE0F Write it in markdown\n\nThere is no special syntax. Ordinary markdown is a deck:\n\n- `#` is the first card\n- `##` sections branch from it\n- `###` and deeper branch from those\n\n### Decks you already have\n\n**reveal.js** decks (`---` between slides, `--` for vertical ones) open as they are, fragments and all. So do the older `+++` decks.\n\n### Code is safe\n\nHeadings inside fenced code are left alone:\n\n```md\n# not a card\n```\n\n### Links between cards\n\nEnd a heading with `{#some-id}` to name its card, then link to it like any anchor: [fly to Record it](#record).\n\n## \u{1F3AC} Present it\n\n- \u2190 \u2192 walk in order, \u2191 \u2193 go to the parent or a child\n- Click any card; drag to pan, scroll to zoom; **O** shows the whole map\n- **F** goes fullscreen\n\n### Made for video\n\n**Path** lays the deck out as a staircase in presenting order, so every move is a short step right or down. **Focus** doesn't travel at all: the next slide fades in where the last one was.\n\nText keeps one size across a section, and a thin bar along the bottom shows your progress.\n\n## \u23FA\uFE0F Record it {#record}\n\nAdd where OBS is to the address, `?obs=localhost:4455`, and Slidetake drives the recording:\n\n- **C** turns on your camera, in a corner or full screen, slide by slide\n- **R** starts a take; \u2190 on a slide you fumbled starts that slide again, and every attempt is kept\n\n### Camera per slide\n\nA comment in a slide moves the camera: `<!-- camera: full, on -->` opens full screen on you, then shows the slide on the next press.\n\n### Review and cut\n\nWhen you finish, pick the best take of each slide. Slidetake writes a **frame-exact ffmpeg command**, YouTube **chapters**, a description and tags.\n\n## \u{1F517} Open your own deck\n\nPress **Open** and paste a link to a markdown file:\n\n- a GitHub file: `slidetake.com/gh/owner/repo/talk.md`\n- a gist: `slidetake.com/gist/<id>`\n- any URL that lets other sites read it\n\n**Share** copies a link to the deck you're viewing. **\u2191 Load .md** opens a file from your computer, and **Editor** lets you write one here.\n\n## \u{1F49B} Free and open\n\nSlidetake is open source under the Apache 2.0 license: [github.com/sakthipriyan/slidetake](https://github.com/sakthipriyan/slidetake).\n\nThe whole app is one HTML file. Download it, open it, host it anywhere.\n";
 
   // src/core/text.js
   function slugify(s) {
@@ -1070,6 +1114,70 @@ camera: 24%, 40%, full, off  ← layouts V cycles through
     for (let f = 1; f <= frags; f++) out.push({ cam: k, frag: f });
     for (let i = k + 1; i < cams.length; i++) out.push({ cam: i, frag: frags });
     return out;
+  }
+
+  // src/core/source.js
+  var RAW = "https://raw.githubusercontent.com/";
+  function normalizeSource(input) {
+    const text = String(input || "").trim();
+    if (!text) return null;
+    let u;
+    try {
+      u = new URL(/^[a-z]+:\/\//i.test(text) ? text : "https://" + text);
+    } catch (e) {
+      return null;
+    }
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (u.hostname === "github.com" || u.hostname === "www.github.com") {
+      const [owner, repo, kind, ref, ...rest] = parts;
+      if (owner && repo && (kind === "blob" || kind === "raw" || kind === "tree") && ref) {
+        let path = rest.join("/");
+        if (kind === "tree" || !/\.(md|markdown|txt)$/i.test(path)) path = (path ? path + "/" : "") + "index.md";
+        return { kind: "url", url: RAW + [owner, repo, ref].join("/") + "/" + path };
+      }
+      if (owner && repo && !kind) return { kind: "url", url: RAW + owner + "/" + repo + "/HEAD/README.md" };
+    }
+    if (u.hostname === "gist.github.com") {
+      const id = parts.length >= 2 ? parts[1] : parts[0];
+      if (id && /^[\da-f]+$/i.test(id)) return { kind: "gist", id };
+    }
+    if (u.hostname === "slidetake.com" || u.hostname === "www.slidetake.com") {
+      const fromPath = sourceFromPath(u.pathname);
+      if (fromPath) return fromPath;
+      const src = u.searchParams.get("src");
+      if (src) return { kind: "url", url: src };
+    }
+    return { kind: "url", url: u.href };
+  }
+  function sourceFromPath(pathname) {
+    const parts = String(pathname || "").split("/").filter(Boolean).map((p) => {
+      try {
+        return decodeURIComponent(p);
+      } catch (e) {
+        return p;
+      }
+    });
+    if (parts[0] === "gh" && parts.length >= 4) {
+      const [, owner, repoRef, ...rest] = parts;
+      const at = repoRef.indexOf("@");
+      const repo = at < 0 ? repoRef : repoRef.slice(0, at);
+      const ref = at < 0 ? "HEAD" : repoRef.slice(at + 1);
+      if (!owner || !repo || !ref) return null;
+      return { kind: "url", url: RAW + [owner, repo, ref, ...rest].map(encodeURIComponent).join("/") };
+    }
+    if (parts[0] === "gist" && parts[1] && /^[\da-f]+$/i.test(parts[1])) {
+      return parts[2] ? { kind: "gist", id: parts[1], file: parts[2] } : { kind: "gist", id: parts[1] };
+    }
+    return null;
+  }
+  function shortLink(source) {
+    if (source.kind === "gist") return "/gist/" + source.id + (source.file ? "/" + encodeURIComponent(source.file) : "");
+    const m = source.url.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
+    if (m) {
+      const [, owner, repo, ref, path] = m;
+      if (!/^refs$/.test(ref)) return "/gh/" + owner + "/" + repo + (ref === "HEAD" ? "" : "@" + ref) + "/" + path;
+    }
+    return "/?src=" + encodeURIComponent(source.url);
   }
 
   // src/core/cut.js
@@ -2179,6 +2287,7 @@ camera: 24%, 40%, full, off  ← layouts V cycles through
   }
   editor.addEventListener("input", () => {
     clearTimeout(debounceTimer);
+    deckEdited = true;
     debounceTimer = setTimeout(() => {
       save("slidetake:draft", editor.value);
       rebuild(true);
@@ -2295,6 +2404,7 @@ camera: 24%, 40%, full, off  ← layouts V cycles through
     reader.onload = () => {
       editor.value = reader.result;
       deckBase = null;
+      deckSource = null;
       save("slidetake:draft", editor.value);
       currentId = null;
       rebuild(true);
@@ -2420,8 +2530,20 @@ camera: 24%, 40%, full, off  ← layouts V cycles through
     obsStatus.textContent = text;
     obsStatus.className = kind || "";
   }
+  var isLoopback = (host) => /^(localhost|127(\.\d+){3}|\[?::1\]?)$/i.test(host);
+  function obsBlockedHere(host) {
+    return location.protocol === "https:" && !isLoopback(host);
+  }
+  var OBS_HTTPS_HELP = "This page is served over https, and browsers block it from reaching OBS on another computer (OBS only offers plain ws://). Run OBS on this computer and use localhost, or open Slidetake from a local copy: download dist/index.html from github.com/sakthipriyan/slidetake and serve it with python3 -m http.server.";
   async function connectObs() {
-    const url = "ws://" + (obsHost.value.trim() || "localhost") + ":" + (obsPort.value.trim() || "4455");
+    const host = obsHost.value.trim() || "localhost";
+    const url = "ws://" + host + ":" + (obsPort.value.trim() || "4455");
+    if (obsBlockedHere(host)) {
+      obsConnected = false;
+      recStartBtn.disabled = true;
+      setObsStatus(OBS_HTTPS_HELP, "err");
+      return;
+    }
     setObsStatus("Connecting to " + url + "\u2026");
     try {
       await loadScript(OBS_URL);
@@ -3156,31 +3278,98 @@ camera: 24%, 40%, full, off  ← layouts V cycles through
     applyCamera();
     refocus(true);
   }).observe(stage);
+  var toastEl = document.createElement("div");
+  toastEl.id = "toast";
+  toastEl.setAttribute("role", "status");
+  document.body.appendChild(toastEl);
+  var toastTimer = null;
+  function showToast(text, ms) {
+    toastEl.textContent = text;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), ms || 2500);
+  }
+  function deckAddress(source, { keepObs = true, keepEdit = true, slide = "" } = {}) {
+    const link = new URL(shortLink(source), location.origin);
+    new URLSearchParams(location.search).forEach((v, k) => {
+      if (k === "src" || k === "obs" && !keepObs || k === "edit" && !keepEdit) return;
+      link.searchParams.set(k, v);
+    });
+    if (slide) link.hash = slide;
+    return link.href.replace(link.pathname, link.pathname.replace(/%40/g, "@"));
+  }
+  var openDialog = document.getElementById("open-dialog");
+  var openUrl = document.getElementById("open-url");
+  var openError = document.getElementById("open-error");
+  document.getElementById("btn-open").onclick = () => {
+    openError.hidden = true;
+    openModal(openDialog);
+    openUrl.focus();
+    openUrl.select();
+  };
+  document.getElementById("open-form").onsubmit = (e) => {
+    e.preventDefault();
+    const source = normalizeSource(openUrl.value);
+    if (!source) {
+      openError.textContent = "That doesn't look like a link.";
+      openError.hidden = false;
+      return;
+    }
+    location.href = deckAddress(source);
+  };
+  document.getElementById("btn-share").onclick = async () => {
+    if (!deckSource) {
+      showToast("This deck is only on this computer. Put the markdown on GitHub or in a gist, open it here, then share.", 6e3);
+      return;
+    }
+    const link = deckAddress(deckSource, { keepObs: false, keepEdit: false, slide: currentId && currentId !== order[0] ? currentId : "" });
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast(deckEdited ? "Link copied. It opens the online version, without your edits here." : "Link copied: " + link, 4e3);
+    } catch (err) {
+      prompt("Copy this link:", link);
+    }
+  };
   var savedMode = load("slidetake:layout");
   layoutMode = ["tree", "radial", "path", "focus"].includes(savedMode) ? savedMode : "tree";
   document.querySelectorAll("#layout-toggle .seg-btn").forEach((x) => x.classList.toggle("active", x.dataset.mode === layoutMode));
   document.getElementById("btn-edit-toggle").classList.add("active");
   var params = new URLSearchParams(location.search);
   var startId = decodeURIComponent(location.hash.slice(1));
-  if (params.get("edit") === "0") toggleEditor();
   if (["tree", "radial", "path", "focus"].includes(params.get("layout"))) {
     layoutMode = params.get("layout");
     document.querySelectorAll("#layout-toggle .seg-btn").forEach((x) => x.classList.toggle("active", x.dataset.mode === layoutMode));
   }
+  var deckSource = sourceFromPath(location.pathname) || (params.get("src") ? { kind: "url", url: params.get("src") } : null);
+  var deckEdited = false;
+  async function fetchSource(source) {
+    if (source.kind === "gist") {
+      const res2 = await fetch("https://api.github.com/gists/" + encodeURIComponent(source.id));
+      if (!res2.ok) throw new Error(res2.status === 404 ? "no such gist" : res2.status + " " + res2.statusText);
+      const files = Object.values((await res2.json()).files || {});
+      const file = files.find((f) => f.filename === source.file) || files.find((f) => /\.(md|markdown)$/i.test(f.filename)) || files[0];
+      if (!file) throw new Error("the gist has no files");
+      deckBase = file.raw_url;
+      return file.truncated ? await (await fetch(file.raw_url)).text() : file.content;
+    }
+    const res = await fetch(source.url);
+    if (!res.ok) throw new Error(res.status === 404 ? "not found" : res.status + " " + res.statusText);
+    deckBase = new URL(source.url, location.href).href;
+    return await res.text();
+  }
   async function loadInitialDeck() {
-    const src = params.get("src");
-    if (src) {
+    if (deckSource) {
       try {
-        const res = await fetch(src);
-        if (!res.ok) throw new Error(res.status + " " + res.statusText);
-        deckBase = new URL(src, location.href).href;
-        return await res.text();
+        return await fetchSource(deckSource);
       } catch (e) {
-        statusErr.textContent = "Could not load " + src + " (" + e.message + ")";
+        statusErr.textContent = "Could not load the deck (" + e.message + ")";
+        showToast("Could not load " + (deckSource.kind === "gist" ? "the gist" : deckSource.url) + ": " + e.message, 6e3);
+        deckSource = null;
       }
     }
     return load("slidetake:draft") || SAMPLE;
   }
+  if (params.get("edit") === "0" || params.get("edit") !== "1" && (deckSource || !load("slidetake:draft"))) toggleEditor();
   loadInitialDeck().then((text) => {
     editor.value = text;
     parseDeck2(editor.value);

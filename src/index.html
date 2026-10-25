@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Slidetake</title>
+<meta name="description" content="Markdown to finished video: a spatial deck that records itself, take by take. Open any markdown deck, present it, and record it with OBS.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#09090b">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Slidetake">
+<meta property="og:title" content="Slidetake: markdown to finished video">
+<meta property="og:description" content="A spatial deck that records itself, take by take. Open any markdown deck, present it, record it with OBS, and get a frame-exact cut with chapters.">
+<meta property="og:url" content="https://slidetake.com/">
+<meta property="og:image" content="https://slidetake.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -14,7 +27,7 @@
 
 <header>
   <div class="brand">
-    <div class="mark">Slidetake<span>.</span></div>
+    <a class="mark" href="/" title="Slidetake home"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M 10 8 H 38 C 41.3 8 44 10.7 44 14 V 18 H 22 C 16.5 18 12 22.5 12 28 V 36 H 10 C 6.7 36 4 33.3 4 30 V 14 C 4 10.7 6.7 8 10 8 Z" opacity="0.4"/><path fill-rule="evenodd" d="M 22 22 H 54 C 57.3 22 60 24.7 60 28 V 50 C 60 53.3 57.3 56 54 56 H 22 C 18.7 56 16 53.3 16 50 V 28 C 16 24.7 18.7 22 22 22 Z M 26 34 C 28.2 34 30 32.2 30 30 C 30 27.8 28.2 26 26 26 C 23.8 26 22 27.8 22 30 C 22 32.2 23.8 34 26 34 Z M 38 40 C 36.9 40 36 40.9 36 42 V 48 C 36 49.1 36.9 50 38 50 H 50 C 51.1 50 52 49.1 52 48 V 42 C 52 40.9 51.1 40 50 40 H 38 Z"/></svg>Slidetake<span>.</span></a>
     <div class="tagline">plain markdown → spatial deck → video</div>
   </div>
   <div class="hdr-actions">
@@ -25,7 +38,9 @@
       <button class="seg-btn" data-mode="path" title="Path: slides in presenting order (3)">path</button>
       <button class="seg-btn" data-mode="focus" title="Focus: one slide at a time, no travel (4)">focus</button>
     </div>
-    <button class="btn" id="btn-load">↑ Load .md</button>
+    <button class="btn" id="btn-open" title="Open a deck from a link">Open</button>
+    <button class="btn" id="btn-share" title="Copy a link to this deck">Share</button>
+    <button class="btn" id="btn-load" title="Open a markdown file from this computer">↑ Load .md</button>
     <button class="btn" id="btn-download">↓ Download</button>
     <button class="btn" id="btn-edit-toggle" title="Editor (E)">Editor</button>
     <button class="btn" id="btn-mode" title="Light / dark (L)">◐ Light</button>
@@ -139,6 +154,27 @@ camera: 24%, 40%, full, off  ← layouts V cycles through
     <h3>Recording</h3>
     <p>The current slide is scaled up to fill the screen. <kbd>+</kbd> <kbd>−</kbd> make slides bigger or smaller, and the size is remembered. <kbd>P</kbd> goes fullscreen; the cursor and controls hide after two seconds without mouse movement.</p>
     <p>Your draft is kept in this browser only. Use Download to keep a file.</p>
+  </div>
+</div>
+
+<div id="open-dialog" class="modal" role="dialog" aria-labelledby="open-title">
+  <div class="panel">
+    <button class="close" data-close aria-label="Close">✕</button>
+    <h2 id="open-title">Open a deck</h2>
+    <p>Paste a link to a markdown file: a GitHub file or folder, a gist, or any URL that allows other sites to read it.</p>
+    <form id="open-form" class="row">
+      <input type="text" id="open-url" placeholder="https://github.com/you/repo/blob/main/talk.md" spellcheck="false" autocomplete="off">
+      <button class="btn primary" type="submit">Open</button>
+    </form>
+    <p id="open-error" class="warn" hidden></p>
+    <h3>Try one</h3>
+    <ul id="open-examples">
+      <li><a href="/gh/sakthipriyan/slidetake/examples/why-debt-is-not-bad.md">Why debt is a tool, not an enemy</a> (headings format)</li>
+      <li><a href="/gh/sakthipriyan/sakthipriyan.github.io/content/building-wealth/slides/2025/invest-in-gold/index.md">Invest in gold</a> (a reveal.js deck)</li>
+    </ul>
+    <h3>Short links</h3>
+    <p><code>slidetake.com/gh/owner/repo/path/deck.md</code> opens a file on GitHub (add <code>@branch</code> after the repo for another branch), and <code>slidetake.com/gist/&lt;id&gt;</code> a gist. Images next to the deck load as they are.</p>
+    <p>Opening a file from this computer instead? Use <strong>↑ Load .md</strong>.</p>
   </div>
 </div>
 

@@ -30,8 +30,7 @@ The **core** is shared: parsing (headings, `+++`, reveal.js), layouts, camera mo
 
 ### 3. Hosted Studio at slidetake.com
 - Deployed from GitHub Actions with wrangler as an assets-only Cloudflare Worker on slidetake.com, the same setup as xfina-labs. Any path serves the app (single-page-application), so short links need no redirect rules.
-- `slidetake.com/?src=<any URL>` already works, including GitHub raw URLs (raw.githubusercontent.com sends `Access-Control-Allow-Origin: *`). Add short links: `/gh/owner/repo/path/deck.md` and `/gist/<id>`.
-- A landing page that is itself a Slidetake deck.
+- Done: `/gh/owner/repo[@ref]/path` and `/gist/<id>` short links, `?src=` for any URL; an Open box that turns pasted GitHub and gist page links into those; Share (never includes `?obs=`); a landing deck; a clear message when https blocks OBS on another machine; favicon, link previews.
 
 ### 4. npm and `npx slidetake`
 - `npm i slidetake` for the embed and studio builds.

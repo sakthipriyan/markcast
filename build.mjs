@@ -1,7 +1,7 @@
 // Builds dist/index.html: the page shell with the styles and the bundled app inlined, so the result is
 // still one file you can open, copy or host anywhere. `node build.mjs --watch` rebuilds on every change.
 import * as esbuild from 'esbuild';
-import {readFile, writeFile, mkdir} from 'node:fs/promises';
+import {readFile, writeFile, mkdir, cp} from 'node:fs/promises';
 
 const watch = process.argv.includes('--watch');
 
@@ -19,6 +19,8 @@ const inlinePage = {
         .replace('<script>/*@app*/</script>', ()=>'<script>\n' + js.replace(/<\/script/gi, '<\\/script') + '</script>');
       await mkdir('dist', {recursive: true});
       await writeFile('dist/index.html', page);
+      // favicon, preview image and other files served as they are
+      await cp('src/public', 'dist', {recursive: true});
       console.log('built dist/index.html (' + Math.round(page.length / 1024) + ' KB)');
     });
   }
