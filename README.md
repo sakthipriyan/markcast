@@ -39,3 +39,7 @@ Plain markdown (each heading is a card), the older `+++` format, and reveal.js d
 ## Status
 
 Early. Planned: split into modules with TypeScript types, an npm package, a hugo-continuum slide layout (`engine: markcast`), and a public editor.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
