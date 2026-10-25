@@ -427,6 +427,7 @@
   html.embed #btn-edit-toggle, html.embed #continue, html.embed #editor-pane, html.embed #editor-resizer{display:none !important;}
   html.embed .brand .mark .back{color:var(--accent);margin-right:2px;}
   html.embed .brand .tagline a{color:inherit;}
+  html.no-record #btn-camera, html.no-record #btn-record, html.no-record #navbar .divider, html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
   /* the logo written into a heading: # ![](/favicon.svg) Slidetake */
   .node .body :is(h1,h2) img[src$="favicon.svg"]{height:1em;width:auto;vertical-align:-.12em;margin-right:.25em;display:inline;}
   #brand .st-mark{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--text);}

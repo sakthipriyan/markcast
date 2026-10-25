@@ -17,6 +17,10 @@ import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapte
 // themeKey}. The page shows that one deck, read-only: no editor, links or copies.
 const EMBED = window.SLIDETAKE || null;
 document.documentElement.classList.toggle('embed', !!EMBED);
+// Camera and Record are for making a video. On slidetake.com they're always there; embedded in a site
+// they'd only puzzle readers, so they appear there with ?obs= in the address (or recording: true).
+const RECORDING_UI = !EMBED || EMBED.recording === true || new URLSearchParams(location.search).has('obs');
+document.documentElement.classList.toggle('no-record', !RECORDING_UI);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slidetake's own read-only decks
 const BUILTIN = {home: SAMPLE_MD, help: HELP_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
@@ -228,6 +232,7 @@ function pipRect(){
   return {x0, y0, x1:x0 + w, y1:y0 + h};
 }
 function cycleCamera(){
+  if (!RECORDING_UI) return;
   if (cameraOff){ setCameraEnabled(true); return; }
   const list = cameraList();
   camCycle = (camCycle + 1) % list.length;
@@ -1303,6 +1308,7 @@ function showScreenAdvice(){
     'Move this window to a 16:9 screen, physical or virtual (say 1920×1080), then press F there.</span>';
 }
 function openRecordDialog(){
+  if (!RECORDING_UI) return;
   const total = order.reduce((a, id)=>a + slideSteps(nodes.get(id)).length, 0);
   const usesCamera = deck.camera || [...nodes.values()].some(n=>n.camera);
   document.getElementById('rec-deck-info').innerHTML =
@@ -1805,6 +1811,7 @@ function updateCamBtn(){
   camBtn.title = cameraOff ? 'Camera is off for every slide (C)' : 'Camera is on and follows the deck (C)';
 }
 function setCameraEnabled(on){
+  if (on && !RECORDING_UI) return;
   cameraOff = !on;
   if (cameraOff) stopWebcam();
   camManual = null; camCycle = -1;

@@ -2,18 +2,42 @@
   "name": "slidetake",
   "version": "0.1.0",
   "description": "Markdown to finished video: a spatial deck that records itself, take by take",
+  "keywords": [
+    "slides",
+    "presentation",
+    "markdown",
+    "reveal.js",
+    "obs",
+    "video",
+    "recording",
+    "deck"
+  ],
+  "homepage": "https://slidetake.com",
+  "bugs": "https://github.com/slidetake/slidetake/issues",
   "license": "Apache-2.0",
   "author": "Sakthi Priyan H",
   "repository": "github:slidetake/slidetake",
   "type": "module",
-  "private": true,
+  "main": "dist/slidetake.js",
+  "browser": "dist/slidetake.js",
+  "unpkg": "dist/slidetake.js",
+  "jsdelivr": "dist/slidetake.js",
+  "files": [
+    "dist/slidetake.js",
+    "dist/index.html",
+    "examples/embed.html",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
   "scripts": {
     "build": "node build.mjs",
     "dev": "node build.mjs && (node build.mjs --watch & wrangler dev --port 8787 --ip 127.0.0.1)",
     "watch": "node build.mjs --watch",
     "test": "node --test \"test/*.test.js\"",
     "typecheck": "tsc -p jsconfig.json",
-    "check": "npm run typecheck && npm test && npm run build"
+    "check": "npm run typecheck && npm test && npm run build",
+    "prepublishOnly": "npm run check"
   },
   "devDependencies": {
     "esbuild": "0.25.10",

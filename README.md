@@ -66,12 +66,15 @@ window.SLIDETAKE = {
   base: location.href,                                // where relative images resolve
   back: {url: "/talks/", label: "Talks"},             // the header's link back to the site
   themeKey: "my-site-theme"                           // optional: the site's light/dark/auto key
+  // recording: true                                 // optional: always show Camera and Record
 };
 </script>
-<script src="/slidetake/slidetake.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/slidetake@0.1.0/dist/slidetake.js"></script>
 ```
 
-The page then shows that deck, read-only, with the layouts, keys, camera, recording and fullscreen. See [examples/embed.html](examples/embed.html). The [hugo-continuum](https://github.com/sakthipriyan/hugo-continuum) theme uses it for slide pages with `engine: slidetake`.
+Load it from npm through a CDN (pin the version, as above), or copy `dist/slidetake.js` into your site, or `npm install slidetake` and serve `node_modules/slidetake/dist/slidetake.js`.
+
+The page then shows that deck, read-only, with the layouts, keys and fullscreen. Camera and Record appear when the address has `?obs=` (or with `recording: true`), so readers get a clean view and you can still record from the page. See [examples/embed.html](examples/embed.html). The [hugo-continuum](https://github.com/sakthipriyan/hugo-continuum) theme uses it for slide pages with `engine: slidetake`.
 
 ## Develop
 

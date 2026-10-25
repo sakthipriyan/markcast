@@ -466,6 +466,7 @@
   html.embed #btn-edit-toggle, html.embed #continue, html.embed #editor-pane, html.embed #editor-resizer{display:none !important;}
   html.embed .brand .mark .back{color:var(--accent);margin-right:2px;}
   html.embed .brand .tagline a{color:inherit;}
+  html.no-record #btn-camera, html.no-record #btn-record, html.no-record #navbar .divider, html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
   /* the logo written into a heading: # ![](/favicon.svg) Slidetake */
   .node .body :is(h1,h2) img[src$="favicon.svg"]{height:1em;width:auto;vertical-align:-.12em;margin-right:.25em;display:inline;}
   #brand .st-mark{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--text);}
@@ -618,7 +619,7 @@
       <tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>bigger / smaller slides</td></tr>
       <tr><td><kbd>E</kbd></td><td>editor: write, open, share</td></tr>
       <tr><td><kbd>L</kbd></td><td>light / dark</td></tr>
-      <tr><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, record</td></tr>
+      <tr class="rec"><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, record</td></tr>
     </table>
     <p>Drag to pan, scroll or pinch to zoom, click a card to fly to it.</p>
     <p><a href="/help" target="_blank" rel="noopener">The full guide →</a> writing decks, sharing, recording, camera, review and cut.</p>
@@ -1435,6 +1436,8 @@
   // src/app.js
   var EMBED = window.SLIDETAKE || null;
   document.documentElement.classList.toggle("embed", !!EMBED);
+  var RECORDING_UI = !EMBED || EMBED.recording === true || new URLSearchParams(location.search).has("obs");
+  document.documentElement.classList.toggle("no-record", !RECORDING_UI);
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var BUILTIN = { home: sample_default, help: help_default, "template:blank": blank_default, "template:talk": talk_default, "template:recording": recording_default };
   var editor = document.getElementById("editor");
@@ -1621,6 +1624,7 @@
     return { x0, y0, x1: x0 + w, y1: y0 + h };
   }
   function cycleCamera() {
+    if (!RECORDING_UI) return;
     if (cameraOff) {
       setCameraEnabled(true);
       return;
@@ -2835,6 +2839,7 @@
     el.innerHTML = '<span class="warn">This screen is ' + shape + " (" + w + "\xD7" + h + "), not 16:9, so the video will have bars or be cropped. Move this window to a 16:9 screen, physical or virtual (say 1920\xD71080), then press F there.</span>";
   }
   function openRecordDialog() {
+    if (!RECORDING_UI) return;
     const total = order.reduce((a, id) => a + slideSteps(nodes.get(id)).length, 0);
     const usesCamera = deck.camera || [...nodes.values()].some((n) => n.camera);
     document.getElementById("rec-deck-info").innerHTML = escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : "This deck")) + " \xB7 " + order.length + " slides \xB7 " + total + " presses" + (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C first if this take should include your webcam.</span>' : "");
@@ -3411,6 +3416,7 @@
     camBtn.title = cameraOff ? "Camera is off for every slide (C)" : "Camera is on and follows the deck (C)";
   }
   function setCameraEnabled(on) {
+    if (on && !RECORDING_UI) return;
     cameraOff = !on;
     if (cameraOff) stopWebcam();
     camManual = null;
