@@ -22,7 +22,6 @@ const statusCount = document.getElementById('status-count');
 const statusErr = document.getElementById('status-err');
 const mmSvg = document.getElementById('mm-svg');
 const mmLabel = document.getElementById('mm-label');
-const navPos = document.getElementById('nav-pos');
 const editorPane = document.getElementById('editor-pane');
 
 // ---------- layout constants ----------
@@ -738,10 +737,6 @@ function updateActivePath(){
   });
   renderBreadcrumbs(path);
   updateProgress();
-  const nSteps = currentId ? slideSteps(nodes.get(currentId)).length : 0;
-  navPos.textContent = currentId
-    ? (order.indexOf(currentId) + 1) + ' / ' + order.length + (nSteps > 1 ? ' · ' + (Math.min(stepPos, nSteps - 1) + 1) + '/' + nSteps : '')
-    : order.length + ' cards';
 }
 
 // shown while presenting in the path and focus layouts; it counts every press (reveals and camera
@@ -1101,9 +1096,6 @@ stage.addEventListener('wheel', e=>{
 // ---------- controls ----------
 document.getElementById('nav-prev').onclick = ()=>step(-1);
 document.getElementById('nav-next').onclick = ()=>step(1);
-document.getElementById('nav-parent').onclick = toParent;
-document.getElementById('nav-child').onclick = toChild;
-document.getElementById('nav-overview').onclick = overview;
 
 document.getElementById('btn-load').onclick = ()=>document.getElementById('file-input').click();
 document.getElementById('file-input').addEventListener('change', e=>{
@@ -1796,8 +1788,6 @@ function markActive(){
   if (presenting) idleTimer = setTimeout(()=>document.body.classList.add('idle'), 2000);
 }
 window.addEventListener('pointermove', markActive);
-document.getElementById('nav-smaller').onclick = ()=>setSlideFill(slideFill - 0.1);
-document.getElementById('nav-bigger').onclick = ()=>setSlideFill(slideFill + 0.1);
 document.addEventListener('fullscreenchange', ()=>{
   if (document.fullscreenElement) return;
   if (rec.active) finishTake('Stopped: the browser left fullscreen');
@@ -1807,6 +1797,7 @@ document.addEventListener('fullscreenchange', ()=>{
 const help = document.getElementById('help');
 // ? (the key) shows the keys; the ? button opens the full guide, itself a deck, in a new tab
 document.getElementById('btn-help').onclick = ()=>window.open('/help', '_blank', 'noopener');
+document.getElementById('btn-keys').onclick = ()=>help.classList.add('open');
 document.getElementById('help-close').onclick = ()=>help.classList.remove('open');
 help.addEventListener('click', e=>{ if (e.target===help) help.classList.remove('open'); });
 

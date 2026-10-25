@@ -57,7 +57,7 @@ Plain markdown (each heading is a card), the older `+++` format, and reveal.js d
 
 ```sh
 npm install
-npm run dev        # rebuilds dist/index.html on every change in src/
+npm run dev        # http://127.0.0.1:8787, rebuilt on every change in src/, served like slidetake.com
 npm run check      # type check, tests, build
 ```
 

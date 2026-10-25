@@ -6,7 +6,7 @@ pip: none
 
 # Slidetake help
 
-Everything Slidetake does, as a Slidetake deck. Press → to read it in order, ↓ ↑ to go into a section and back out, or **O** for the whole map.
+The details behind the [home deck](/): writing, sharing, presenting, recording and the camera. Press → to read in order, ↓ ↑ to go into a section and back out, or **O** for the whole map.
 
 ## ✍️ Writing a deck
 
@@ -89,9 +89,9 @@ A deck you write or change in the editor lives in the address itself, compressed
 | + − | bigger / smaller slides (remembered) |
 | E | editor |
 | L | light / dark |
-| ? | keys |
+| ? | keys (also ⌨ in the bottom bar) |
 
-Click a card to fly to it. Drag to pan; scroll or pinch to zoom.
+Click a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch screen, the bottom bar adds ← → buttons.
 
 ### Layouts
 

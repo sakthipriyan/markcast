@@ -407,7 +407,9 @@
   }
   #navbar button:hover{color:var(--accent);background:var(--node-bg);}
   #navbar .divider{width:1px;height:18px;background:var(--panel-line);margin:0 2px;}
-  #nav-pos{font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:0 6px;min-width:44px;text-align:center;}
+  /* the arrows are for touch screens; keyboards and clickers use the keys */
+  #navbar .touch-only{display:none;}
+  @media (pointer:coarse){ #navbar .touch-only{display:inline-block;} }
 
   #minimap{
     position:absolute;bottom:16px;right:14px;z-index:10;width:180px;height:130px;
