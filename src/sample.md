@@ -48,10 +48,14 @@ Text keeps one size across a section, and a thin bar along the bottom shows your
 
 ## ⏺️ Record it {#record}
 
-Add where OBS is to the address, `?obs=localhost:4455`, and Slidetake drives the recording:
+Recording needs **[OBS Studio](https://obsproject.com)** (free), with its WebSocket server turned on. Add where OBS is to the address, `?obs=localhost:4455`, and Slidetake drives the recording:
 
 - **C** turns on your camera, in a corner or full screen, slide by slide
 - **R** starts a take; ← on a slide you fumbled starts that slide again, and every attempt is kept
+
+### A 16:9 screen
+
+YouTube is 16:9, and MacBook screens aren't. **[BetterDisplay](https://betterdisplay.pro)** adds a 16:9 virtual screen (say 1920×1080) to record the deck on, so nothing gets cropped or letterboxed.
 
 ### Camera per slide
 
@@ -63,13 +67,13 @@ When you finish, pick the best take of each slide. Slidetake writes a **frame-ex
 
 ## 🔗 Open your own deck
 
-Press **Open** and paste a link to a markdown file:
+Press **✎ Editor**, then **Open**, and paste a link to a markdown file:
 
 - a GitHub file: `slidetake.com/gh/owner/repo/talk.md`
 - a gist: `slidetake.com/gist/<id>`
 - any URL that lets other sites read it
 
-**Share** copies a link to the deck you're viewing. **↑ Load .md** opens a file from your computer, and **Editor** lets you write one here.
+**Share** copies a link to the deck you're viewing. Write or change a deck in the editor and the link carries the whole deck inside it, nothing to upload. **↑ Load** opens a file from your computer.
 
 ## 💛 Free and open
 

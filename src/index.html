@@ -27,7 +27,7 @@
 
 <header>
   <div class="brand">
-    <a class="mark" href="/" title="Slidetake home"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M 10 8 H 38 C 41.3 8 44 10.7 44 14 V 18 H 22 C 16.5 18 12 22.5 12 28 V 36 H 10 C 6.7 36 4 33.3 4 30 V 14 C 4 10.7 6.7 8 10 8 Z" opacity="0.4"/><path fill-rule="evenodd" d="M 22 22 H 54 C 57.3 22 60 24.7 60 28 V 50 C 60 53.3 57.3 56 54 56 H 22 C 18.7 56 16 53.3 16 50 V 28 C 16 24.7 18.7 22 22 22 Z M 26 34 C 28.2 34 30 32.2 30 30 C 30 27.8 28.2 26 26 26 C 23.8 26 22 27.8 22 30 C 22 32.2 23.8 34 26 34 Z M 38 40 C 36.9 40 36 40.9 36 42 V 48 C 36 49.1 36.9 50 38 50 H 50 C 51.1 50 52 49.1 52 48 V 42 C 52 40.9 51.1 40 50 40 H 38 Z"/></svg>Slidetake<span>.</span></a>
+    <a class="mark" href="/" title="Slidetake home"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M 10 8 H 38 C 41.3 8 44 10.7 44 14 V 18 H 22 C 16.5 18 12 22.5 12 28 V 36 H 10 C 6.7 36 4 33.3 4 30 V 14 C 4 10.7 6.7 8 10 8 Z" opacity="0.4"/><path fill-rule="evenodd" d="M 22 22 H 54 C 57.3 22 60 24.7 60 28 V 50 C 60 53.3 57.3 56 54 56 H 22 C 18.7 56 16 53.3 16 50 V 28 C 16 24.7 18.7 22 22 22 Z M 26 34 C 28.2 34 30 32.2 30 30 C 30 27.8 28.2 26 26 26 C 23.8 26 22 27.8 22 30 C 22 32.2 23.8 34 26 34 Z M 38 40 C 36.9 40 36 40.9 36 42 V 48 C 36 49.1 36.9 50 38 50 H 50 C 51.1 50 52 49.1 52 48 V 42 C 52 40.9 51.1 40 50 40 H 38 Z"/></svg><span class="word">Slide<span>take</span></span></a>
     <div class="tagline">plain markdown → spatial deck → video</div>
   </div>
   <div class="hdr-actions">
@@ -38,23 +38,13 @@
       <button class="seg-btn" data-mode="path" title="Path: slides in presenting order (3)">path</button>
       <button class="seg-btn" data-mode="focus" title="Focus: one slide at a time, no travel (4)">focus</button>
     </div>
-    <button class="btn" id="btn-open" title="Open a deck from a link">Open</button>
-    <button class="btn" id="btn-share" title="Copy a link to this deck">Share</button>
-    <button class="btn" id="btn-load" title="Open a markdown file from this computer">↑ Load .md</button>
-    <button class="btn" id="btn-download">↓ Download</button>
-    <button class="btn" id="btn-edit-toggle" title="Editor (E)">Editor</button>
-    <button class="btn" id="btn-mode" title="Light / dark (L)">◐ Light</button>
-    <button class="btn" id="btn-help" title="Help (?)">?</button>
+    <button class="btn" id="btn-edit-toggle" title="Editor: write, open, share (E)">✎ Editor</button>
+    <button class="btn icon" id="btn-mode" title="Light / dark (L)" aria-label="Light / dark"></button>
+    <button class="btn icon" id="btn-help" title="Help (?)" aria-label="Help">?</button>
   </div>
 </header>
 
 <main>
-  <div id="editor-pane">
-    <div class="pane-label">Source · markdown</div>
-    <textarea id="editor" spellcheck="false"></textarea>
-    <div id="status-line"><span id="status-count"></span><span id="status-err" class="err"></span><button id="btn-reset">reset to sample</button></div>
-  </div>
-
   <div id="stage-wrap">
     <div id="stage">
       <div id="world">
@@ -83,6 +73,20 @@
     <div id="brand" hidden></div>
     <div id="pip" hidden><span>PIP camera</span></div>
     <div id="pip-msg" role="status"></div>
+  </div>
+  <div id="editor-resizer" role="separator" aria-orientation="vertical" aria-label="Resize the editor" title="Drag to resize"></div>
+  <div id="editor-pane" class="collapsed">
+    <div class="pane-bar">
+      <span class="pane-label">Markdown</span>
+      <span class="pane-actions">
+        <button class="btn small" id="btn-open" title="Open a deck from a link">Open</button>
+        <button class="btn small" id="btn-share" title="Copy a link to this deck">Share</button>
+        <button class="btn small" id="btn-load" title="Open a markdown file from this computer">↑ Load</button>
+        <button class="btn small" id="btn-download" title="Save the markdown as a file">↓ Save</button>
+      </span>
+    </div>
+    <textarea id="editor" spellcheck="false"></textarea>
+    <div id="status-line"><span id="status-count"></span><span id="status-err" class="err"></span><button id="btn-reset">reset to sample</button></div>
   </div>
 </main>
 
@@ -149,6 +153,7 @@ camera: 24%, 40%, full, off  ← layouts V cycles through
     <h3>Progress and talk timer</h3>
     <p>While presenting, a thin bar along the bottom fills in the theme colour with every press. Give the deck a length, <code>duration: 10m</code> (or <code>90s</code>, <code>1h</code>, <code>12:30</code>, or <code>?duration=10m</code> in the address), and a half-strength layer of the same colour grows behind it with the clock: if that lighter stretch shows past the solid fill, you're behind; if it reaches the end, the bar pulses. The timer is for you, so recorded takes show progress only unless the deck says <code>timer: always</code>. <code>progress: off</code> hides the bar.</p>
     <h3>Recording a take</h3>
+    <p>You need <a href="https://obsproject.com" target="_blank" rel="noopener">OBS Studio</a> (free) with its WebSocket server on (Tools → WebSocket Server Settings). OBS records; Slidetake drives it. On a MacBook, whose screen isn't 16:9, <a href="https://betterdisplay.pro" target="_blank" rel="noopener">BetterDisplay</a> can add a 16:9 virtual screen (say 1920×1080) to present on and record, so YouTube shows it without bars.</p>
     <p><strong>● Record</strong> connects to OBS over its WebSocket server, counts down, starts the recording, and from then on the deck drives everything: camera layouts, reveals and slides follow <kbd>→</kbd> (a Bluetooth clicker works). Clicks, dragging and the map are locked so the take only moves forward. <kbd>←</kbd> takes the current slide again, keeping every attempt; <kbd>B</kbd> pauses; one press past the last step stops OBS.</p>
     <p>Then the review opens: every slide with its takes (the last one picked), previews straight from the OBS file, a ready-to-run ffmpeg command for the picked takes, and the YouTube title, description with chapters and links, and tags. Sessions are kept in this browser, so a take can be reviewed again later from ● Record. <code>?obs=host:port:password</code> in the address fills in OBS and connects automatically. Deck front matter <code>summary</code>, <code>related</code> (a list of <code>[Title](url)</code>), <code>tags</code> / <code>wealth_tags</code> / <code>systems_tags</code>, and <code>permalink</code> or <code>site</code> feed the publish pack.</p>
     <h3>Recording</h3>

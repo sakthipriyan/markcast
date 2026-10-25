@@ -20,7 +20,7 @@ Then open:
 
 ## Open a deck from a link
 
-On [slidetake.com](https://slidetake.com), press **Open** and paste a GitHub file or folder link, a gist, or any URL that lets other sites read it. Or link straight to it:
+On [slidetake.com](https://slidetake.com), press **✎ Editor**, then **Open**, and paste a GitHub file or folder link, a gist, or any URL that lets other sites read it. Or link straight to it:
 
 ```
 https://slidetake.com/gh/owner/repo/path/deck.md          a file on GitHub (default branch)
@@ -29,7 +29,7 @@ https://slidetake.com/gist/<id>                           a gist
 https://slidetake.com/?src=https://…/deck.md              anything else
 ```
 
-**Share** copies the short link to the deck and slide you're on (never the OBS address).
+**Share** copies the short link to the deck and slide you're on (never the OBS address). A deck you wrote or changed in the editor goes inside the link itself, like edotor.net: `https://slidetake.com/#deflate:<compressed markdown>`. Nothing is uploaded; the address bar keeps it up to date as you type.
 
 ## Viewing and recording
 
@@ -44,6 +44,8 @@ Add where OBS is to turn on recording mode, the same format the reveal.js slides
 ```
 
 Recording mode adds the camera (C), recording (R) and the talk timer, and follows `pip`, `camera` and per-slide `<!-- camera: … -->` settings.
+
+**Recording needs [OBS Studio](https://obsproject.com)** (free) with its WebSocket server on; OBS records and Slidetake drives it. On a MacBook, [BetterDisplay](https://betterdisplay.pro) is recommended: it adds a 16:9 virtual screen (say 1920×1080) to present and record on, so the video fits YouTube without bars.
 
 From https://slidetake.com, OBS must run on the same computer (`?obs=localhost:4455`): browsers block secure pages from plain `ws://` connections to other machines. To record with OBS on another machine, serve `dist/index.html` locally over http.
 

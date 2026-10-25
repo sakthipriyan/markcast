@@ -3,6 +3,7 @@ import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime} from './core/text.
 import {parseDeck as parseDeckCore, cameraDirective, mapDirective} from './core/parse.js';
 import {CORNERS, clampPipSize, applyPreset, cameraPresets, stepsFor} from './core/steps.js';
 import {normalizeSource, sourceFromPath, shortLink} from './core/source.js';
+import {encodeDeck, decodeDeck, parseHash, deckHash} from './core/share.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
@@ -109,7 +110,13 @@ function applyMode(){
   const light = currentMode() === 'light';
   if (light) document.body.dataset.mode = 'light'; else delete document.body.dataset.mode;
   const b = document.getElementById('btn-mode');
-  if (b) b.textContent = light ? '◑ Dark' : '◐ Light';
+  if (b){
+    b.innerHTML = light
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+    b.title = (light ? 'Dark theme' : 'Light theme') + ' (L)';
+    b.setAttribute('aria-label', b.title);
+  }
 }
 function toggleMode(){
   save('slidetake:mode', currentMode() === 'light' ? 'dark' : 'light');
@@ -848,8 +855,26 @@ function scheduleAutoslide(n){
 }
 
 // ---------- navigation ----------
+// the deck itself, when it lives in the link (#deflate:…); see core/share.js
+let hashDeck = null;
 function setHash(id){
-  try { history.replaceState(null, '', id ? '#' + encodeURIComponent(id) : location.pathname + location.search); } catch(e){}
+  try {
+    if (hashDeck) history.replaceState(null, '', location.pathname + location.search + deckHash(hashDeck, id && id !== order[0] ? id : ''));
+    else history.replaceState(null, '', id ? '#' + encodeURIComponent(id) : location.pathname + location.search);
+  } catch(e){}
+}
+// After an edit, a file load or a reset the address carries the deck itself, so a reload keeps it and the
+// address can be shared as it is. The path and ?src= go: the deck is no longer the one they point to.
+let syncTimer = null;
+function syncDeckToUrl(){
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(async ()=>{
+    try {
+      hashDeck = await encodeDeck(editor.value);
+      const q = new URLSearchParams(location.search); q.delete('src');
+      history.replaceState(null, '', '/' + (q.toString() ? '?' + q : '') + deckHash(hashDeck, currentId && currentId !== order[0] ? currentId : ''));
+    } catch(e){}
+  }, 500);
 }
 function navigate(id, instant, atLastStep){
   if (!nodes.has(id)) return;
@@ -981,7 +1006,7 @@ function rebuild(instant){
 editor.addEventListener('input', ()=>{
   clearTimeout(debounceTimer);
   deckEdited = true;
-  debounceTimer = setTimeout(()=>{ save('slidetake:draft', editor.value); rebuild(true); }, 300);
+  debounceTimer = setTimeout(()=>{ save('slidetake:draft', editor.value); rebuild(true); syncDeckToUrl(); }, 300);
 });
 
 // ---------- layout switching ----------
@@ -1083,7 +1108,7 @@ document.getElementById('btn-load').onclick = ()=>document.getElementById('file-
 document.getElementById('file-input').addEventListener('change', e=>{
   const f = e.target.files[0]; if (!f) return;
   const reader = new FileReader();
-  reader.onload = ()=>{ editor.value = reader.result; deckBase = null; deckSource = null; save('slidetake:draft', editor.value); currentId = null; rebuild(true); };
+  reader.onload = ()=>{ editor.value = reader.result; deckBase = null; deckSource = null; save('slidetake:draft', editor.value); currentId = null; rebuild(true); syncDeckToUrl(); };
   reader.readAsText(f);
   e.target.value = '';
 });
@@ -1097,7 +1122,9 @@ document.getElementById('btn-download').onclick = ()=>{
 };
 document.getElementById('btn-reset').onclick = ()=>{
   if (editor.value !== SAMPLE && !confirm('Replace the editor contents with the sample deck?')) return;
-  editor.value = SAMPLE; save('slidetake:draft', SAMPLE); currentId = null; rebuild(true);
+  editor.value = SAMPLE; save('slidetake:draft', SAMPLE); currentId = null; deckSource = null; deckEdited = false; hashDeck = null; rebuild(true);
+  const q = new URLSearchParams(location.search); q.delete('src');
+  history.replaceState(null, '', '/' + (q.toString() ? '?' + q : ''));
 };
 
 function toggleEditor(){
@@ -1105,6 +1132,29 @@ function toggleEditor(){
   document.getElementById('btn-edit-toggle').classList.toggle('active', !editorPane.classList.contains('collapsed'));
 }
 document.getElementById('btn-edit-toggle').onclick = toggleEditor;
+// drag the handle on the editor's left edge to resize it; the width is remembered
+const mainEl = document.querySelector('main');
+const editorResizer = document.getElementById('editor-resizer');
+const savedEditorW = parseFloat(load('slidetake:editorWidth'));
+if (savedEditorW) editorPane.style.setProperty('--editor-w', savedEditorW + 'px');
+editorResizer.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  editorResizer.setPointerCapture(e.pointerId);
+  mainEl.classList.add('resizing');
+  const right = mainEl.getBoundingClientRect().right;
+  const move = ev=>{
+    const w = Math.round(Math.max(280, Math.min(window.innerWidth * 0.75, right - ev.clientX)));
+    editorPane.style.setProperty('--editor-w', w + 'px');
+  };
+  const up = ()=>{
+    mainEl.classList.remove('resizing');
+    editorResizer.removeEventListener('pointermove', move);
+    save('slidetake:editorWidth', String(editorPane.getBoundingClientRect().width));
+  };
+  editorResizer.addEventListener('pointermove', move);
+  editorResizer.addEventListener('pointerup', up, {once: true});
+});
+editorResizer.addEventListener('dblclick', ()=>{ editorPane.style.removeProperty('--editor-w'); try { localStorage.removeItem('slidetake:editorWidth'); } catch(e){} });
 document.getElementById('btn-mode').onclick = toggleMode;
 
 function setPresent(on){
@@ -1791,8 +1841,9 @@ window.addEventListener('keydown', e=>{
 });
 
 window.addEventListener('hashchange', ()=>{
-  const id = decodeURIComponent(location.hash.slice(1));
-  if (id && id !== currentId && nodes.has(id)) navigate(id);
+  const {data, slide} = parseHash(location.hash);
+  if (data && data !== hashDeck){ location.reload(); return; }   // a different deck was pasted into the address
+  if (slide && slide !== currentId && nodes.has(slide)) navigate(slide);
 });
 
 // the stage changes size when the editor collapses, presenting starts, or the window resizes
@@ -1843,12 +1894,19 @@ document.getElementById('open-form').onsubmit = e=>{
 };
 // a shared link never carries the OBS address (it can hold a password) or the editor state
 document.getElementById('btn-share').onclick = async ()=>{
-  if (!deckSource){
-    showToast('This deck is only on this computer. Put the markdown on GitHub or in a gist, open it here, then share.', 6000);
-    return;
+  const slide = currentId && currentId !== order[0] ? currentId : '';
+  let link, note;
+  if (deckSource && !deckEdited){
+    link = deckAddress(deckSource, {keepObs: false, keepEdit: false, slide});
+    note = 'Link copied.';
+  } else {
+    const data = await encodeDeck(editor.value);
+    const q = new URLSearchParams(location.search); ['src', 'obs', 'edit'].forEach(k=>q.delete(k));
+    link = location.origin + '/' + (q.toString() ? '?' + q : '') + deckHash(data, slide);
+    note = 'Link copied, with the whole deck inside it (' + (link.length / 1024).toFixed(1) + ' KB)' +
+      (link.length > 8000 ? '. Some chat apps cut long links short: a GitHub file or gist makes a shorter one.' : '.');
   }
-  const link = deckAddress(deckSource, {keepObs: false, keepEdit: false, slide: currentId && currentId !== order[0] ? currentId : ''});
-  try { await navigator.clipboard.writeText(link); showToast(deckEdited ? 'Link copied. It opens the online version, without your edits here.' : 'Link copied: ' + link, 4000); }
+  try { await navigator.clipboard.writeText(link); showToast(note, 5000); }
   catch(err){ prompt('Copy this link:', link); }
 };
 
@@ -1856,12 +1914,12 @@ document.getElementById('btn-share').onclick = async ()=>{
 const savedMode = load('slidetake:layout');
 layoutMode = ['tree','radial','path','focus'].includes(savedMode) ? savedMode : 'tree';
 document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
-document.getElementById('btn-edit-toggle').classList.add('active');
 
 // ?src=<url of a .md> loads a deck from the web (relative images resolve next to it),
 // ?edit=0 starts with the editor hidden, ?layout=tree|radial|path|focus picks the layout
 const params = new URLSearchParams(location.search);
-const startId = decodeURIComponent(location.hash.slice(1));
+const startHash = parseHash(location.hash);
+const startId = startHash.slide;
 if (['tree','radial','path','focus'].includes(params.get('layout'))){
   layoutMode = params.get('layout');
   document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
@@ -1885,6 +1943,10 @@ async function fetchSource(source){
   return await res.text();
 }
 async function loadInitialDeck(){
+  if (startHash.data){
+    try { const text = await decodeDeck(startHash.data); hashDeck = startHash.data; deckSource = null; return text; }
+    catch(e){ showToast('This link\'s deck is damaged or cut short, so it could not be opened.', 6000); }
+  }
   if (deckSource){
     try { return await fetchSource(deckSource); }
     catch(e){
@@ -1895,9 +1957,8 @@ async function loadInitialDeck(){
   }
   return load('slidetake:draft') || SAMPLE;
 }
-// the editor starts open on your own draft, and closed on the landing deck or a deck from a link;
-// ?edit=1 / ?edit=0 decide it outright
-if (params.get('edit') === '0' || (params.get('edit') !== '1' && (deckSource || !load('slidetake:draft')))) toggleEditor();
+// the editor starts closed; E, the Editor button or ?edit=1 opens it
+if (params.get('edit') === '1') toggleEditor();
 loadInitialDeck().then(text=>{
   editor.value = text;
   parseDeck(editor.value);
