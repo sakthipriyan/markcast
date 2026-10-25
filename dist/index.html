@@ -464,9 +464,15 @@
   #brand[hidden]{display:none;}
   /* embedded in a site page: one read-only deck, so no editor, links or copies */
   html.embed #btn-edit-toggle, html.embed #continue, html.embed #editor-pane, html.embed #editor-resizer{display:none !important;}
-  html.embed .brand .mark .back{color:var(--accent);margin-right:2px;}
-  html.embed .brand .tagline a{color:inherit;}
-  html.no-record #btn-camera, html.no-record #btn-record, html.no-record #navbar .divider, html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
+  html.embed .brand .trail{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:600;font-size:15px;min-width:0;}
+  html.embed .brand .trail a{color:var(--text);text-decoration:none;white-space:nowrap;}
+  html.embed .brand .trail a:hover{color:var(--accent);}
+  html.embed .brand .trail a:last-child{color:var(--accent);}
+  html.embed .brand .trail .sep{color:var(--text-muted);font-weight:400;}
+  #navbar #credit{display:inline-flex;align-items:center;padding:5px 9px;border-radius:6px;}
+  #navbar #credit .logo{width:16px;height:16px;fill:var(--text-muted);}
+  #navbar #credit:hover .logo{fill:var(--accent);}
+  html.no-record #btn-camera, html.no-record #btn-record, html.no-record #navbar .divider:not(:last-of-type), html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
   /* the logo written into a heading: # ![](/favicon.svg) Slidetake */
   .node .body :is(h1,h2) img[src$="favicon.svg"]{height:1em;width:auto;vertical-align:-.12em;margin-right:.25em;display:inline;}
   #brand .st-mark{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--text);}
@@ -1435,6 +1441,7 @@
 
   // src/app.js
   var EMBED = window.SLIDETAKE || null;
+  var LOGO = document.querySelector("header .mark .logo").outerHTML;
   document.documentElement.classList.toggle("embed", !!EMBED);
   var RECORDING_UI = !EMBED || EMBED.recording === true || new URLSearchParams(location.search).has("obs");
   document.documentElement.classList.toggle("no-record", !RECORDING_UI);
@@ -1501,7 +1508,7 @@
   function applyDeckSettings() {
     const name = deck.brand || "", logo = deck.logo || "";
     const chip = /^chip$/i.test(deck.brand_style || "");
-    const html = /^slidetake$/i.test(name) ? '<span class="st-mark">' + document.querySelector("header .mark .logo").outerHTML + '<span class="word">Slide<span>take</span></span></span>' : (logo ? '<img alt="" src="' + escapeHtml(logo) + '">' : "") + (name ? "<span" + (chip ? ' class="chip"' : "") + ">" + escapeHtml(name) + "</span>" : "");
+    const html = /^slidetake$/i.test(name) ? '<span class="st-mark">' + LOGO + '<span class="word">Slide<span>take</span></span></span>' : (logo ? '<img alt="" src="' + escapeHtml(logo) + '">' : "") + (name ? "<span" + (chip ? ' class="chip"' : "") + ">" + escapeHtml(name) + "</span>" : "");
     if (brandEl.dataset.html !== html) {
       brandEl.dataset.html = html;
       brandEl.innerHTML = html;
@@ -3609,14 +3616,22 @@
     document.querySelectorAll("#layout-toggle .seg-btn").forEach((x) => x.classList.toggle("active", x.dataset.mode === layoutMode));
   }
   if (EMBED) {
-    const mark = document.querySelector("header .mark");
-    if (EMBED.back && EMBED.back.url) {
-      mark.href = EMBED.back.url;
-      mark.title = "Back to " + (EMBED.back.label || "the site");
-      mark.innerHTML = '<span class="back">\u2190</span><span class="word">' + escapeHtml(EMBED.back.label || "Back") + "</span>";
+    const trail = (Array.isArray(EMBED.trail) ? EMBED.trail : EMBED.back ? [EMBED.back] : []).filter((t) => t && t.label);
+    const brandBox = document.querySelector("header .brand");
+    if (trail.length) {
+      brandBox.innerHTML = '<nav class="trail" aria-label="Site">' + trail.map((t, i) => (i ? '<span class="sep" aria-hidden="true">|</span>' : "") + (t.url ? '<a href="' + escapeHtml(t.url) + '">' + escapeHtml(t.label) + "</a>" : "<span>" + escapeHtml(t.label) + "</span>")).join("") + "</nav>";
     }
-    const tagline = document.querySelector("header .tagline");
-    if (tagline) tagline.innerHTML = 'made with <a href="https://slidetake.com" target="_blank" rel="noopener">Slidetake</a>';
+    const credit = document.createElement("a");
+    credit.id = "credit";
+    credit.href = "https://slidetake.com";
+    credit.target = "_blank";
+    credit.rel = "noopener";
+    credit.title = "Made with Slidetake";
+    credit.setAttribute("aria-label", "Made with Slidetake");
+    credit.innerHTML = LOGO;
+    const bar = document.getElementById("navbar");
+    bar.insertAdjacentHTML("beforeend", '<div class="divider"></div>');
+    bar.appendChild(credit);
   }
   var route = routeOf(location.pathname, location.search, location.hash);
   var startId = route.page === "pick" ? "" : route.slide;

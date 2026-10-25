@@ -16,6 +16,8 @@ import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapte
 // Embedded in another site's page (see src/embed.js): window.SLIDETAKE = {markdown, settings, base, back,
 // themeKey}. The page shows that one deck, read-only: no editor, links or copies.
 const EMBED = window.SLIDETAKE || null;
+// the logo, read once from the header (which an embed replaces): the corner mark and the credit reuse it
+const LOGO = document.querySelector('header .mark .logo').outerHTML;
 document.documentElement.classList.toggle('embed', !!EMBED);
 // Camera and Record are for making a video. On slidetake.com they're always there; embedded in a site
 // they'd only puzzle readers, so they appear there with ?obs= in the address (or recording: true).
@@ -95,7 +97,7 @@ function applyDeckSettings(){
   const chip = /^chip$/i.test(deck.brand_style || '');
   // brand: slidetake is Slidetake's own mark, the logo and the two-tone name, as in the header
   const html = /^slidetake$/i.test(name)
-    ? '<span class="st-mark">' + document.querySelector('header .mark .logo').outerHTML + '<span class="word">Slide<span>take</span></span></span>'
+    ? '<span class="st-mark">' + LOGO + '<span class="word">Slide<span>take</span></span></span>'
     : (logo ? '<img alt="" src="'+escapeHtml(logo)+'">' : '') + (name ? '<span' + (chip ? ' class="chip"' : '') + '>'+escapeHtml(name)+'</span>' : '');
   if (brandEl.dataset.html !== html){
     brandEl.dataset.html = html;
@@ -1965,16 +1967,23 @@ if (['tree','radial','path','focus'].includes(params.get('layout'))){
   layoutMode = params.get('layout');
   document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
 }
-// ---------- embedded: the header links back to the host site, and credits Slidetake ----------
+// ---------- embedded: the header is the host site's trail; the credit sits in the control bar ----------
+// trail: [{label, url}, …] from the site's home down to this deck's section (back: {label, url} is one step)
 if (EMBED){
-  const mark = document.querySelector('header .mark');
-  if (EMBED.back && EMBED.back.url){
-    mark.href = EMBED.back.url;
-    mark.title = 'Back to ' + (EMBED.back.label || 'the site');
-    mark.innerHTML = '<span class="back">←</span><span class="word">' + escapeHtml(EMBED.back.label || 'Back') + '</span>';
+  const trail = (Array.isArray(EMBED.trail) ? EMBED.trail : EMBED.back ? [EMBED.back] : []).filter(t=>t && t.label);
+  const brandBox = document.querySelector('header .brand');
+  if (trail.length){
+    brandBox.innerHTML = '<nav class="trail" aria-label="Site">' + trail.map((t, i)=>
+      (i ? '<span class="sep" aria-hidden="true">|</span>' : '') +
+      (t.url ? '<a href="' + escapeHtml(t.url) + '">' + escapeHtml(t.label) + '</a>' : '<span>' + escapeHtml(t.label) + '</span>')).join('') + '</nav>';
   }
-  const tagline = document.querySelector('header .tagline');
-  if (tagline) tagline.innerHTML = 'made with <a href="https://slidetake.com" target="_blank" rel="noopener">Slidetake</a>';
+  const credit = document.createElement('a');
+  credit.id = 'credit'; credit.href = 'https://slidetake.com'; credit.target = '_blank'; credit.rel = 'noopener';
+  credit.title = 'Made with Slidetake'; credit.setAttribute('aria-label', 'Made with Slidetake');
+  credit.innerHTML = LOGO;
+  const bar = document.getElementById('navbar');
+  bar.insertAdjacentHTML('beforeend', '<div class="divider"></div>');
+  bar.appendChild(credit);
 }
 
 // ---------- the deck on this page, and the working copy ----------

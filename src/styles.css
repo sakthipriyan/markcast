@@ -425,9 +425,15 @@
   #brand[hidden]{display:none;}
   /* embedded in a site page: one read-only deck, so no editor, links or copies */
   html.embed #btn-edit-toggle, html.embed #continue, html.embed #editor-pane, html.embed #editor-resizer{display:none !important;}
-  html.embed .brand .mark .back{color:var(--accent);margin-right:2px;}
-  html.embed .brand .tagline a{color:inherit;}
-  html.no-record #btn-camera, html.no-record #btn-record, html.no-record #navbar .divider, html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
+  html.embed .brand .trail{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:600;font-size:15px;min-width:0;}
+  html.embed .brand .trail a{color:var(--text);text-decoration:none;white-space:nowrap;}
+  html.embed .brand .trail a:hover{color:var(--accent);}
+  html.embed .brand .trail a:last-child{color:var(--accent);}
+  html.embed .brand .trail .sep{color:var(--text-muted);font-weight:400;}
+  #navbar #credit{display:inline-flex;align-items:center;padding:5px 9px;border-radius:6px;}
+  #navbar #credit .logo{width:16px;height:16px;fill:var(--text-muted);}
+  #navbar #credit:hover .logo{fill:var(--accent);}
+  html.no-record #btn-camera, html.no-record #btn-record, html.no-record #navbar .divider:not(:last-of-type), html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
   /* the logo written into a heading: # ![](/favicon.svg) Slidetake */
   .node .body :is(h1,h2) img[src$="favicon.svg"]{height:1em;width:auto;vertical-align:-.12em;margin-right:.25em;display:inline;}
   #brand .st-mark{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--text);}

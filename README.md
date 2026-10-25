@@ -64,7 +64,8 @@ window.SLIDETAKE = {
   markdown: "# My deck\n\n## A section\n…",          // the deck, without its frontmatter
   settings: {title: "My deck", duration: "10m"},      // the frontmatter as data
   base: location.href,                                // where relative images resolve
-  back: {url: "/talks/", label: "Talks"},             // the header's link back to the site
+  trail: [{label: "My site", url: "/"},               // the header: the site, down to the deck's section
+          {label: "Talks", url: "/talks/"}],
   themeKey: "my-site-theme"                           // optional: the site's light/dark/auto key
   // recording: true                                 // optional: always show Camera and Record
 };
