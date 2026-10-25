@@ -94,7 +94,7 @@ For a file from your computer whose images sit next to it online, add `base: htt
 |---|---|
 | → ← Space | next / previous step, in document order |
 | ↓ ↑ | first child / parent |
-| O | the whole map |
+| O | the whole map; O or Esc goes back to your slide |
 | 1 2 3 4 | tree, radial, path, focus |
 | F | fullscreen |
 | + − | bigger / smaller slides (remembered) |

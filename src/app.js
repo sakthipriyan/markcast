@@ -903,7 +903,11 @@ function leaveSlide(){
   applyFragments(prev, prev.frags.length, true);
   resetEntrances(prev);
 }
+// the slide the overview was opened from, so Esc (or O again) can go back to it
+let overviewFrom = null;
 function overview(){
+  if (!currentId && overviewFrom && nodes.has(overviewFrom)){ backFromOverview(); return; }   // O again
+  if (currentId) overviewFrom = currentId;
   if (layoutMode === 'focus'){ setMode('path'); }
   leaveSlide();
   clearTimeout(autoTimer);
@@ -912,6 +916,12 @@ function overview(){
   updateMinimap();
   fitAll();
   setHash(null);
+}
+// Esc during either overview: the map moment flies on into its slide, O's overview returns to the slide it left
+function backFromOverview(){
+  if (mapTimer){ clearTimeout(mapTimer); mapTimer = null; focusOn(currentId); return true; }
+  if (!currentId && overviewFrom && nodes.has(overviewFrom)){ const id = overviewFrom; overviewFrom = null; navigate(id); return true; }
+  return false;
 }
 function step(dir){
   if (!currentId){ if (order.length) navigate(order[dir > 0 ? 0 : order.length-1]); return; }
@@ -1846,7 +1856,7 @@ window.addEventListener('keydown', e=>{
   else if (k==='+' || k==='='){ sizeStep(1); }
   else if (k==='-' || k==='_'){ sizeStep(-1); }
   else if (k==='?'){ help.classList.add('open'); }
-  else if (k==='Escape' && presenting){ setPresent(false); }
+  else if (k==='Escape'){ if (!backFromOverview() && presenting) setPresent(false); }
 });
 
 window.addEventListener('hashchange', ()=>{
