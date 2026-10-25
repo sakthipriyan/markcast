@@ -43,12 +43,9 @@ let deck = {};           // settings from the deck's frontmatter: brand, logo, p
 // global camera switch (◉ Camera / C): when off, camera comments are ignored, camera-only steps are
 // skipped and slides get the whole screen. Every page load starts with it off; it comes on only by hand.
 let cameraOff = true;
-// Camera, recording and the talk timer are for recording a video, so they appear only when the address
-// says where OBS is: ?obs=host:port[:password] (or a bare ?obs for the remembered connection). Everyone
-// else, e.g. a reader on the website, gets the deck and a Fullscreen button, and camera settings in the
-// deck are ignored so slides use the whole screen.
-const recording = new URLSearchParams(location.search).has('obs');
-document.documentElement.classList.toggle('no-obs', !recording);
+// Camera, Record and Fullscreen are always there. The camera is off until someone turns it on, and until
+// then the deck's camera settings are ignored, so readers get slides using the whole screen. ?obs=host:port
+// only fills in where OBS is (see loadObsSettings).
 let cameraStream = null; // live webcam shown in the PIP box (◉ Camera)
 const brandEl = document.getElementById('brand');
 const pipEl = document.getElementById('pip');
@@ -212,7 +209,6 @@ function pipRect(){
   return {x0, y0, x1:x0 + w, y1:y0 + h};
 }
 function cycleCamera(){
-  if (!recording) return;
   if (cameraOff){ setCameraEnabled(true); return; }
   const list = cameraList();
   camCycle = (camCycle + 1) % list.length;
@@ -746,7 +742,7 @@ progressEl.innerHTML = '<b></b><i></i>';
 const talk = {start:0, timer:null};
 function talkLength(){ return parseDuration(new URLSearchParams(location.search).get('duration') ?? deck.duration); }
 // the timer is for the presenter: a take's footage shows progress only, unless the deck says timer: always
-function timerVisible(){ return recording && presenting && talkLength() > 0 && (!rec.active || /^always$/i.test(deck.timer || '')); }
+function timerVisible(){ return presenting && talkLength() > 0 && (!rec.active || /^always$/i.test(deck.timer || '')); }
 function updateTimer(){
   const on = timerVisible() && talk.start > 0;
   progressEl.classList.toggle('timed', on);
@@ -851,27 +847,17 @@ function scheduleAutoslide(n){
 }
 
 // ---------- navigation ----------
-// the deck itself, when it lives in the link (#deflate:…); see core/share.js
-let hashDeck = null;
 function setHash(id){
-  try {
-    if (hashDeck) history.replaceState(null, '', location.pathname + location.search + deckHash(hashDeck, id && id !== order[0] ? id : ''));
-    else history.replaceState(null, '', id ? '#' + encodeURIComponent(id) : location.pathname + location.search);
-  } catch(e){}
+  try { history.replaceState(null, '', id ? '#' + encodeURIComponent(id) : location.pathname + location.search); } catch(e){}
 }
-// After an edit, a file load or a reset the address carries the deck itself, so a reload keeps it and the
-// address can be shared as it is. The path and ?src= go: the deck is no longer the one they point to.
-let syncTimer = null;
-function syncDeckToUrl(){
-  clearTimeout(syncTimer);
-  syncTimer = setTimeout(async ()=>{
-    try {
-      hashDeck = await encodeDeck(editor.value);
-      const q = new URLSearchParams(location.search); q.delete('src');
-      history.replaceState(null, '', '/' + (q.toString() ? '?' + q : '') + deckHash(hashDeck, currentId && currentId !== order[0] ? currentId : ''));
-    } catch(e){}
-  }, 500);
+// Edits not yet shared or saved: the editor bar says so, and leaving the page asks first. Share (which puts
+// the deck in the link) and Save (a file) both clear it.
+let unsaved = false;
+function setUnsaved(on){
+  unsaved = on;
+  document.getElementById('editor-pane').classList.toggle('unsaved', on);
 }
+window.addEventListener('beforeunload', e=>{ if (unsaved){ e.preventDefault(); e.returnValue = ''; } });
 function navigate(id, instant, atLastStep){
   if (!nodes.has(id)) return;
   if (id !== currentId){
@@ -1001,8 +987,8 @@ function rebuild(instant){
 }
 editor.addEventListener('input', ()=>{
   clearTimeout(debounceTimer);
-  deckEdited = true;
-  debounceTimer = setTimeout(()=>{ save('slidetake:draft', editor.value); rebuild(true); syncDeckToUrl(); }, 300);
+  deckEdited = true; setUnsaved(true);
+  debounceTimer = setTimeout(()=>{ save('slidetake:draft', editor.value); rebuild(true); }, 300);
 });
 
 // ---------- layout switching ----------
@@ -1097,25 +1083,26 @@ stage.addEventListener('wheel', e=>{
 document.getElementById('nav-prev').onclick = ()=>step(-1);
 document.getElementById('nav-next').onclick = ()=>step(1);
 
-document.getElementById('btn-load').onclick = ()=>document.getElementById('file-input').click();
+document.getElementById('btn-open').onclick = ()=>document.getElementById('file-input').click();
 document.getElementById('file-input').addEventListener('change', e=>{
   const f = e.target.files[0]; if (!f) return;
   const reader = new FileReader();
-  reader.onload = ()=>{ editor.value = reader.result; deckBase = null; deckSource = null; save('slidetake:draft', editor.value); currentId = null; rebuild(true); syncDeckToUrl(); };
+  reader.onload = ()=>{ editor.value = reader.result; deckBase = null; deckSource = null; save('slidetake:draft', editor.value); currentId = null; deckEdited = true; setUnsaved(false); rebuild(true); };
   reader.readAsText(f);
   e.target.value = '';
 });
-document.getElementById('btn-download').onclick = ()=>{
+document.getElementById('btn-save').onclick = ()=>{
   const blob = new Blob([editor.value], {type:'text/markdown'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = (roots[0] ? slugify(nodes.get(roots[0]).title) : 'deck') + '.md';
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  setUnsaved(false);
 };
 document.getElementById('btn-reset').onclick = ()=>{
   if (editor.value !== SAMPLE && !confirm('Replace the editor contents with the sample deck?')) return;
-  editor.value = SAMPLE; save('slidetake:draft', SAMPLE); currentId = null; deckSource = null; deckEdited = false; hashDeck = null; rebuild(true);
+  editor.value = SAMPLE; save('slidetake:draft', SAMPLE); currentId = null; deckSource = null; deckEdited = false; setUnsaved(false); rebuild(true);
   const q = new URLSearchParams(location.search); q.delete('src');
   history.replaceState(null, '', '/' + (q.toString() ? '?' + q : ''));
 };
@@ -1263,15 +1250,29 @@ async function connectObs(){
 document.getElementById('obs-connect').onclick = connectObs;
 obsRemember.addEventListener('change', saveObsSettings);
 
+// YouTube is 16:9; a take recorded on a 16:10 MacBook screen gets bars or a crop. Fullscreen fills the
+// whole screen, so it's the screen's shape that matters.
+function showScreenAdvice(){
+  const el = document.getElementById('rec-screen');
+  const w = screen.width, h = screen.height;
+  if (Math.abs(w / h - 16 / 9) < 0.02){ el.innerHTML = '<span class="ok">This screen is 16:9 (' + w + '×' + h + '), right for YouTube.</span>'; return; }
+  // name the nearest familiar shape (a MacBook's 1512×982 is "about 3:2"), not a ratio like 756:491
+  const shapes = [['16:10', 1.6], ['3:2', 1.5], ['4:3', 4 / 3], ['21:9', 21 / 9], ['16:9', 16 / 9]];
+  const [name, r] = shapes.reduce((a, b)=>Math.abs(b[1] - w / h) < Math.abs(a[1] - w / h) ? b : a);
+  const shape = Math.abs(r - w / h) < 0.005 ? name : 'about ' + name;
+  el.innerHTML = '<span class="warn">This screen is ' + shape + ' (' + w + '×' + h + '), not 16:9, so the video will have bars or be cropped. ' +
+    'Move this window to a 16:9 screen, or add one with <a href="https://betterdisplay.pro" target="_blank" rel="noopener">BetterDisplay</a> ' +
+    '(a 1920×1080 virtual screen works well), then press F there.</span>';
+}
 function openRecordDialog(){
-  if (!recording) return;
   const total = order.reduce((a, id)=>a + slideSteps(nodes.get(id)).length, 0);
   const usesCamera = deck.camera || [...nodes.values()].some(n=>n.camera);
   document.getElementById('rec-deck-info').innerHTML =
     escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : 'This deck')) + ' · ' + order.length + ' slides · ' + total + ' presses' +
-    (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C (or ○ Camera off) first if this take should include your webcam.</span>' : '');
+    (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C first if this take should include your webcam.</span>' : '');
   recStartBtn.disabled = !obsConnected;
   renderSessionList();
+  showScreenAdvice();
   openModal(recDialog);
 }
 document.getElementById('btn-record').onclick = openRecordDialog;
@@ -1765,7 +1766,6 @@ function updateCamBtn(){
   camBtn.title = cameraOff ? 'Camera is off for every slide (C)' : 'Camera is on and follows the deck (C)';
 }
 function setCameraEnabled(on){
-  if (on && !recording) return;
   cameraOff = !on;
   if (cameraOff) stopWebcam();
   camManual = null; camCycle = -1;
@@ -1835,7 +1835,7 @@ window.addEventListener('keydown', e=>{
 
 window.addEventListener('hashchange', ()=>{
   const {data, slide} = parseHash(location.hash);
-  if (data && data !== hashDeck){ location.reload(); return; }   // a different deck was pasted into the address
+  if (data){ location.reload(); return; }   // a deck link was pasted into the address of this tab
   if (slide && slide !== currentId && nodes.has(slide)) navigate(slide);
 });
 
@@ -1874,7 +1874,7 @@ function deckAddress(source, {keepObs = true, keepEdit = true, slide = ''} = {})
 const openDialog = document.getElementById('open-dialog');
 const openUrl = document.getElementById('open-url');
 const openError = document.getElementById('open-error');
-document.getElementById('btn-open').onclick = ()=>{
+document.getElementById('btn-load').onclick = ()=>{
   openError.hidden = true;
   openModal(openDialog);
   openUrl.focus(); openUrl.select();
@@ -1901,6 +1901,7 @@ document.getElementById('btn-share').onclick = async ()=>{
   }
   try { await navigator.clipboard.writeText(link); showToast(note, 5000); }
   catch(err){ prompt('Copy this link:', link); }
+  setUnsaved(false);
 };
 
 // ---------- boot ----------
@@ -1938,7 +1939,14 @@ async function fetchSource(source){
 }
 async function loadInitialDeck(){
   if (startHash.data){
-    try { const text = await decodeDeck(startHash.data); hashDeck = startHash.data; deckSource = null; return text; }
+    try {
+      // the deck is now in the editor (and saved as the draft), so the long #deflate: part leaves the address
+      const text = await decodeDeck(startHash.data);
+      deckSource = null; deckEdited = true;
+      save('slidetake:draft', text);
+      history.replaceState(null, '', location.pathname + location.search);
+      return text;
+    }
     catch(e){ showToast('This link\'s deck is damaged or cut short, so it could not be opened.', 6000); }
   }
   if (deckSource){

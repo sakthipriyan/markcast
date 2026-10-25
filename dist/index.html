@@ -162,6 +162,10 @@
   #editor-resizer:has(+ #editor-pane.collapsed){display:none;}
   .pane-bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--panel-line);}
   .pane-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .pane-label .edited{display:none;color:var(--accent);}
+  #editor-pane.unsaved .pane-label .edited{display:inline;}
+  #editor-pane.unsaved .pane-bar{box-shadow:inset 0 -2px 0 var(--accent);}
+  #editor-pane.unsaved #btn-share, #editor-pane.unsaved #btn-save{border-color:var(--accent);color:var(--accent);}
   .btn.small{padding:3px 9px;font-size:11px;}
   .btn.icon{padding:4px 9px;min-width:30px;display:inline-flex;align-items:center;justify-content:center;}
   .btn.icon svg{width:15px;height:15px;display:block;}
@@ -322,14 +326,14 @@
   .modal .btn[disabled]{opacity:.4;cursor:not-allowed;}
   .modal .btn.small{padding:3px 9px;font-size:11px;}
   #obs-status{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
-  #obs-status.ok{color:#10b981;}
+  #obs-status.ok, #rec-screen .ok{color:#10b981;}
+  #rec-screen a{color:inherit;text-decoration:underline;}
   #obs-status.err{color:var(--danger);}
   .modal .warn{color:var(--accent);}
   @media (max-width:560px){ .modal .fields{grid-template-columns:1fr;} }
   #navbar #btn-record{color:#f87171;}
   #navbar #btn-record:hover{color:#fff;background:#b91c1c;}
   #navbar #btn-present{color:var(--accent);}
-  .no-obs #btn-camera, .no-obs #btn-record, .no-obs #pip, .no-obs .obs-only{display:none !important;}
   /* camera: a grey camera when off; green, with a live dot, when on */
   #btn-camera{display:inline-flex;align-items:center;gap:6px;}
   #btn-camera svg{display:block;}
@@ -575,7 +579,7 @@
       <button id="btn-keys" title="Keyboard shortcuts (?)">⌨<span class="lbl"> Keys</span></button>
       <button id="nav-prev" class="touch-only" title="Previous (←)" aria-label="Previous">←</button>
       <button id="nav-next" class="touch-only" title="Next (→)" aria-label="Next">→</button>
-      <div class="divider obs-only"></div>
+      <div class="divider"></div>
       <button id="btn-camera" title="Camera (C)" aria-pressed="false"></button>
       <button id="btn-record" title="Record a take with OBS (R)">●<span class="lbl"> Record</span></button>
       <button id="btn-present" title="Fullscreen (F)">⛶<span class="lbl"> Fullscreen</span></button>
@@ -589,12 +593,12 @@
   <div id="editor-resizer" role="separator" aria-orientation="vertical" aria-label="Resize the editor" title="Drag to resize"></div>
   <div id="editor-pane" class="collapsed">
     <div class="pane-bar">
-      <span class="pane-label">Markdown</span>
+      <span class="pane-label">Markdown<span class="edited" title="Changed since it was loaded, shared or saved. Share or Save keeps it."> · edited</span></span>
       <span class="pane-actions">
-        <button class="btn small" id="btn-open" title="Open a deck from a link">Open</button>
+        <button class="btn small" id="btn-load" title="Load a deck from a link: GitHub, a gist or any URL">⇣ Load</button>
+        <button class="btn small" id="btn-open" title="Open a markdown file from this computer">Open</button>
+        <button class="btn small" id="btn-save" title="Save the markdown to a file on this computer">Save</button>
         <button class="btn small" id="btn-share" title="Copy a link to this deck">Share</button>
-        <button class="btn small" id="btn-load" title="Open a markdown file from this computer">↑ Load</button>
-        <button class="btn small" id="btn-download" title="Save the markdown as a file">↓ Save</button>
       </span>
     </div>
     <textarea id="editor" spellcheck="false"></textarea>
@@ -615,7 +619,7 @@
       <tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>bigger / smaller slides</td></tr>
       <tr><td><kbd>E</kbd></td><td>editor: write, open, share</td></tr>
       <tr><td><kbd>L</kbd></td><td>light / dark</td></tr>
-      <tr><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, record (with <code>?obs=</code>)</td></tr>
+      <tr><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, record</td></tr>
     </table>
     <p>Drag to pan, scroll or pinch to zoom, click a card to fly to it.</p>
     <p><a href="/help" target="_blank" rel="noopener">The full guide →</a> writing decks, sharing, recording, camera, review and cut.</p>
@@ -625,11 +629,11 @@
 <div id="open-dialog" class="modal" role="dialog" aria-labelledby="open-title">
   <div class="panel">
     <button class="close" data-close aria-label="Close">✕</button>
-    <h2 id="open-title">Open a deck</h2>
+    <h2 id="open-title">Load a deck from a link</h2>
     <p>Paste a link to a markdown file: a GitHub file or folder, a gist, or any URL that allows other sites to read it.</p>
     <form id="open-form" class="row">
       <input type="text" id="open-url" placeholder="https://github.com/you/repo/blob/main/talk.md" spellcheck="false" autocomplete="off">
-      <button class="btn primary" type="submit">Open</button>
+      <button class="btn primary" type="submit">Load</button>
     </form>
     <p id="open-error" class="warn" hidden></p>
     <h3>Try one</h3>
@@ -639,7 +643,7 @@
     </ul>
     <h3>Short links</h3>
     <p><code>slidetake.com/gh/owner/repo/path/deck.md</code> opens a file on GitHub (add <code>@branch</code> after the repo for another branch), and <code>slidetake.com/gist/&lt;id&gt;</code> a gist. Images next to the deck load as they are.</p>
-    <p>Opening a file from this computer instead? Use <strong>↑ Load .md</strong>.</p>
+    <p>A file on this computer? Use <strong>Open</strong>.</p>
   </div>
 </div>
 
@@ -648,6 +652,7 @@
     <button class="close" data-close aria-label="Close">✕</button>
     <h2 id="rec-title">Record a take</h2>
     <p id="rec-deck-info"></p>
+    <p id="rec-screen"></p>
     <h3>OBS</h3>
     <div class="fields">
       <label>Host<input type="text" id="obs-host" value="localhost" spellcheck="false"></label>
@@ -742,10 +747,10 @@
 "use strict";
 (() => {
   // src/sample.md
-  var sample_default = "---\ntitle: Slidetake \u2014 markdown to finished video\nbrand: slidetake.com\npip: none\n---\n\n# Slidetake\n\n**Markdown to finished video.** Write a deck in markdown, present it as a map you move through, and record it take by take.\n\nPress \u2192 to walk this deck.\n\n## \u270D\uFE0F Write\n\nOrdinary markdown: every heading is a card, and deeper headings branch off it. reveal.js decks open as they are.\n\n## \u{1F3AC} Present\n\n\u2190 \u2192 to move, **F** for fullscreen. Pick **tree**, **radial**, **path** or **focus** at the top.\n\n## \u23FA\uFE0F Record\n\nWith **[OBS](https://obsproject.com)**, every slide is a take: redo a slide on the spot, keep the best attempt, and get a frame-exact cut with YouTube chapters.\n\n## \u{1F517} Open and share\n\n**\u270E Editor \u2192 Open** a GitHub file or gist. **Share** copies a link; a deck you wrote here travels inside the link itself.\n\n## \u{1F49B} Free and open\n\nOpen source, Apache 2.0: [github.com/sakthipriyan/slidetake](https://github.com/sakthipriyan/slidetake).\n\nEverything else is in the guide: **[slidetake.com/help](/help)**.\n";
+  var sample_default = "---\ntitle: Slidetake \u2014 markdown to finished video\nbrand: slidetake.com\npip: none\n---\n\n# Slidetake\n\n**Markdown to finished video.** Write a deck in markdown, present it as a map you move through, and record it take by take.\n\nPress \u2192 to walk this deck.\n\n## \u270D\uFE0F Write\n\nOrdinary markdown: every heading is a card, and deeper headings branch off it. reveal.js decks open as they are.\n\n## \u{1F3AC} Present\n\n\u2190 \u2192 to move, **F** for fullscreen. Pick **tree**, **radial**, **path** or **focus** at the top.\n\n## \u23FA\uFE0F Record\n\nWith **[OBS](https://obsproject.com)**, every slide is a take: redo a slide on the spot, keep the best attempt, and get a frame-exact cut with YouTube chapters.\n\n## \u{1F517} Open and share\n\n**\u270E Editor \u2192 Load** a GitHub file or gist. **Share** copies a link; a deck you wrote here travels inside the link itself.\n\n## \u{1F49B} Free and open\n\nOpen source, Apache 2.0: [github.com/sakthipriyan/slidetake](https://github.com/sakthipriyan/slidetake).\n\nEverything else is in the guide: **[slidetake.com/help](/help)**.\n";
 
   // src/help.md
-  var help_default = "---\ntitle: Slidetake help\nbrand: slidetake.com/help\npip: none\n---\n\n# Slidetake help\n\nThe details behind the [home deck](/): writing, sharing, presenting, recording and the camera. Press \u2192 to read in order, \u2193 \u2191 to go into a section and back out, or **O** for the whole map.\n\n## \u270D\uFE0F Writing a deck\n\nA deck is an ordinary markdown file. **Every heading becomes a card**, and a heading branches off the nearest shallower heading above it.\n\n```md\n# Product            \u2190 the first card\nIntro text.\n\n## Pricing           \u2190 branches from Product\n### Enterprise       \u2190 branches from Pricing\n## Roadmap {#plan}   \u2190 branches from Product, id \"plan\"\n\nSee the [roadmap](#plan).\n```\n\n### Rules\n\n- Text before the first heading becomes a card of its own.\n- Headings inside fenced code blocks are ignored.\n- A card's id is its heading slugified (`## Moving around` \u2192 `moving-around`), or set one with `{#id}` at the end of the heading.\n- A link to `#id` flies to that card.\n\n### reveal.js decks\n\nDecks written for reveal.js open as they are: `---` starts a slide and `--` a vertical one beneath it, and the first slide becomes the root card.\n\nSupported: fragments (`fade-up`, `fade-in-then-out`, `grow`, \u2026, one per \u2192), `r-stack`, `<!-- .element: \u2026 -->`, `<section>` slides, `data-autoslide`, Graphviz `dot` diagrams, ECharts charts, `data-gsap` entrance animations and `title-scramble`.\n\n### Older +++ decks\n\nDecks that separate slides with `+++` and use `id`, `parent`, `x`, `y` frontmatter still load.\n\n### Wide content\n\nCards widen for wide tables, columns, diagrams and embeds; anything wider still is scaled to fit.\n\n## \u{1F517} Opening and sharing\n\nPress **\u270E Editor**, then **Open**, and paste a link: a GitHub file or folder, a gist, or any URL that lets other sites read it. Or link straight to a deck:\n\n| Link | Opens |\n|---|---|\n| `/gh/owner/repo/path/deck.md` | a GitHub file, default branch |\n| `/gh/owner/repo@branch/deck.md` | another branch or tag |\n| `/gist/<id>` | a gist's first markdown file |\n| `/?src=https://\u2026/deck.md` | anything else |\n\nImages next to the deck load as they are.\n\n### Decks inside links\n\nA deck you write or change in the editor lives in the address itself, compressed: `slidetake.com/#deflate:\u2026`. Nothing is uploaded, and the address stays up to date as you type, so a reload keeps your work.\n\n**Share** copies the short link for an unchanged online deck, and the deck-inside link otherwise. Shared links never include `?obs=`.\n\n### Files on your computer\n\n**\u2191 Load** opens a markdown file; **\u2193 Save** downloads the editor's markdown. For a file loaded from disk, add `base: https://\u2026/deck-folder/` to its top block so its images load.\n\n### Address options\n\n| Option | Does |\n|---|---|\n| `?edit=1` | opens the editor |\n| `?layout=tree` (radial, path, focus) | picks the layout |\n| `?mode=light` | light theme |\n| `?duration=10m` | talk length for the timer |\n| `#card-id` | opens at a card |\n\n## \u{1F9ED} Moving around\n\n| Key | Does |\n|---|---|\n| \u2192 \u2190 Space | next / previous step, in document order |\n| \u2193 \u2191 | first child / parent |\n| O | the whole map |\n| 1 2 3 4 | tree, radial, path, focus |\n| F | fullscreen |\n| + \u2212 | bigger / smaller slides (remembered) |\n| E | editor |\n| L | light / dark |\n| ? | keys (also \u2328 in the bottom bar) |\n\nClick a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch screen, the bottom bar adds \u2190 \u2192 buttons.\n\n### Layouts\n\n**Tree** is a top-down chart and **radial** rings out from the root.\n\n**Path** is made for video: a staircase in presenting order. Each section is a row, and the next one starts just below where the last ended, so every move is a short step right or down.\n\n**Focus** doesn't travel at all: the next slide fades in where the last one was.\n\n### Steady text\n\nText keeps one size within a section and only changes when the section does. Charts and diagrams are fitted on their own.\n\n### Map moments\n\n`<!-- view: overview -->` on a slide pulls back to the whole map for a beat before flying in: a good start to a chapter.\n\n## \u{1F3AC} Presenting\n\n**F** goes fullscreen. The current slide fills the screen, and the cursor and controls hide after two seconds without the mouse moving.\n\n### Progress and talk timer\n\nWhile presenting, a thin bar along the bottom fills with every press.\n\nGive the deck a length, `duration: 10m` (or `90s`, `1h`, `12:30`), and a lighter layer of the same colour grows behind it with the clock: if the lighter stretch shows past the solid fill, you're behind; if it reaches the end, the bar pulses.\n\nThe timer is for you, so recordings show progress only, unless the deck says `timer: always`. `progress: off` hides the bar.\n\n## \u23FA\uFE0F Recording\n\nRecording needs **[OBS Studio](https://obsproject.com)** (free) with its WebSocket server on: in OBS, Tools \u2192 WebSocket Server Settings. OBS records; Slidetake drives it.\n\nOn a MacBook, whose screen isn't 16:9, **[BetterDisplay](https://betterdisplay.pro)** can add a 16:9 virtual screen (say 1920\xD71080) to present on and record, so the video fits YouTube without bars.\n\n### Recording mode: ?obs\n\nThe camera, recording and timer only appear when the address says where OBS is:\n\n- `?obs=localhost:4455`\n- `?obs=host:port:password`\n- `?obs` alone, for the connection you remembered\n\nWithout it, Slidetake is a viewer and camera settings are ignored, so the same deck works for readers on a website.\n\n### OBS on another computer\n\nFrom https://slidetake.com, OBS must be on the same computer (`localhost`): browsers block secure pages from reaching plain `ws://` addresses elsewhere. For OBS on another machine, serve a local copy of [`dist/index.html`](https://github.com/sakthipriyan/slidetake) over http.\n\n### Taking a take\n\n**\u25CF Record** (or **R**) connects to OBS, counts down and starts recording. From then on the deck drives everything: camera layouts, reveals and slides follow \u2192 (a Bluetooth clicker works).\n\n- **\u2190** takes the current slide again, keeping every attempt\n- **B** pauses and resumes\n- one press past the last step stops OBS\n\nClicks, dragging and the map are locked so the take only moves forward.\n\n### Review and cut\n\nThen the review opens: every slide with its takes (the last one picked), previews from the OBS file, a ready-to-run **ffmpeg** command for the picked takes (frame-exact), and the YouTube title, description with **chapters** and links, and tags.\n\nSessions are kept in this browser, so a take can be reviewed again later from \u25CF Record.\n\n## \u{1F4F7} Camera\n\n**C** turns your webcam on in its box; a plain screen recording then captures you and the slides together. The camera is off every time the page opens.\n\n### Deck settings\n\nAn optional block at the top of the file:\n\n```yaml\n---\nbrand: example.com/talks     \u2190 text in the top-right corner\nlogo: https://\u2026/logo.png     \u2190 image beside it\npip: bottom-right            \u2190 camera corner, or none\npip_size: 24%                \u2190 camera box width\npip_shape: rect              \u2190 rect (16:9) or circle\npip_mirror: yes              \u2190 mirror the webcam\ncamera: 24%, 40%, full, off  \u2190 layouts V cycles through\n---\n```\n\nSlides are always placed clear of the brand and the camera box.\n\n### Camera per slide\n\nA comment in a slide changes the camera from that slide on:\n\n```md\n## Intro\n<!-- camera: full -->       \u2190 camera fills the screen\n\n## Pricing\n<!-- camera: 18% flip -->   \u2190 small, on the other side\n```\n\nWords you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`, `circle` / `rect`, `mirror` / `unmirror`.\n\n### Several steps on one slide\n\nList layouts with commas to step through them: `full, on` opens full screen on you, and the next \u2192 shrinks the camera to its corner and shows the slide. `on, full, on, off` ends a closing slide on you, then the slide again, then without the camera.\n\n**V** steps through the deck's `camera:` list for the current slide.\n\n## \u{1F4CB} Publish pack\n\nThe review fills the YouTube description from the deck's top block:\n\n| Key | Used for |\n|---|---|\n| `title` | the video title |\n| `summary` | the description's first paragraph |\n| `related` | a list of `[Title](url)` links |\n| `tags`, `wealth_tags`, `systems_tags` | tags |\n| `permalink` or `site` | the link back to the deck |\n\n## \u{1F512} Your data\n\nYour draft and settings stay in this browser. Decks inside links live in the part of the address after `#`, which browsers never send to a server. Slidetake has no accounts and stores no decks.\n\nslidetake.com counts visits with Google Analytics. What it records leaves out the `#` part and `?obs=`, so neither your deck nor an OBS password reaches it. Copies you host yourself send nothing.\n\nSlidetake is open source: [github.com/sakthipriyan/slidetake](https://github.com/sakthipriyan/slidetake).\n";
+  var help_default = "---\ntitle: Slidetake help\nbrand: slidetake.com/help\npip: none\n---\n\n# Slidetake help\n\nThe details behind the [home deck](/): writing, sharing, presenting, recording and the camera. Press \u2192 to read in order, \u2193 \u2191 to go into a section and back out, or **O** for the whole map.\n\n## \u270D\uFE0F Writing a deck\n\nA deck is an ordinary markdown file. **Every heading becomes a card**, and a heading branches off the nearest shallower heading above it.\n\n```md\n# Product            \u2190 the first card\nIntro text.\n\n## Pricing           \u2190 branches from Product\n### Enterprise       \u2190 branches from Pricing\n## Roadmap {#plan}   \u2190 branches from Product, id \"plan\"\n\nSee the [roadmap](#plan).\n```\n\n### Rules\n\n- Text before the first heading becomes a card of its own.\n- Headings inside fenced code blocks are ignored.\n- A card's id is its heading slugified (`## Moving around` \u2192 `moving-around`), or set one with `{#id}` at the end of the heading.\n- A link to `#id` flies to that card.\n\n### reveal.js decks\n\nDecks written for reveal.js open as they are: `---` starts a slide and `--` a vertical one beneath it, and the first slide becomes the root card.\n\nSupported: fragments (`fade-up`, `fade-in-then-out`, `grow`, \u2026, one per \u2192), `r-stack`, `<!-- .element: \u2026 -->`, `<section>` slides, `data-autoslide`, Graphviz `dot` diagrams, ECharts charts, `data-gsap` entrance animations and `title-scramble`.\n\n### Older +++ decks\n\nDecks that separate slides with `+++` and use `id`, `parent`, `x`, `y` frontmatter still load.\n\n### Wide content\n\nCards widen for wide tables, columns, diagrams and embeds; anything wider still is scaled to fit.\n\n## \u{1F517} Opening and sharing\n\nPress **\u270E Editor**, then **\u21E3 Load**, and paste a link: a GitHub file or folder, a gist, or any URL that lets other sites read it. Or link straight to a deck:\n\n| Link | Opens |\n|---|---|\n| `/gh/owner/repo/path/deck.md` | a GitHub file, default branch |\n| `/gh/owner/repo@branch/deck.md` | another branch or tag |\n| `/gist/<id>` | a gist's first markdown file |\n| `/?src=https://\u2026/deck.md` | anything else |\n\nImages next to the deck load as they are.\n\n### Decks inside links\n\nA deck you write or change in the editor lives in the address itself, compressed: `slidetake.com/#deflate:\u2026`. Nothing is uploaded, and the address stays up to date as you type, so a reload keeps your work.\n\n**Share** copies the short link for an unchanged online deck, and the deck-inside link otherwise. Shared links never include `?obs=`.\n\n### Files on your computer\n\n**Open** opens a markdown file from your computer; **Save** saves the editor's markdown to one. For a file loaded from disk, add `base: https://\u2026/deck-folder/` to its top block so its images load.\n\n### Address options\n\n| Option | Does |\n|---|---|\n| `?edit=1` | opens the editor |\n| `?layout=tree` (radial, path, focus) | picks the layout |\n| `?mode=light` | light theme |\n| `?duration=10m` | talk length for the timer |\n| `#card-id` | opens at a card |\n\n## \u{1F9ED} Moving around\n\n| Key | Does |\n|---|---|\n| \u2192 \u2190 Space | next / previous step, in document order |\n| \u2193 \u2191 | first child / parent |\n| O | the whole map |\n| 1 2 3 4 | tree, radial, path, focus |\n| F | fullscreen |\n| + \u2212 | bigger / smaller slides (remembered) |\n| E | editor |\n| L | light / dark |\n| ? | keys (also \u2328 in the bottom bar) |\n| C \xB7 V \xB7 R | camera, camera layouts, record |\n\nClick a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch screen, the bottom bar adds \u2190 \u2192 buttons.\n\n### Layouts\n\n**Tree** is a top-down chart and **radial** rings out from the root.\n\n**Path** is made for video: a staircase in presenting order. Each section is a row, and the next one starts just below where the last ended, so every move is a short step right or down.\n\n**Focus** doesn't travel at all: the next slide fades in where the last one was.\n\n### Steady text\n\nText keeps one size within a section and only changes when the section does. Charts and diagrams are fitted on their own.\n\n### Map moments\n\n`<!-- view: overview -->` on a slide pulls back to the whole map for a beat before flying in: a good start to a chapter.\n\n## \u{1F3AC} Presenting\n\n**F** goes fullscreen. The current slide fills the screen, and the cursor and controls hide after two seconds without the mouse moving.\n\n### Progress and talk timer\n\nWhile presenting, a thin bar along the bottom fills with every press.\n\nGive the deck a length, `duration: 10m` (or `90s`, `1h`, `12:30`), and a lighter layer of the same colour grows behind it with the clock: if the lighter stretch shows past the solid fill, you're behind; if it reaches the end, the bar pulses.\n\nThe timer is for you, so recordings show progress only, unless the deck says `timer: always`. `progress: off` hides the bar.\n\n## \u23FA\uFE0F Recording\n\nRecording needs **[OBS Studio](https://obsproject.com)** (free) with its WebSocket server on: in OBS, Tools \u2192 WebSocket Server Settings. OBS records; Slidetake drives it.\n\nOn a MacBook, whose screen isn't 16:9, **[BetterDisplay](https://betterdisplay.pro)** can add a 16:9 virtual screen (say 1920\xD71080) to present on and record, so the video fits YouTube without bars.\n\n### Connecting to OBS\n\nPress **\u25CF Record** and enter where OBS is: host, port and the password from OBS's WebSocket settings. Tick *Remember* to skip this next time.\n\n`?obs=localhost:4455` (or `?obs=host:port:password`) in the address fills this in and connects as the page opens.\n\n### A 16:9 screen\n\nThe Record dialog checks your screen. If it isn't 16:9, present on one that is, or add a 1920\xD71080 virtual screen with BetterDisplay and press **F** there.\n\n### OBS on another computer\n\nFrom https://slidetake.com, OBS must be on the same computer (`localhost`): browsers block secure pages from reaching plain `ws://` addresses elsewhere. For OBS on another machine, serve a local copy of [`dist/index.html`](https://github.com/sakthipriyan/slidetake) over http.\n\n### Taking a take\n\n**\u25CF Record** (or **R**) connects to OBS, counts down and starts recording. From then on the deck drives everything: camera layouts, reveals and slides follow \u2192 (a Bluetooth clicker works).\n\n- **\u2190** takes the current slide again, keeping every attempt\n- **B** pauses and resumes\n- one press past the last step stops OBS\n\nClicks, dragging and the map are locked so the take only moves forward.\n\n### Review and cut\n\nThen the review opens: every slide with its takes (the last one picked), previews from the OBS file, a ready-to-run **ffmpeg** command for the picked takes (frame-exact), and the YouTube title, description with **chapters** and links, and tags.\n\nSessions are kept in this browser, so a take can be reviewed again later from \u25CF Record.\n\n## \u{1F4F7} Camera\n\n**C** (or **Camera** in the bottom bar) turns your webcam on in its box; a plain screen recording then captures you and the slides together. The camera is off every time the page opens, and until it's on, the deck's camera settings are ignored, so readers get slides using the whole screen.\n\n### Deck settings\n\nAn optional block at the top of the file:\n\n```yaml\n---\nbrand: example.com/talks     \u2190 text in the top-right corner\nlogo: https://\u2026/logo.png     \u2190 image beside it\npip: bottom-right            \u2190 camera corner, or none\npip_size: 24%                \u2190 camera box width\npip_shape: rect              \u2190 rect (16:9) or circle\npip_mirror: yes              \u2190 mirror the webcam\ncamera: 24%, 40%, full, off  \u2190 layouts V cycles through\n---\n```\n\nSlides are always placed clear of the brand and the camera box.\n\n### Camera per slide\n\nA comment in a slide changes the camera from that slide on:\n\n```md\n## Intro\n<!-- camera: full -->       \u2190 camera fills the screen\n\n## Pricing\n<!-- camera: 18% flip -->   \u2190 small, on the other side\n```\n\nWords you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`, `circle` / `rect`, `mirror` / `unmirror`.\n\n### Several steps on one slide\n\nList layouts with commas to step through them: `full, on` opens full screen on you, and the next \u2192 shrinks the camera to its corner and shows the slide. `on, full, on, off` ends a closing slide on you, then the slide again, then without the camera.\n\n**V** steps through the deck's `camera:` list for the current slide.\n\n## \u{1F4CB} Publish pack\n\nThe review fills the YouTube description from the deck's top block:\n\n| Key | Used for |\n|---|---|\n| `title` | the video title |\n| `summary` | the description's first paragraph |\n| `related` | a list of `[Title](url)` links |\n| `tags`, `wealth_tags`, `systems_tags` | tags |\n| `permalink` or `site` | the link back to the deck |\n\n## \u{1F512} Your data\n\nYour draft and settings stay in this browser. Decks inside links live in the part of the address after `#`, which browsers never send to a server. Slidetake has no accounts and stores no decks.\n\nslidetake.com counts visits with Google Analytics. What it records leaves out the `#` part and `?obs=`, so neither your deck nor an OBS password reaches it. Copies you host yourself send nothing.\n\nSlidetake is open source: [github.com/sakthipriyan/slidetake](https://github.com/sakthipriyan/slidetake).\n";
 
   // src/core/text.js
   function slugify(s) {
@@ -1344,8 +1349,6 @@
   var presenting = false;
   var deck = {};
   var cameraOff = true;
-  var recording = new URLSearchParams(location.search).has("obs");
-  document.documentElement.classList.toggle("no-obs", !recording);
   var cameraStream = null;
   var brandEl = document.getElementById("brand");
   var pipEl = document.getElementById("pip");
@@ -1492,7 +1495,6 @@
     return { x0, y0, x1: x0 + w, y1: y0 + h };
   }
   function cycleCamera() {
-    if (!recording) return;
     if (cameraOff) {
       setCameraEnabled(true);
       return;
@@ -2064,7 +2066,7 @@
     return parseDuration(new URLSearchParams(location.search).get("duration") ?? deck.duration);
   }
   function timerVisible() {
-    return recording && presenting && talkLength() > 0 && (!rec.active || /^always$/i.test(deck.timer || ""));
+    return presenting && talkLength() > 0 && (!rec.active || /^always$/i.test(deck.timer || ""));
   }
   function updateTimer() {
     const on = timerVisible() && talk.start > 0;
@@ -2183,27 +2185,23 @@
       if (currentId === n.id) step(1);
     }, n.autoslide);
   }
-  var hashDeck = null;
   function setHash(id) {
     try {
-      if (hashDeck) history.replaceState(null, "", location.pathname + location.search + deckHash(hashDeck, id && id !== order[0] ? id : ""));
-      else history.replaceState(null, "", id ? "#" + encodeURIComponent(id) : location.pathname + location.search);
+      history.replaceState(null, "", id ? "#" + encodeURIComponent(id) : location.pathname + location.search);
     } catch (e) {
     }
   }
-  var syncTimer = null;
-  function syncDeckToUrl() {
-    clearTimeout(syncTimer);
-    syncTimer = setTimeout(async () => {
-      try {
-        hashDeck = await encodeDeck(editor.value);
-        const q = new URLSearchParams(location.search);
-        q.delete("src");
-        history.replaceState(null, "", "/" + (q.toString() ? "?" + q : "") + deckHash(hashDeck, currentId && currentId !== order[0] ? currentId : ""));
-      } catch (e) {
-      }
-    }, 500);
+  var unsaved = false;
+  function setUnsaved(on) {
+    unsaved = on;
+    document.getElementById("editor-pane").classList.toggle("unsaved", on);
   }
+  window.addEventListener("beforeunload", (e) => {
+    if (unsaved) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
   function navigate(id, instant, atLastStep) {
     if (!nodes.has(id)) return;
     if (id !== currentId) {
@@ -2346,10 +2344,10 @@
   editor.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     deckEdited = true;
+    setUnsaved(true);
     debounceTimer = setTimeout(() => {
       save("slidetake:draft", editor.value);
       rebuild(true);
-      syncDeckToUrl();
     }, 300);
   });
   function setMode(mode, instant) {
@@ -2452,7 +2450,7 @@
   }, { passive: false });
   document.getElementById("nav-prev").onclick = () => step(-1);
   document.getElementById("nav-next").onclick = () => step(1);
-  document.getElementById("btn-load").onclick = () => document.getElementById("file-input").click();
+  document.getElementById("btn-open").onclick = () => document.getElementById("file-input").click();
   document.getElementById("file-input").addEventListener("change", (e) => {
     const f = e.target.files[0];
     if (!f) return;
@@ -2463,19 +2461,21 @@
       deckSource = null;
       save("slidetake:draft", editor.value);
       currentId = null;
+      deckEdited = true;
+      setUnsaved(false);
       rebuild(true);
-      syncDeckToUrl();
     };
     reader.readAsText(f);
     e.target.value = "";
   });
-  document.getElementById("btn-download").onclick = () => {
+  document.getElementById("btn-save").onclick = () => {
     const blob = new Blob([editor.value], { type: "text/markdown" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = (roots[0] ? slugify(nodes.get(roots[0]).title) : "deck") + ".md";
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1e3);
+    setUnsaved(false);
   };
   document.getElementById("btn-reset").onclick = () => {
     if (editor.value !== SAMPLE && !confirm("Replace the editor contents with the sample deck?")) return;
@@ -2484,7 +2484,7 @@
     currentId = null;
     deckSource = null;
     deckEdited = false;
-    hashDeck = null;
+    setUnsaved(false);
     rebuild(true);
     const q = new URLSearchParams(location.search);
     q.delete("src");
@@ -2675,13 +2675,25 @@
   }
   document.getElementById("obs-connect").onclick = connectObs;
   obsRemember.addEventListener("change", saveObsSettings);
+  function showScreenAdvice() {
+    const el = document.getElementById("rec-screen");
+    const w = screen.width, h = screen.height;
+    if (Math.abs(w / h - 16 / 9) < 0.02) {
+      el.innerHTML = '<span class="ok">This screen is 16:9 (' + w + "\xD7" + h + "), right for YouTube.</span>";
+      return;
+    }
+    const shapes = [["16:10", 1.6], ["3:2", 1.5], ["4:3", 4 / 3], ["21:9", 21 / 9], ["16:9", 16 / 9]];
+    const [name, r] = shapes.reduce((a, b) => Math.abs(b[1] - w / h) < Math.abs(a[1] - w / h) ? b : a);
+    const shape = Math.abs(r - w / h) < 5e-3 ? name : "about " + name;
+    el.innerHTML = '<span class="warn">This screen is ' + shape + " (" + w + "\xD7" + h + '), not 16:9, so the video will have bars or be cropped. Move this window to a 16:9 screen, or add one with <a href="https://betterdisplay.pro" target="_blank" rel="noopener">BetterDisplay</a> (a 1920\xD71080 virtual screen works well), then press F there.</span>';
+  }
   function openRecordDialog() {
-    if (!recording) return;
     const total = order.reduce((a, id) => a + slideSteps(nodes.get(id)).length, 0);
     const usesCamera = deck.camera || [...nodes.values()].some((n) => n.camera);
-    document.getElementById("rec-deck-info").innerHTML = escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : "This deck")) + " \xB7 " + order.length + " slides \xB7 " + total + " presses" + (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C (or \u25CB Camera off) first if this take should include your webcam.</span>' : "");
+    document.getElementById("rec-deck-info").innerHTML = escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : "This deck")) + " \xB7 " + order.length + " slides \xB7 " + total + " presses" + (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C first if this take should include your webcam.</span>' : "");
     recStartBtn.disabled = !obsConnected;
     renderSessionList();
+    showScreenAdvice();
     openModal(recDialog);
   }
   document.getElementById("btn-record").onclick = openRecordDialog;
@@ -3252,7 +3264,6 @@
     camBtn.title = cameraOff ? "Camera is off for every slide (C)" : "Camera is on and follows the deck (C)";
   }
   function setCameraEnabled(on) {
-    if (on && !recording) return;
     cameraOff = !on;
     if (cameraOff) stopWebcam();
     camManual = null;
@@ -3358,7 +3369,7 @@
   });
   window.addEventListener("hashchange", () => {
     const { data, slide } = parseHash(location.hash);
-    if (data && data !== hashDeck) {
+    if (data) {
       location.reload();
       return;
     }
@@ -3395,7 +3406,7 @@
   var openDialog = document.getElementById("open-dialog");
   var openUrl = document.getElementById("open-url");
   var openError = document.getElementById("open-error");
-  document.getElementById("btn-open").onclick = () => {
+  document.getElementById("btn-load").onclick = () => {
     openError.hidden = true;
     openModal(openDialog);
     openUrl.focus();
@@ -3430,6 +3441,7 @@
     } catch (err) {
       prompt("Copy this link:", link);
     }
+    setUnsaved(false);
   };
   var savedMode = load("slidetake:layout");
   layoutMode = ["tree", "radial", "path", "focus"].includes(savedMode) ? savedMode : "tree";
@@ -3463,8 +3475,10 @@
     if (startHash.data) {
       try {
         const text = await decodeDeck(startHash.data);
-        hashDeck = startHash.data;
         deckSource = null;
+        deckEdited = true;
+        save("slidetake:draft", text);
+        history.replaceState(null, "", location.pathname + location.search);
         return text;
       } catch (e) {
         showToast("This link's deck is damaged or cut short, so it could not be opened.", 6e3);

@@ -20,7 +20,7 @@ Then open:
 
 ## Open a deck from a link
 
-On [slidetake.com](https://slidetake.com), press **✎ Editor**, then **Open**, and paste a GitHub file or folder link, a gist, or any URL that lets other sites read it. Or link straight to it:
+On [slidetake.com](https://slidetake.com), press **✎ Editor**, then **⇣ Load**, and paste a GitHub file or folder link, a gist, or any URL that lets other sites read it. Or link straight to it:
 
 ```
 https://slidetake.com/gh/owner/repo/path/deck.md          a file on GitHub (default branch)
@@ -29,25 +29,24 @@ https://slidetake.com/gist/<id>                           a gist
 https://slidetake.com/?src=https://…/deck.md              anything else
 ```
 
-**Share** copies the short link to the deck and slide you're on (never the OBS address). A deck you wrote or changed in the editor goes inside the link itself, like edotor.net: `https://slidetake.com/#deflate:<compressed markdown>`. Nothing is uploaded; the address bar keeps it up to date as you type.
+**Share** copies the short link to the deck and slide you're on (never the OBS address). A deck you wrote or changed in the editor goes inside the link itself, like edotor.net: `https://slidetake.com/#deflate:<compressed markdown>`. Nothing is uploaded. Opening such a link puts the deck in the editor and tidies the address; the editor marks later edits until you Share or Save.
 
-## Viewing and recording
+For AI tools: the guide is plain markdown at [slidetake.com/help.md](https://slidetake.com/help.md), indexed by [llms.txt](https://slidetake.com/llms.txt).
 
-Without anything else in the address, Slidetake is a viewer: the deck and a **Fullscreen** button (F). Camera settings in the deck are ignored, so the same deck works for readers on a website.
+## Recording
 
-Add where OBS is to turn on recording mode, the same format the reveal.js slides use:
+The bottom bar always has **Camera** (C), **● Record** (R) and **Fullscreen** (F). The camera is off until someone turns it on, and until then the deck's camera settings are ignored, so the same deck works for readers.
+
+**● Record** asks where OBS is, or fill it in from the address (the same format the reveal.js slides use):
 
 ```
 ?obs=localhost:4455
 ?obs=192.168.1.10:4455:password
-?obs            (the remembered connection)
 ```
 
-Recording mode adds the camera (C), recording (R) and the talk timer, and follows `pip`, `camera` and per-slide `<!-- camera: … -->` settings.
+**Recording needs [OBS Studio](https://obsproject.com)** (free) with its WebSocket server on; OBS records and Slidetake drives it. The Record dialog checks the screen: if it isn't 16:9, [BetterDisplay](https://betterdisplay.pro) can add a 1920×1080 virtual screen to present and record on, so the video fits YouTube without bars.
 
-**Recording needs [OBS Studio](https://obsproject.com)** (free) with its WebSocket server on; OBS records and Slidetake drives it. On a MacBook, [BetterDisplay](https://betterdisplay.pro) is recommended: it adds a 16:9 virtual screen (say 1920×1080) to present and record on, so the video fits YouTube without bars.
-
-From https://slidetake.com, OBS must run on the same computer (`?obs=localhost:4455`): browsers block secure pages from plain `ws://` connections to other machines. To record with OBS on another machine, serve `dist/index.html` locally over http.
+From https://slidetake.com, OBS must run on the same computer (`localhost`): browsers block secure pages from plain `ws://` connections to other machines. To record with OBS on another machine, serve `dist/index.html` locally over http.
 
 ## Decks
 

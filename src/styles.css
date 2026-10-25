@@ -123,6 +123,10 @@
   #editor-resizer:has(+ #editor-pane.collapsed){display:none;}
   .pane-bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--panel-line);}
   .pane-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .pane-label .edited{display:none;color:var(--accent);}
+  #editor-pane.unsaved .pane-label .edited{display:inline;}
+  #editor-pane.unsaved .pane-bar{box-shadow:inset 0 -2px 0 var(--accent);}
+  #editor-pane.unsaved #btn-share, #editor-pane.unsaved #btn-save{border-color:var(--accent);color:var(--accent);}
   .btn.small{padding:3px 9px;font-size:11px;}
   .btn.icon{padding:4px 9px;min-width:30px;display:inline-flex;align-items:center;justify-content:center;}
   .btn.icon svg{width:15px;height:15px;display:block;}
@@ -283,14 +287,14 @@
   .modal .btn[disabled]{opacity:.4;cursor:not-allowed;}
   .modal .btn.small{padding:3px 9px;font-size:11px;}
   #obs-status{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
-  #obs-status.ok{color:#10b981;}
+  #obs-status.ok, #rec-screen .ok{color:#10b981;}
+  #rec-screen a{color:inherit;text-decoration:underline;}
   #obs-status.err{color:var(--danger);}
   .modal .warn{color:var(--accent);}
   @media (max-width:560px){ .modal .fields{grid-template-columns:1fr;} }
   #navbar #btn-record{color:#f87171;}
   #navbar #btn-record:hover{color:#fff;background:#b91c1c;}
   #navbar #btn-present{color:var(--accent);}
-  .no-obs #btn-camera, .no-obs #btn-record, .no-obs #pip, .no-obs .obs-only{display:none !important;}
   /* camera: a grey camera when off; green, with a live dot, when on */
   #btn-camera{display:inline-flex;align-items:center;gap:6px;}
   #btn-camera svg{display:block;}

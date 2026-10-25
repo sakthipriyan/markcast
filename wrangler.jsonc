@@ -11,5 +11,10 @@
     "not_found_handling": "single-page-application"
   },
 
-  "routes": [{ "pattern": "slidetake.com", "custom_domain": true }]
+  // www gets its own DNS record and certificate here; a Cloudflare redirect rule then sends it to
+  // slidetake.com (an assets-only Worker can't redirect by itself).
+  "routes": [
+    { "pattern": "slidetake.com", "custom_domain": true },
+    { "pattern": "www.slidetake.com", "custom_domain": true }
+  ]
 }

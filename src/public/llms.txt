@@ -1,0 +1,23 @@
+# Slidetake
+
+> Markdown to finished video: a markdown file becomes a spatial deck you move through like a map, and when you record it with OBS, the deck directs the video: every slide is a take, with a frame-exact ffmpeg cut and YouTube chapters at the end.
+
+Slidetake runs in the browser at https://slidetake.com. It is open source (Apache 2.0): https://github.com/sakthipriyan/slidetake
+
+## Docs
+
+- [Guide](https://slidetake.com/help.md): the full guide as markdown, itself a Slidetake deck (writing decks, opening and sharing, layouts and keys, presenting, recording, camera directives, review and cut, publish pack)
+- [Home deck](https://slidetake.com/home.md): the short introduction shown at https://slidetake.com
+
+## Writing a deck for Slidetake
+
+- Ordinary markdown: every heading is a card; a heading branches off the nearest shallower heading above it.
+- reveal.js decks (`---` between slides, `--` for vertical ones) open as they are.
+- An optional frontmatter block sets deck options: title, brand, duration (e.g. 10m), pip, camera.
+- `<!-- camera: full, on -->` inside a slide steps the presenter's camera; `<!-- view: overview -->` pulls back to the map first.
+
+## Opening a deck
+
+- https://slidetake.com/gh/OWNER/REPO/PATH.md opens a file on GitHub (default branch); /gh/OWNER/REPO@BRANCH/PATH.md another branch.
+- https://slidetake.com/gist/ID opens a gist.
+- https://slidetake.com/?src=URL opens any markdown URL that allows cross-origin reads.

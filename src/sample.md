@@ -24,7 +24,7 @@ With **[OBS](https://obsproject.com)**, every slide is a take: redo a slide on t
 
 ## 🔗 Open and share
 
-**✎ Editor → Open** a GitHub file or gist. **Share** copies a link; a deck you wrote here travels inside the link itself.
+**✎ Editor → Load** a GitHub file or gist. **Share** copies a link; a deck you wrote here travels inside the link itself.
 
 ## 💛 Free and open
 

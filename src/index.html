@@ -71,7 +71,7 @@
       <button id="btn-keys" title="Keyboard shortcuts (?)">⌨<span class="lbl"> Keys</span></button>
       <button id="nav-prev" class="touch-only" title="Previous (←)" aria-label="Previous">←</button>
       <button id="nav-next" class="touch-only" title="Next (→)" aria-label="Next">→</button>
-      <div class="divider obs-only"></div>
+      <div class="divider"></div>
       <button id="btn-camera" title="Camera (C)" aria-pressed="false"></button>
       <button id="btn-record" title="Record a take with OBS (R)">●<span class="lbl"> Record</span></button>
       <button id="btn-present" title="Fullscreen (F)">⛶<span class="lbl"> Fullscreen</span></button>
@@ -85,12 +85,12 @@
   <div id="editor-resizer" role="separator" aria-orientation="vertical" aria-label="Resize the editor" title="Drag to resize"></div>
   <div id="editor-pane" class="collapsed">
     <div class="pane-bar">
-      <span class="pane-label">Markdown</span>
+      <span class="pane-label">Markdown<span class="edited" title="Changed since it was loaded, shared or saved. Share or Save keeps it."> · edited</span></span>
       <span class="pane-actions">
-        <button class="btn small" id="btn-open" title="Open a deck from a link">Open</button>
+        <button class="btn small" id="btn-load" title="Load a deck from a link: GitHub, a gist or any URL">⇣ Load</button>
+        <button class="btn small" id="btn-open" title="Open a markdown file from this computer">Open</button>
+        <button class="btn small" id="btn-save" title="Save the markdown to a file on this computer">Save</button>
         <button class="btn small" id="btn-share" title="Copy a link to this deck">Share</button>
-        <button class="btn small" id="btn-load" title="Open a markdown file from this computer">↑ Load</button>
-        <button class="btn small" id="btn-download" title="Save the markdown as a file">↓ Save</button>
       </span>
     </div>
     <textarea id="editor" spellcheck="false"></textarea>
@@ -111,7 +111,7 @@
       <tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>bigger / smaller slides</td></tr>
       <tr><td><kbd>E</kbd></td><td>editor: write, open, share</td></tr>
       <tr><td><kbd>L</kbd></td><td>light / dark</td></tr>
-      <tr><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, record (with <code>?obs=</code>)</td></tr>
+      <tr><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, record</td></tr>
     </table>
     <p>Drag to pan, scroll or pinch to zoom, click a card to fly to it.</p>
     <p><a href="/help" target="_blank" rel="noopener">The full guide →</a> writing decks, sharing, recording, camera, review and cut.</p>
@@ -121,11 +121,11 @@
 <div id="open-dialog" class="modal" role="dialog" aria-labelledby="open-title">
   <div class="panel">
     <button class="close" data-close aria-label="Close">✕</button>
-    <h2 id="open-title">Open a deck</h2>
+    <h2 id="open-title">Load a deck from a link</h2>
     <p>Paste a link to a markdown file: a GitHub file or folder, a gist, or any URL that allows other sites to read it.</p>
     <form id="open-form" class="row">
       <input type="text" id="open-url" placeholder="https://github.com/you/repo/blob/main/talk.md" spellcheck="false" autocomplete="off">
-      <button class="btn primary" type="submit">Open</button>
+      <button class="btn primary" type="submit">Load</button>
     </form>
     <p id="open-error" class="warn" hidden></p>
     <h3>Try one</h3>
@@ -135,7 +135,7 @@
     </ul>
     <h3>Short links</h3>
     <p><code>slidetake.com/gh/owner/repo/path/deck.md</code> opens a file on GitHub (add <code>@branch</code> after the repo for another branch), and <code>slidetake.com/gist/&lt;id&gt;</code> a gist. Images next to the deck load as they are.</p>
-    <p>Opening a file from this computer instead? Use <strong>↑ Load .md</strong>.</p>
+    <p>A file on this computer? Use <strong>Open</strong>.</p>
   </div>
 </div>
 
@@ -144,6 +144,7 @@
     <button class="close" data-close aria-label="Close">✕</button>
     <h2 id="rec-title">Record a take</h2>
     <p id="rec-deck-info"></p>
+    <p id="rec-screen"></p>
     <h3>OBS</h3>
     <div class="fields">
       <label>Host<input type="text" id="obs-host" value="localhost" spellcheck="false"></label>

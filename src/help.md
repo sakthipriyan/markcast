@@ -46,7 +46,7 @@ Cards widen for wide tables, columns, diagrams and embeds; anything wider still 
 
 ## 🔗 Opening and sharing
 
-Press **✎ Editor**, then **Open**, and paste a link: a GitHub file or folder, a gist, or any URL that lets other sites read it. Or link straight to a deck:
+Press **✎ Editor**, then **⇣ Load**, and paste a link: a GitHub file or folder, a gist, or any URL that lets other sites read it. Or link straight to a deck:
 
 | Link | Opens |
 |---|---|
@@ -65,7 +65,7 @@ A deck you write or change in the editor lives in the address itself, compressed
 
 ### Files on your computer
 
-**↑ Load** opens a markdown file; **↓ Save** downloads the editor's markdown. For a file loaded from disk, add `base: https://…/deck-folder/` to its top block so its images load.
+**Open** opens a markdown file from your computer; **Save** saves the editor's markdown to one. For a file loaded from disk, add `base: https://…/deck-folder/` to its top block so its images load.
 
 ### Address options
 
@@ -90,6 +90,7 @@ A deck you write or change in the editor lives in the address itself, compressed
 | E | editor |
 | L | light / dark |
 | ? | keys (also ⌨ in the bottom bar) |
+| C · V · R | camera, camera layouts, record |
 
 Click a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch screen, the bottom bar adds ← → buttons.
 
@@ -127,15 +128,15 @@ Recording needs **[OBS Studio](https://obsproject.com)** (free) with its WebSock
 
 On a MacBook, whose screen isn't 16:9, **[BetterDisplay](https://betterdisplay.pro)** can add a 16:9 virtual screen (say 1920×1080) to present on and record, so the video fits YouTube without bars.
 
-### Recording mode: ?obs
+### Connecting to OBS
 
-The camera, recording and timer only appear when the address says where OBS is:
+Press **● Record** and enter where OBS is: host, port and the password from OBS's WebSocket settings. Tick *Remember* to skip this next time.
 
-- `?obs=localhost:4455`
-- `?obs=host:port:password`
-- `?obs` alone, for the connection you remembered
+`?obs=localhost:4455` (or `?obs=host:port:password`) in the address fills this in and connects as the page opens.
 
-Without it, Slidetake is a viewer and camera settings are ignored, so the same deck works for readers on a website.
+### A 16:9 screen
+
+The Record dialog checks your screen. If it isn't 16:9, present on one that is, or add a 1920×1080 virtual screen with BetterDisplay and press **F** there.
 
 ### OBS on another computer
 
@@ -159,7 +160,7 @@ Sessions are kept in this browser, so a take can be reviewed again later from �
 
 ## 📷 Camera
 
-**C** turns your webcam on in its box; a plain screen recording then captures you and the slides together. The camera is off every time the page opens.
+**C** (or **Camera** in the bottom bar) turns your webcam on in its box; a plain screen recording then captures you and the slides together. The camera is off every time the page opens, and until it's on, the deck's camera settings are ignored, so readers get slides using the whole screen.
 
 ### Deck settings
 
