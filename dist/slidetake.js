@@ -1,4 +1,4 @@
-/* Slidetake 0.2.1 · https://slidetake.com · Apache-2.0 */
+/* Slidetake 0.2.2 · https://slidetake.com · Apache-2.0 */
 "use strict";(()=>{var j=(e,t)=>()=>(e&&(t=e(e=0)),t);var Ft,jn=j(()=>{Ft=`---
 title: Slidetake \u2014 write in markdown, record without timeline editing
 brand: slidetake
@@ -1075,7 +1075,6 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
     color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6);}
   .node.img-overlay .body figure.media{position:relative;}
   .node.img-overlay .body figure.media img{width:100%;height:540px;object-fit:contain;}
-  .node.card-full.img-overlay .body figure.media img{object-fit:cover;}
   .node.img-overlay .body figure.media figcaption{position:absolute;left:0;right:0;bottom:0;padding:36px 18px 14px;
     color:#f4f4f5;background:linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.78));}
   .node.img-overlay .body .gallery.carousel figure.media figcaption::before{color:color-mix(in srgb, var(--accent) 55%, #fff);}
