@@ -11,6 +11,27 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-27
+
+### Added
+
+- Themeable colours. Every colour comes from a few tokens, and two things can
+  set them: `window.SLIDETAKE.colors` for a site embedding a deck (`accent`,
+  `accentSoft`, `line`, `ring`, `header`, `headerText`, for both modes or under
+  `light` / `dark`), and `accent:` in a deck's top block, one colour that
+  Slidetake sets bright for dark mode and deep for light mode.
+- A host's `header` colour is a band behind the deck's header, with
+  `headerText` for the trail and buttons on it, so a deck can wear its site's
+  header.
+- Charts and D2 diagrams take the deck's colours: the accent leads the chart
+  palette and tints D2's shapes, whatever it is.
+
+### Changed
+
+- Slidetake's own colour is terminal green (`#4ade80` on dark, `#15803d` on
+  light), replacing gold: the logo, favicon, link preview and every default.
+  Decks and sites that set their own colours are unaffected.
+
 ## [0.1.1] - 2026-10-26
 
 ### Added

@@ -112,9 +112,73 @@ function applyDeckSettings(){
 
   applyPipState();
   document.title = deck.title || 'Slidetake';
-  const palette = String(deck.theme || deck.palette || '').toLowerCase();
-  if (palette) document.body.dataset.palette = palette; else delete document.body.dataset.palette;
+  applyColors();
   applyMode();
+}
+
+// ---------- colours ----------
+// Everything is drawn from a few colour tokens (styles.css); Slidetake's own are terminal green. Two
+// things can replace them, the later winning:
+//   window.SLIDETAKE.colors  a host site's: {accent, accentSoft, line, ring, header, headerText} for both
+//                            modes, and/or {light: {…}, dark: {…}}; any CSS colour, gradients for header
+//   accent: in a deck        one colour; both modes' shades come from its hue, set to the lightness each
+//                            mode needs (bright on dark, deep enough to read on white)
+const COLOR_TOKENS = {accent: '--accent', accentSoft: '--accent-teal', line: '--accent-line', ring: '--accent-ring',
+  header: '--header-bg', headerText: '--header-ink', onAccent: '--on-accent'};
+function deckColors(){
+  const a = String(deck.accent || '').trim();
+  if (!a || !window.CSS || !CSS.supports('color', a)) return null;
+  if (!CSS.supports('color', 'oklch(from red l c h)')) return {accent: a, line: a};
+  const at = l=>'oklch(from ' + a + ' ' + l + ' c h)';
+  return {dark: {accent: at(0.80), accentSoft: at(0.87), line: at(0.50)},
+    light: {accent: at(0.45), accentSoft: at(0.40), line: at(0.75), ring: at(0.70)}};
+}
+function applyColors(){
+  let css = '';
+  const rule = (sel, o)=>{
+    const decl = Object.entries(o || {}).filter(([k, v])=>COLOR_TOKENS[k] && v && typeof v !== 'object')
+      .map(([k, v])=>COLOR_TOKENS[k] + ':' + String(v).replace(/[;{}<>]/g, '')).join(';');
+    if (decl) css += sel + '{' + decl + '}\n';
+  };
+  // what a source leaves out follows from the accent it gives, never from Slidetake's green
+  [EMBED && EMBED.colors, deckColors()].filter(Boolean).forEach(c=>{
+    ['dark', 'light'].forEach(mode=>{
+      const m = {...c, ...(c[mode] || {})}, dark = mode === 'dark';
+      if (m.accent && typeof m.accent === 'string'){
+        m.accentSoft = m.accentSoft || m.accent;
+        m.line = m.line || 'color-mix(in srgb, ' + m.accent + (dark ? ' 45%, #09090b)' : ' 55%, #fff)');
+        m.ring = m.ring || (dark ? m.accent : m.line);
+        m.onAccent = m.onAccent || (dark ? 'color-mix(in srgb, ' + m.accent + ' 15%, #000)' : '#fff');
+      }
+      rule(dark ? 'body:not([data-mode="light"])' : 'body[data-mode="light"]', m);
+    });
+  });
+  let el = document.getElementById('st-colors');
+  if (!el){ el = document.createElement('style'); el.id = 'st-colors'; document.head.appendChild(el); }
+  if (el.textContent !== css) el.textContent = css;
+  document.body.classList.toggle('st-header-color', css.includes('--header-bg'));
+}
+// a colour token as #rrggbb, read back from one drawn pixel: D2 and ECharts want plain hex, and a token can
+// be any CSS colour (oklch, color-mix, a var)
+let pixel = null;
+function tokenHex(name){
+  const probe = document.createElement('span');
+  probe.style.color = 'var(' + name + ')';
+  document.body.appendChild(probe);
+  const c = getComputedStyle(probe).color;
+  probe.remove();
+  pixel = pixel || Object.assign(document.createElement('canvas'), {width: 1, height: 1}).getContext('2d', {willReadFrequently: true});
+  pixel.clearRect(0, 0, 1, 1);
+  pixel.fillStyle = '#000';
+  pixel.fillStyle = c;
+  pixel.fillRect(0, 0, 1, 1);
+  return '#' + [...pixel.getImageData(0, 0, 1, 1).data.slice(0, 3)].map(x=>x.toString(16).padStart(2, '0')).join('');
+}
+// t of colour a over b, both #rrggbb
+function mixHex(a, b, t){
+  const p = h=>[1, 3, 5].map(i=>parseInt(h.slice(i, i + 2), 16));
+  const x = p(a), y = p(b);
+  return '#' + x.map((v, i)=>Math.round(v * t + y[i] * (1 - t)).toString(16).padStart(2, '0')).join('');
 }
 
 // ---------- light / dark ----------
@@ -597,38 +661,53 @@ function relayoutSoon(){
 // ---------- diagrams (Graphviz dot) and charts (ECharts), loaded only when a deck uses them ----------
 const VIZ_URL = 'https://cdn.jsdelivr.net/npm/@viz-js/viz@3.4.0/lib/viz-standalone.js';
 const ECHARTS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js';
-// charts in the deck's palette, gold first, redrawn when the theme flips; a chart that sets its own colors keeps them
+// charts in the deck's palette, its accent first, redrawn when the theme flips; a chart that sets its own
+// colors keeps them
 const ECHARTS_THEME = {
-  dark: {palette: ['#e0b024', '#60a5fa', '#34d399', '#f472b6', '#a78bfa', '#fb923c', '#a1a1aa'],
+  dark: {palette: ['#60a5fa', '#f472b6', '#a78bfa', '#fb923c', '#facc15', '#a1a1aa'],
     text: '#e4e4e7', muted: '#a1a1aa', line: '#3f3f46', split: '#27272a', tip: '#18181b'},
-  light: {palette: ['#c4930f', '#2563eb', '#059669', '#db2777', '#7c3aed', '#ea580c', '#71717a'],
+  light: {palette: ['#2563eb', '#db2777', '#7c3aed', '#ea580c', '#ca8a04', '#71717a'],
     text: '#27272a', muted: '#71717a', line: '#d4d4d8', split: '#e4e4e7', tip: '#ffffff'},
 };
-function registerChartThemes(){
-  Object.entries(ECHARTS_THEME).forEach(([mode, t])=>{
-    const axis = {axisLine: {lineStyle: {color: t.line}}, axisTick: {lineStyle: {color: t.line}},
-      axisLabel: {color: t.muted}, splitLine: {lineStyle: {color: t.split}}, nameTextStyle: {color: t.muted}};
-    echarts.registerTheme('slidetake-' + mode, {
-      color: t.palette, backgroundColor: 'transparent',
-      textStyle: {color: t.text, fontFamily: "'IBM Plex Sans', sans-serif"},
-      title: {textStyle: {color: t.text}, subtextStyle: {color: t.muted}},
-      legend: {textStyle: {color: t.text}},
-      tooltip: {backgroundColor: t.tip, borderColor: t.line, textStyle: {color: t.text}},
-      categoryAxis: axis, valueAxis: axis, logAxis: axis, timeAxis: axis,
-      line: {symbolSize: 6, lineStyle: {width: 2.5}},
-    });
+// one theme per mode and accent, so a deck in another accent (or the other mode) gets its own; light mode
+// fills with the ring colour, the deep accent being dark enough for text and heavy as a bar
+function chartTheme(){
+  const mode = currentMode() === 'light' ? 'light' : 'dark', accent = tokenHex(mode === 'light' ? '--accent-ring' : '--accent');
+  const name = 'slidetake-' + mode + '-' + accent.slice(1);
+  if (!chartThemes.has(name)){ registerChartTheme(name, ECHARTS_THEME[mode], accent); chartThemes.add(name); }
+  return name;
+}
+const chartThemes = new Set();
+function registerChartTheme(name, t, accent){
+  const axis = {axisLine: {lineStyle: {color: t.line}}, axisTick: {lineStyle: {color: t.line}},
+    axisLabel: {color: t.muted}, splitLine: {lineStyle: {color: t.split}}, nameTextStyle: {color: t.muted}};
+  echarts.registerTheme(name, {
+    color: [accent, ...t.palette], backgroundColor: 'transparent',
+    textStyle: {color: t.text, fontFamily: "'IBM Plex Sans', sans-serif"},
+    title: {textStyle: {color: t.text}, subtextStyle: {color: t.muted}},
+    legend: {textStyle: {color: t.text}},
+    tooltip: {backgroundColor: t.tip, borderColor: t.line, textStyle: {color: t.text}},
+    categoryAxis: axis, valueAxis: axis, logAxis: axis, timeAxis: axis,
+    line: {symbolSize: 6, lineStyle: {width: 2.5}},
   });
 }
 // D2 (https://d2lang.com) ships as an ES module; it loads only when a deck has a ```d2 block
 const D2_URL = 'https://esm.sh/@terrastruct/d2@0.1.33';
 let d2 = null;
-// D2's palette slots in Slidetake's gold, per mode: N = neutrals (text to page), B = the accent and its tints
-const D2_THEME = {
-  dark: {N1:'#e4e4e7', N2:'#a1a1aa', N3:'#a1a1aa', N4:'#323238', N5:'#27272a', N6:'#18181b', N7:'#09090b',
-         B1:'#e0b024', B2:'#907320', B3:'#68551f', B4:'#483c1d', B5:'#38301c', B6:'#2c271c'},
-  light: {N1:'#27272a', N2:'#71717a', N3:'#71717a', N4:'#e4e4e7', N5:'#e4e4e7', N6:'#f4f4f5', N7:'#ffffff',
-          B1:'#7a5c12', B2:'#e5cf87', B3:'#eedfaf', B4:'#f5eccf', B5:'#f8f2df', B6:'#fbf7eb'}
+// D2's palette slots, per mode: N = neutrals (text to page), B = the deck's accent and its tints over the card
+const D2_NEUTRALS = {
+  dark: {N1:'#e4e4e7', N2:'#a1a1aa', N3:'#a1a1aa', N4:'#323238', N5:'#27272a', N6:'#18181b', N7:'#09090b'},
+  light: {N1:'#27272a', N2:'#71717a', N3:'#71717a', N4:'#e4e4e7', N5:'#e4e4e7', N6:'#f4f4f5', N7:'#ffffff'}
 };
+function d2Theme(){
+  const mode = currentMode() === 'light' ? 'light' : 'dark', card = tokenHex('--node-bg');
+  // dark tints the bright accent into the card; light tints the line colour, the deep accent being for text
+  const tint = mode === 'dark' ? tokenHex('--accent') : tokenHex('--accent-line');
+  const steps = mode === 'dark' ? [0.58, 0.38, 0.25, 0.18, 0.12] : [0.7, 0.45, 0.25, 0.15, 0.08];
+  const t = {...D2_NEUTRALS[mode], B1: tokenHex('--accent')};
+  steps.forEach((x, i)=>{ t['B' + (i + 2)] = mixHex(tint, card, x); });
+  return t;
+}
 // ELK lays out D2's containers more cleanly than the default; a deck's own d2-config still wins
 const withD2Defaults = code=>/d2-config\s*:/.test(code) ? code : 'vars: {\n  d2-config: {\n    layout-engine: elk\n  }\n}\n' + code;
 const scripts = {};
@@ -673,7 +752,7 @@ async function renderRich(){
     try {
       if (!d2){ const mod = await import(/* runtime, not bundled */ D2_URL); d2 = new mod.D2(); }
       if (gen !== buildGen) return;
-      const theme = D2_THEME[currentMode()];
+      const theme = d2Theme();
       for (const code of d2s){
         const box = document.createElement('div');
         box.className = 'diagram d2';
@@ -690,13 +769,13 @@ async function renderRich(){
     try {
       await loadScript(ECHARTS_URL);
       if (gen !== buildGen) return;
-      if (!echarts._slidetakeThemes){ registerChartThemes(); echarts._slidetakeThemes = true; }
+      const theme = chartTheme();
       charts.forEach(div=>{
         let opt;
         try { opt = JSON.parse(div.dataset.chart); }
         catch(e){ div.textContent = 'Chart data is not valid JSON.'; return; }
         // SVG stays sharp however far the camera zooms in
-        echarts.init(div, 'slidetake-' + (currentMode() === 'light' ? 'light' : 'dark'), {renderer:'svg'}).setOption(Object.assign({backgroundColor:'transparent', animation:!reduceMotion}, opt));
+        echarts.init(div, theme, {renderer:'svg'}).setOption(Object.assign({backgroundColor:'transparent', animation:!reduceMotion}, opt));
       });
     } catch(e){ problems.push('charts'); }
   }

@@ -203,8 +203,11 @@ pip_size: 24%                ← camera box width
 pip_shape: rect              ← rect (16:9) or circle
 pip_mirror: yes              ← mirror the webcam
 camera: 24%, 40%, full, off  ← layouts V cycles through
+accent: "#3b82f6"            ← the deck's colour, instead of Slidetake's green
 ---
 ```
+
+`accent` is one colour; Slidetake sets it bright for dark mode and deep enough to read on white for light mode, and uses it for text accents, lines, charts and diagrams.
 
 Slides are always placed clear of the brand and the camera box.
 
