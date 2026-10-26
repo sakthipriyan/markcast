@@ -2166,7 +2166,8 @@ window.addEventListener('keydown', e=>{
   if (document.querySelector('.modal.open')){ if (e.key === 'Escape') closeModals(); return; }
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === 'TEXTAREA' || tag === 'INPUT' || e.metaKey || e.ctrlKey || e.altKey) return;
-  if (help.classList.contains('open')){ if (e.key==='Escape') help.classList.remove('open'); return; }
+  // the keys card: K or ? again closes it, as O and F undo themselves
+  if (help.classList.contains('open')){ if (/^(Escape|k|K|\?)$/.test(e.key)) help.classList.remove('open'); return; }
   const k = e.key;
   if (k==='ArrowRight' || k===' ' || k==='PageDown'){ e.preventDefault(); step(1); }
   else if (k==='ArrowLeft' || k==='PageUp'){ e.preventDefault(); step(-1); }
