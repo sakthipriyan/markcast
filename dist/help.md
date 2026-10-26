@@ -142,7 +142,7 @@ Text keeps one size within a section and only changes when the section does. Cha
 
 ## 🎬 Presenting
 
-**F** goes fullscreen. The current slide fills the screen, and the cursor and controls hide after two seconds without the mouse moving.
+**F** goes fullscreen, and **F** again (or **Esc**) leaves. The current slide fills the screen, and the cursor and controls hide after two seconds without the mouse moving.
 
 ### Progress and talk timer
 

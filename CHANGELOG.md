@@ -11,6 +11,13 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-27
+
+### Fixed
+
+- **K** (or **?**) again closes the keys card, as **O** returns from the map and
+  **F** leaves fullscreen; before, only **Esc** closed it.
+
 ## [0.2.0] - 2026-10-27
 
 ### Added
