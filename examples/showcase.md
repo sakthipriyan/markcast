@@ -104,7 +104,7 @@ The layout comes from what's on the slide; the alt text is the caption.
 
 ### One image
 
-![An image alone fills the card](https://slidetake.com/og.jpg)
+![An image alone fills the card edge to edge](https://slidetake.com/og.jpg)
 
 ### Image and text
 

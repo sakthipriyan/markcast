@@ -40,9 +40,9 @@ Plain markdown, and the layout follows from what's on the card. [See every one â
 | ` ```dot `, ` ```d2 ` | a Graphviz or D2 diagram |
 | ` ```echarts ` with JSON options | a chart, in the deck's colors for dark and light |
 | ` ```svg ` or `![](drawing.svg)` | an SVG drawing |
-| an image alone | the image fills the card |
+| an image alone | the image fills the card edge to edge, heading and caption over it |
 | an image and text | a split card: the image sits on the side written first |
-| a list of images | a gallery; with `<!-- steps -->` a carousel, one image per press |
+| a list of images | a gallery; with `<!-- steps -->` a full-bleed carousel, one image per press |
 | images in one paragraph | a grid, up to four a row |
 | a YouTube link alone on a line | the video: the next press plays it, leaving pauses it |
 

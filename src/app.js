@@ -43,6 +43,7 @@ const editorPane = document.getElementById('editor-pane');
 
 // ---------- layout constants ----------
 // cards are NODE_W wide unless their content needs more (wide tables, columns, diagrams, embeds)
+const BLEED_H = 540;   // a full-bleed card's height: 16:9 at the widest card
 const NODE_W = 440, WIDE_W = 720, XWIDE_W = 960, NODE_H_EST = 180, SPACING_X = 540,
       VERTICAL_GAP = 100, RADIAL_GAP = 110, RADIAL_MIN_STEP = 420;
 
@@ -455,6 +456,8 @@ function applyMedia(el, body){
   const parts = [...body.children].filter(c=>!/^H[1-6]$/.test(c.tagName) && !(c.nodeType === 1 && c.tagName === 'HR'));
   const media = parts.filter(c=>c.matches('figure.media'));
   if (media.length === 1 && parts.length === 1) el.classList.add('card-media');
+  // an image or a carousel alone runs edge to edge, the heading and caption laid over it
+  if (parts.length === 1 && (parts[0].matches('figure.media:not(.yt)') || parts[0].matches('.gallery.carousel'))) el.classList.add('card-bleed');
   else if (media.length === 1){
     el.classList.add('card-split', parts.indexOf(media[0]) === 0 ? 'media-first' : 'media-last');
     const text = document.createElement('div');
@@ -535,6 +538,11 @@ function sizeCard(n){
   // a chart, diagram or embed is a picture: its zoom shouldn't set the section's text size
   n.visual = !!b.querySelector('iframe, .echarts-container, pre > code.language-dot, pre > code.language-d2, pre > code.language-echarts, .diagram, figure.media');
   if (n.visual) w = XWIDE_W;
+  // a full-bleed card takes its image's shape at a 16:9 card's height (the widest image, for a carousel)
+  if (el.classList.contains('card-bleed')){
+    const aspect = Math.max(0, ...[...b.querySelectorAll('img')].map(i=>i.naturalWidth && i.naturalHeight ? i.naturalWidth / i.naturalHeight : 0)) || 16 / 9;
+    w = Math.round(Math.max(NODE_W, Math.min(XWIDE_W, BLEED_H * aspect)));
+  }
   else if (b.querySelector('[style*="flex"], [style*="grid"], .r-hstack') || b.querySelectorAll('img').length >= 4) w = WIDE_W;
   // tables get the width they naturally need (laid out with the widest card's room), not a tier by
   // column count, so a compact table doesn't leave a third of the card empty
