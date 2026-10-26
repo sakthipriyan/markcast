@@ -127,6 +127,12 @@ Several images in one paragraph sit side by side, up to four a row:
 
 ![Logo](https://slidetake.com/favicon.svg) ![Icon](https://slidetake.com/apple-touch-icon.png) ![Preview](https://slidetake.com/og.jpg)
 
+### Full screen
+
+<!-- view: full -->
+
+![A card tagged view: full fills the whole screen](https://slidetake.com/og.jpg)
+
 ## ▶️ YouTube
 
 A YouTube link alone on a line becomes the video. The next press plays it; leaving the slide pauses it.

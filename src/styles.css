@@ -386,20 +386,42 @@
   .node .body .gallery.carousel figcaption[data-count]::before{content:attr(data-count) "  ·  ";color:var(--accent);font-family:var(--mono);white-space:pre;}
   .node .body .gallery.carousel:has(> li.visible) > li:not(.fragment){opacity:0;visibility:hidden;transition:opacity .45s ease, visibility 0s .45s;}
   .node .body .gallery.carousel > li:not(.fragment){transition:opacity .45s ease;}
-  /* full bleed: an image or carousel alone fills the card; the heading and caption sit over it */
+  /* image cards: an image or carousel alone, laid out by the image's shape (see sizeCard) */
   div.node.card-bleed{padding:0;overflow:hidden;}
-  .node.card-bleed::before{content:"";position:absolute;inset:0 0 auto;height:96px;z-index:2;pointer-events:none;
-    background:linear-gradient(rgba(0,0,0,.72), rgba(0,0,0,0));border-radius:8px 8px 0 0;}
-  .node.card-bleed .crumb{position:absolute;top:12px;left:18px;right:18px;z-index:3;margin:0;color:rgba(255,255,255,.72);}
-  .node.card-bleed .body > :is(h1,h2,h3,h4,h5,h6):first-child{position:absolute;top:28px;left:18px;right:18px;z-index:3;margin:0;
-    color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6);}
   .node.card-bleed .body .gallery{margin:0;}
-  .node.card-bleed .body figure.media{position:relative;}
   .node.card-bleed .body figure.media img,
-  .node.card-bleed .body .gallery.carousel figure.media img{width:100%;height:540px;max-height:none;object-fit:contain;border-radius:0;background:var(--code-bg);}
-  .node.card-bleed .body figure.media figcaption{position:absolute;left:0;right:0;bottom:0;margin:0;padding:36px 18px 14px;
-    color:#f4f4f5;background:linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.78));text-align:left;font-size:.82em;}
-  .node.card-bleed .body .gallery.carousel figure.media figcaption::before{color:#f5c542;}
+  .node.card-bleed .body .gallery.carousel figure.media img{max-height:none;border-radius:0;background:var(--code-bg);}
+  .node.card-bleed .body figure.media figcaption{margin:0;text-align:left;font-size:.9em;}
+  /* landscape: the image spans the card; the heading sits above it, the caption below */
+  .node.img-landscape .crumb{margin:12px 18px 4px;}
+  .node.img-landscape .body > :is(h1,h2,h3,h4,h5,h6):first-child{margin:0 18px 10px;}
+  .node.img-landscape .body figure.media img{width:100%;height:var(--img-h);object-fit:contain;}
+  .node.img-landscape .body figure.media figcaption{padding:10px 18px 14px;}
+  /* portrait: the image on the right at the card's height; the heading and caption share the left */
+  div.node.img-portrait{height:540px;padding:20px calc(var(--img-w) + 26px) 22px 24px;}
+  .node.img-portrait .body{display:flex;flex-direction:column;height:100%;}
+  .node.img-portrait .crumb{margin-bottom:10px;}
+  .node.img-portrait .body > :is(h1,h2,h3,h4,h5,h6):first-child{font-size:22px;}
+  .node.img-portrait .body > .gallery, .node.img-portrait .body > figure.media{margin-top:auto;}
+  .node.img-portrait .body figure.media img{position:absolute;top:0;right:0;width:var(--img-w);height:540px;object-fit:contain;}
+  .node.img-portrait .body figure.media figcaption, .node.img-portrait .body .gallery.carousel figure.media figcaption{font-size:1.35em;line-height:1.45;color:var(--text);}
+  .node.img-portrait .body .gallery.carousel figure.media figcaption::before{font-size:.7em;}
+  .node.img-portrait .body .gallery.carousel figure.media figcaption::before{content:attr(data-count) "\A";white-space:pre;}
+  /* 16:9, or a full-screen card: the image fills the card, the heading and caption over it */
+  .node.img-overlay::before{content:"";position:absolute;inset:0 0 auto;height:96px;z-index:2;pointer-events:none;
+    background:linear-gradient(rgba(0,0,0,.72), rgba(0,0,0,0));border-radius:8px 8px 0 0;}
+  .node.img-overlay .crumb{position:absolute;top:12px;left:18px;right:18px;z-index:3;margin:0;color:rgba(255,255,255,.72);}
+  .node.img-overlay .body > :is(h1,h2,h3,h4,h5,h6):first-child{position:absolute;top:28px;left:18px;right:18px;z-index:3;margin:0;
+    color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6);}
+  .node.img-overlay .body figure.media{position:relative;}
+  .node.img-overlay .body figure.media img{width:100%;height:540px;object-fit:contain;}
+  .node.card-full.img-overlay .body figure.media img{object-fit:cover;}
+  .node.img-overlay .body figure.media figcaption{position:absolute;left:0;right:0;bottom:0;padding:36px 18px 14px;
+    color:#f4f4f5;background:linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.78));}
+  .node.img-overlay .body .gallery.carousel figure.media figcaption::before{color:#f5c542;}
+  /* <!-- view: full -->: a 16:9 card that fills the screen, with the map and breadcrumbs out of the way */
+  div.node.card-full{height:540px;overflow:hidden;}
+  body.full-card #breadcrumbs, body.full-card #minimap{opacity:0;pointer-events:none;}
   /* measure cards at their resting size, without grow/zoom transforms */
   div.node.measuring .fragment{transform:none !important;transition:none !important;}
   /* a card re-measured mid-entrance (a theme switch replays it) must not count a gsap "from" state such
