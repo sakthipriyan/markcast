@@ -542,8 +542,8 @@ function sizeCard(n){
   n.visual = !!b.querySelector('iframe, .echarts-container, pre > code.language-dot, pre > code.language-d2, pre > code.language-echarts, .diagram, figure.media');
   if (n.visual) w = XWIDE_W;
   // an image card takes its layout from the image's shape (the widest image, for a carousel):
-  //   portrait  → image on the right at the card's height, the heading and caption beside it
-  //   landscape → image edge to edge across the card, the heading above it and the caption below
+  //   portrait or near-square → image on the right at the card's height, the heading and caption beside it
+  //   wider     → image edge to edge across the card, the heading above it and the caption below
   //   16:9, or a <!-- view: full --> card → the image fills the card, the heading and caption over it
   const full = el.classList.contains('card-full');
   el.classList.remove('img-portrait', 'img-landscape', 'img-overlay');
@@ -551,8 +551,8 @@ function sizeCard(n){
   if (el.classList.contains('card-bleed')){
     const aspect = Math.max(0, ...[...b.querySelectorAll('img')].map(i=>i.naturalWidth && i.naturalHeight ? i.naturalWidth / i.naturalHeight : 0)) || 16 / 9;
     if (full || Math.abs(aspect - 16 / 9) < 0.08){ el.classList.add('img-overlay'); w = XWIDE_W; }
-    else if (aspect < 1){
-      const iw = Math.round(BLEED_H * aspect);
+    else if (aspect < 1.3){
+      const iw = Math.min(Math.round(BLEED_H * aspect), XWIDE_W - 300);   // leave the text at least 300px
       el.classList.add('img-portrait');
       el.style.setProperty('--img-w', iw + 'px');
       w = Math.min(XWIDE_W, Math.max(WIDE_W, iw * 2));
