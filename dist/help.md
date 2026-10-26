@@ -38,7 +38,7 @@ Plain markdown, and the layout follows from what's on the card. [See every one â
 |---|---|
 | `<!-- steps -->` before a list | one item per press |
 | ` ```dot `, ` ```d2 ` | a Graphviz or D2 diagram |
-| ` ```echarts ` with JSON options | a chart |
+| ` ```echarts ` with JSON options | a chart, in the deck's colors for dark and light |
 | ` ```svg ` or `![](drawing.svg)` | an SVG drawing |
 | an image alone | the image fills the card |
 | an image and text | a split card: the image sits on the side written first |

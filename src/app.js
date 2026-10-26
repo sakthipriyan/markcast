@@ -570,6 +570,28 @@ function relayoutSoon(){
 // ---------- diagrams (Graphviz dot) and charts (ECharts), loaded only when a deck uses them ----------
 const VIZ_URL = 'https://cdn.jsdelivr.net/npm/@viz-js/viz@3.4.0/lib/viz-standalone.js';
 const ECHARTS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js';
+// charts in the deck's palette, gold first, redrawn when the theme flips; a chart that sets its own colors keeps them
+const ECHARTS_THEME = {
+  dark: {palette: ['#e0b024', '#60a5fa', '#34d399', '#f472b6', '#a78bfa', '#fb923c', '#a1a1aa'],
+    text: '#e4e4e7', muted: '#a1a1aa', line: '#3f3f46', split: '#27272a', tip: '#18181b'},
+  light: {palette: ['#c4930f', '#2563eb', '#059669', '#db2777', '#7c3aed', '#ea580c', '#71717a'],
+    text: '#27272a', muted: '#71717a', line: '#d4d4d8', split: '#e4e4e7', tip: '#ffffff'},
+};
+function registerChartThemes(){
+  Object.entries(ECHARTS_THEME).forEach(([mode, t])=>{
+    const axis = {axisLine: {lineStyle: {color: t.line}}, axisTick: {lineStyle: {color: t.line}},
+      axisLabel: {color: t.muted}, splitLine: {lineStyle: {color: t.split}}, nameTextStyle: {color: t.muted}};
+    echarts.registerTheme('slidetake-' + mode, {
+      color: t.palette, backgroundColor: 'transparent',
+      textStyle: {color: t.text, fontFamily: "'IBM Plex Sans', sans-serif"},
+      title: {textStyle: {color: t.text}, subtextStyle: {color: t.muted}},
+      legend: {textStyle: {color: t.text}},
+      tooltip: {backgroundColor: t.tip, borderColor: t.line, textStyle: {color: t.text}},
+      categoryAxis: axis, valueAxis: axis, logAxis: axis, timeAxis: axis,
+      line: {symbolSize: 6, lineStyle: {width: 2.5}},
+    });
+  });
+}
 // D2 (https://d2lang.com) ships as an ES module; it loads only when a deck has a ```d2 block
 const D2_URL = 'https://esm.sh/@terrastruct/d2@0.1.33';
 let d2 = null;
@@ -641,12 +663,13 @@ async function renderRich(){
     try {
       await loadScript(ECHARTS_URL);
       if (gen !== buildGen) return;
+      if (!echarts._slidetakeThemes){ registerChartThemes(); echarts._slidetakeThemes = true; }
       charts.forEach(div=>{
         let opt;
         try { opt = JSON.parse(div.dataset.chart); }
         catch(e){ div.textContent = 'Chart data is not valid JSON.'; return; }
         // SVG stays sharp however far the camera zooms in
-        echarts.init(div, currentMode() === 'light' ? null : 'dark', {renderer:'svg'}).setOption(Object.assign({backgroundColor:'transparent', animation:!reduceMotion}, opt));
+        echarts.init(div, 'slidetake-' + (currentMode() === 'light' ? 'light' : 'dark'), {renderer:'svg'}).setOption(Object.assign({backgroundColor:'transparent', animation:!reduceMotion}, opt));
       });
     } catch(e){ problems.push('charts'); }
   }

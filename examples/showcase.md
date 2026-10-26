@@ -85,7 +85,7 @@ ECharts, as a fenced `echarts` block of JSON options.
 {
   "xAxis": {"type": "category", "data": ["Jan", "Feb", "Mar", "Apr", "May"]},
   "yAxis": {"type": "value"},
-  "series": [{"type": "bar", "data": [12, 19, 15, 24, 30], "itemStyle": {"color": "#e0b024"}}]
+  "series": [{"type": "bar", "data": [12, 19, 15, 24, 30]}]
 }
 ```
 
