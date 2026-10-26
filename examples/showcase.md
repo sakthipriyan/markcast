@@ -114,7 +114,7 @@ An image beside text makes a split card. Write the text first and the image move
 
 ### A gallery
 
-A list of images is a gallery, and with `<!-- steps -->` it walks through them one per press:
+A list of images is a gallery. With `<!-- steps -->` it becomes a carousel: one image at a time, the next on each press.
 
 <!-- steps -->
 - ![The logo](https://slidetake.com/favicon.svg)
@@ -123,7 +123,7 @@ A list of images is a gallery, and with `<!-- steps -->` it walks through them o
 
 ### A grid
 
-Several images in one paragraph sit side by side:
+Several images in one paragraph sit side by side, up to four a row:
 
 ![Logo](https://slidetake.com/favicon.svg) ![Icon](https://slidetake.com/apple-touch-icon.png) ![Preview](https://slidetake.com/og.jpg)
 

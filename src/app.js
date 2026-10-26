@@ -376,7 +376,7 @@ function applyElementComments(root){
 // A card's media decides its layout, with no classes to write (the alt text is the caption):
 //   one image or video alone        → media card: the image fills the card, caption below
 //   one image or video + text       → split: media on one side (the side it was written on), text on the other
-//   a list of images                → gallery, one per press under <!-- steps -->
+//   a list of images                → gallery; under <!-- steps --> a carousel, one image per press
 //   several images in one paragraph → grid
 //   a YouTube link alone on a line  → the video (next press plays it; leaving the slide pauses it)
 function figureFor(img){
@@ -395,6 +395,12 @@ function youtubeFigure(v, caption){
     '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>' +
     (caption ? '<figcaption>' + escapeHtml(caption) + '</figcaption>' : '');
   return fig;
+}
+// up to four images a row, each row sharing the card's height, so a long set stays on the slide
+function gridSize(el, n){
+  const cols = n <= 4 ? n : n <= 6 ? 3 : 4;
+  el.style.setProperty('--cols', cols);
+  el.style.setProperty('--rows', Math.ceil(n / cols));
 }
 // a paragraph holding only images (and line breaks), or only one link
 const onlyImages = p=>p.querySelector('img') && !p.textContent.trim() && [...p.children].every(c=>/^(IMG|BR)$/.test(c.tagName));
@@ -423,6 +429,16 @@ function applyMedia(el, body){
     if (!items.length || !items.every(li=>li.querySelector('img') && !li.textContent.trim())) return;
     list.classList.add('gallery');
     items.forEach(li=>{ const img = li.querySelector('img'); li.innerHTML = ''; li.appendChild(img); figureFor(img); });
+    // under <!-- steps -->: a carousel, one image at a time and large; the first is up before any press
+    if (items.length > 1 && items.every(li=>li.classList.contains('fragment'))){
+      list.classList.add('carousel');
+      items[0].classList.remove('fragment', 'fade-up');
+      items.forEach((li, i)=>{
+        li.classList.replace('fade-up', 'current-visible');
+        const cap = li.querySelector('figcaption');
+        if (cap) cap.dataset.count = (i + 1) + ' / ' + items.length;
+      });
+    } else gridSize(list, items.length);
   });
   // paragraphs of images: one image is a figure, several a grid
   body.querySelectorAll(':scope > p').forEach(p=>{
@@ -433,6 +449,7 @@ function applyMedia(el, body){
     grid.className = 'gallery grid';
     p.replaceWith(grid);
     imgs.forEach(img=>{ grid.appendChild(img); figureFor(img); });
+    gridSize(grid, imgs.length);
   });
   // the card's layout, from what's left beside its heading
   const parts = [...body.children].filter(c=>!/^H[1-6]$/.test(c.tagName) && !(c.nodeType === 1 && c.tagName === 'HR'));
