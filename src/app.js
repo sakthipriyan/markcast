@@ -608,7 +608,7 @@ function sizeCard(n){
   // an image card takes its layout from the image's shape (the widest image, for a carousel):
   //   portrait or near-square → image on the right at the card's height, the heading and caption beside it
   //   wider     → image edge to edge across the card, the heading above it and the caption below
-  //   16:9, or a <!-- view: full --> card → the image fills the card, the heading and caption over it
+  //   16:9, or a <!-- view: full --> card → the image fills the card (fitted whole, never cropped), the heading and caption over it
   const full = el.classList.contains('card-full');
   el.classList.remove('img-portrait', 'img-landscape', 'img-overlay');
   if (full) w = XWIDE_W;

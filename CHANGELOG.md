@@ -11,6 +11,14 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-27
+
+### Changed
+
+- A full-screen card (`<!-- view: full -->`) fits its image whole, with bars
+  where its shape differs from the screen's, instead of cropping it to fill.
+  A screenshot keeps every edge.
+
 ## [0.2.1] - 2026-10-27
 
 ### Fixed
