@@ -13,6 +13,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # What ships: the app at slidetake.com and the npm package, both built from
+      # src/ and examples/ by build.mjs. Markdown counts here, unlike most repos:
+      # the help, home and showcase decks are content readers see. Tests, CI and
+      # docs about the repo change nothing that ships.
+      - name: Check changes and changelog
+        env:
+          BASE: origin/${{ github.base_ref }}
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          RELEASE_CHANGED=$(git diff --name-only $BASE...HEAD -- src/ examples/ build.mjs package.json || true)
+          if [ -n "$RELEASE_CHANGED" ]; then
+            echo "User-facing files modified:"
+            echo "$RELEASE_CHANGED"
+            echo "----------------------------------------"
+            if ! git diff --name-only $BASE...HEAD | grep -q "^CHANGELOG.md$"; then
+              echo "::error::User-facing files were modified but CHANGELOG.md was not updated. Please document your changes."
+              exit 1
+            fi
+            echo "Success: CHANGELOG.md was updated!"
+          else
+            echo "No user-facing files modified. Changelog entry not required."
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
