@@ -15,6 +15,8 @@
     base       where relative images resolve, usually the page's own address
     trail      [{label, url}, …]: the header, from the site down to the deck's section
     themeKey   the localStorage key the site keeps light / dark / auto under (optional)
+    colors     the site's colours instead of Slidetake's green (optional): accent, accentSoft, line, ring,
+               header, headerText, for both modes or under light / dark
 -->
 <script>
 window.SLIDETAKE = {
@@ -22,7 +24,8 @@ window.SLIDETAKE = {
   settings: {title: "Embedded deck", brand: "example.com", duration: "5m", tags: ["demo"]},
   base: location.href,
   trail: [{label: "Example site", url: "../"}, {label: "Talks", url: "../"}],
-  themeKey: "example-theme"
+  themeKey: "example-theme",
+  colors: {light: {accent: "#1d4ed8", line: "#93c5fd"}, dark: {accent: "#93c5fd", line: "#1e40af"}}
 };
 </script>
 <script src="../dist/slidetake.js"></script>

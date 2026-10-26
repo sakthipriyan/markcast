@@ -70,12 +70,18 @@ window.SLIDETAKE = {
   base: location.href,                                // where relative images resolve
   trail: [{label: "My site", url: "/"},               // the header: the site, down to the deck's section
           {label: "Talks", url: "/talks/"}],
-  themeKey: "my-site-theme"                           // optional: the site's light/dark/auto key
+  themeKey: "my-site-theme",                          // optional: the site's light/dark/auto key
+  colors: {                                           // optional: the site's colours instead of Slidetake's green
+    light: {accent: "#7a5c12", line: "#f5c542", header: "linear-gradient(135deg,#f5c542,#d4af37)", headerText: "#1a1408"},
+    dark:  {accent: "#e0b024", line: "#966f04"}
+  }
   // recording: true                                 // optional: always show Camera and Record
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/slidetake@0.1.0/dist/slidetake.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/slidetake@0.2.0/dist/slidetake.js"></script>
 ```
+
+`colors` takes any CSS colour per token, for both modes or under `light` / `dark`: `accent` (text and the current slide), `accentSoft` (smaller headings), `line` (borders and the active path), `ring` (the current slide's outline), `header` and `headerText` (a band of colour behind the header). A deck can also set its own with `accent:` in its top block.
 
 Load it from npm through a CDN (pin the version, as above), or copy `dist/slidetake.js` into your site, or `npm install slidetake` and serve `node_modules/slidetake/dist/slidetake.js`.
 
