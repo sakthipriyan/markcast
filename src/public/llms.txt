@@ -1,6 +1,6 @@
 # Slidetake
 
-> Markdown to finished video: a markdown file becomes a spatial deck you move through like a map, and when you record it with OBS, the deck directs the video: every slide is a take, with a frame-exact ffmpeg cut and YouTube chapters at the end.
+> Write in markdown. Present on a spatial canvas. Record without timeline editing. A markdown file becomes a spatial deck you move through like a map; recording with OBS, every slide is a take, so a fumbled line is retaken on the spot, and Slidetake writes the frame-exact ffmpeg cut, YouTube chapters and description. For developers and technical educators.
 
 Slidetake runs in the browser at https://slidetake.com. It is open source (Apache 2.0): https://github.com/slidetake/slidetake
 

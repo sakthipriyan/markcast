@@ -1,0 +1,5 @@
+# Slidetake: everything here is public; crawlers and AI tools are welcome.
+User-agent: *
+Allow: /
+
+# A plain-text summary for AI tools: https://slidetake.com/llms.txt
