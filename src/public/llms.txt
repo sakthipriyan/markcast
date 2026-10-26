@@ -13,6 +13,11 @@ Slidetake runs in the browser at https://slidetake.com. It is open source (Apach
 
 - Ordinary markdown: every heading is a card; a heading branches off the nearest shallower heading above it.
 - reveal.js decks (`---` between slides, `--` for vertical ones) open as they are.
+- `<!-- steps -->` before a list reveals one item per press.
+- Fenced blocks ```dot, ```d2, ```echarts (JSON options) and ```svg render as diagrams, charts and drawings.
+- Images: alone fills the card; beside text makes a split card; a list of images is a gallery; several in one paragraph a grid. Alt text is the caption.
+- A YouTube link alone on a line embeds the video; the next press plays it.
+- Every feature in one deck: https://slidetake.com/examples (source: https://github.com/slidetake/slidetake/blob/main/examples/showcase.md)
 - An optional frontmatter block sets deck options: title, brand, duration (e.g. 10m), pip, camera.
 - `<!-- camera: full, on -->` inside a slide steps the presenter's camera; `<!-- view: overview -->` pulls back to the map first.
 

@@ -30,6 +30,24 @@ See the [roadmap](#plan).
 - A card's id is its heading slugified (`## Moving around` → `moving-around`), or set one with `{#id}` at the end of the heading.
 - A link to `#id` flies to that card.
 
+### What a card can hold
+
+Plain markdown, and the layout follows from what's on the card. [See every one →](/examples)
+
+| Write | Get |
+|---|---|
+| `<!-- steps -->` before a list | one item per press |
+| ` ```dot `, ` ```d2 ` | a Graphviz or D2 diagram |
+| ` ```echarts ` with JSON options | a chart |
+| ` ```svg ` or `![](drawing.svg)` | an SVG drawing |
+| an image alone | the image fills the card |
+| an image and text | a split card: the image sits on the side written first |
+| a list of images | a gallery, walked through with `<!-- steps -->` |
+| images in one paragraph | a grid |
+| a YouTube link alone on a line | the video: the next press plays it, leaving pauses it |
+
+The first and last cards animate in on their own. The alt text of an image is its caption.
+
 ### reveal.js decks
 
 Decks written for reveal.js open as they are: `---` starts a slide and `--` a vertical one beneath it, and the first slide becomes the root card.

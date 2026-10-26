@@ -361,6 +361,23 @@
   .node .r-hstack{display:flex;flex-direction:row;align-items:center;justify-content:center;}
   .node .r-vstack{display:flex;flex-direction:column;align-items:center;justify-content:center;}
   .node .body img{max-width:100%;height:auto;object-fit:contain;}
+  /* ---------- media from plain markdown (see applyMedia) ---------- */
+  .node .body figure.media{margin:0;}
+  .node .body figure.media img{display:block;width:100%;height:auto;max-height:70vh;object-fit:contain;border-radius:8px;}
+  .node .body figure.media figcaption{margin-top:8px;font-size:.82em;color:var(--text-muted);line-height:1.45;}
+  .node .body figure.yt .frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#000;}
+  .node .body figure.yt.portrait .frame{aspect-ratio:9/16;max-height:70vh;width:auto;margin:0 auto;}
+  .node .body figure.yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  /* the video is always on show; its step only plays it */
+  .node .fragment.yt-play{opacity:1 !important;visibility:inherit !important;transform:none !important;}
+  .node.card-split .body{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:4px 22px;align-items:center;}
+  .node.card-split .body > :is(h1,h2,h3,h4,h5,h6){grid-column:1 / -1;}
+  .node.card-split .body .split-text > :first-child{margin-top:0;}
+  .node.card-split.media-last .body{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);}
+  .node .body .gallery{list-style:none;padding:0;margin:8px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-items:start;}
+  .node .body .gallery li{margin:0;}
+  .node .body .gallery figure.media img{max-height:46vh;}
+  .node .body .gallery figure.media figcaption{font-size:.72em;}
   /* measure cards at their resting size, without grow/zoom transforms */
   div.node.measuring .fragment{transform:none !important;transition:none !important;}
   /* a card re-measured mid-entrance (a theme switch replays it) must not count a gsap "from" state such
@@ -372,6 +389,9 @@
   .node .diagram{background:#f8fafc;border:1px solid var(--panel-line);border-radius:8px;padding:12px;margin:0 0 10px;overflow:auto;}
   .node .diagram svg{display:block;width:100%;height:auto;max-height:640px;}
   .node .diagram.err{background:none;color:var(--danger);font-family:var(--mono);font-size:12px;padding:0;}
+  /* D2 is drawn in the deck's own palette, so it needs no light backdrop */
+  .node .diagram.d2{background:none;border:none;padding:0;}
+  .node .diagram.d2 svg{max-height:62vh;}
   .node .echarts-container{width:100%;height:360px;margin:0 0 10px;}
 
   /* ---------- overlays ---------- */

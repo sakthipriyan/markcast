@@ -7,6 +7,7 @@ test('routes', ()=>{
   assert.deepEqual(routeOf('/', '', ''), {page: 'source', source: {kind: 'builtin', id: 'home'}, slide: ''});
   assert.deepEqual(routeOf('/help', '', '#keys'), {page: 'source', source: {kind: 'builtin', id: 'help'}, slide: 'keys'});
   assert.deepEqual(routeOf('/edit', '', '#two'), {page: 'edit', slide: 'two'});
+  assert.deepEqual(routeOf('/examples', '', ''), {page: 'source', source: {kind: 'builtin', id: 'showcase'}, slide: ''});
   assert.deepEqual(routeOf('/new', '', ''), {page: 'pick'});
   assert.deepEqual(routeOf('/new', '?template=talk', ''), {page: 'source', source: {kind: 'builtin', id: 'template:talk'}, slide: ''});
   assert.deepEqual(routeOf('/new', '?template=nope', ''), {page: 'pick'});
@@ -20,6 +21,7 @@ test('routes', ()=>{
 test('builtin short links', ()=>{
   assert.equal(shortLink({kind: 'builtin', id: 'home'}), '/');
   assert.equal(shortLink({kind: 'builtin', id: 'help'}), '/help');
+  assert.equal(shortLink({kind: 'builtin', id: 'showcase'}), '/examples');
   assert.equal(shortLink({kind: 'builtin', id: 'template:talk'}), '/new?template=talk');
 });
 

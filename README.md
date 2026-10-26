@@ -6,6 +6,10 @@ Slidetake turns a markdown file into a deck you move through like a map, and, wh
 
 The built app is a single HTML file, [`dist/index.html`](dist/index.html): open it, copy it or host it anywhere.
 
+## Examples
+
+[`examples/`](examples) holds the decks to look at and start from: [`showcase.md`](examples/showcase.md) has everything a card can hold (steps, Graphviz, D2, SVG, ECharts, images, galleries, YouTube, camera) and is what [slidetake.com/examples](https://slidetake.com/examples) shows; the starter templates sit beside it.
+
 ## Run it
 
 ```sh

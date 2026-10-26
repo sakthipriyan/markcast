@@ -48,6 +48,12 @@ test('reveal.js: first slide is the root, stacks hang off it, vertical slides of
   assert.equal(nodes.get('detail').title, 'Detail');
 });
 
+test('type: slides without separators is still a headings deck', ()=>{
+  const {format, nodes} = parseDeck('---\ntype: slides\n---\n# Root\n\n## One\n\n## Two\n');
+  assert.equal(format, 'headings');
+  assert.equal(nodes.size, 3);
+});
+
 test('reveal.js: directives and data-autoslide are read', ()=>{
   const src = '# Root\n\n---\n\n<!-- .slide: data-autoslide="3000" -->\n<!-- camera: full, on -->\n### Next\n\n--\n\n### Child\n';
   const {nodes} = parseDeck(src);

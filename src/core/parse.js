@@ -166,8 +166,11 @@ export function parseDeck(src, {render = md=>({html: md, err: null})} = {}){
   /** @type {DeckSettings} */
   let deck = {};
   if (!legacy) ({deck, body: src} = parseDeckSettings(src));
-  const reveal = !legacy && (/^slides?$/i.test(String(deck.layout || '')) || /^slides?$/i.test(String(deck.type || ''))
-    || splitOutsideFences(src, /^--\s*$/).length > 1);
+  // reveal.js: vertical "--" separators, or a Hugo "type: slides" deck that actually uses "---" between slides.
+  // A heading-only deck stays a headings deck whatever its type says.
+  const slideType = /^slides?$/i.test(String(deck.layout || '')) || /^slides?$/i.test(String(deck.type || ''));
+  const reveal = !legacy && (splitOutsideFences(src, /^--\s*$/).length > 1
+    || (slideType && splitOutsideFences(src, /^---\s*$/).length > 1));
   const errCount = legacy ? parseLegacy() : reveal ? parseReveal() : parseHeadings();
 
   // drop unknown/self parents, then break any parent cycles

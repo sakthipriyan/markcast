@@ -54,7 +54,7 @@ Write, present and record in one sitting. What comes out is ready to upload.
 
 ## ✍️ Plain text in
 
-Markdown you already know: headings, lists, tables, code, charts.
+Markdown you already know: headings, lists, tables, code, diagrams, charts, images and YouTube links. [See every example →](/examples)
 
 ### Your copy
 

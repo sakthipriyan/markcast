@@ -66,6 +66,7 @@ export function originLabel(origin){
     case 'builtin':
       if (origin.id === 'home') return 'Home';
       if (origin.id === 'help') return 'Help';
+      if (origin.id === 'showcase') return 'the examples';
       return 'the ' + origin.id.replace(/^template:/, '') + ' template';
     case 'gist': return 'a gist' + (origin.file ? ' (' + origin.file + ')' : '');
     case 'shared': return 'a shared deck';

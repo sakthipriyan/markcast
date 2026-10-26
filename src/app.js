@@ -1,14 +1,16 @@
 import SAMPLE_MD from './sample.md';
 import HELP_MD from './help.md';
-import BLANK_MD from './templates/blank.md';
-import TALK_MD from './templates/talk.md';
-import RECORDING_MD from './templates/recording.md';
+import BLANK_MD from '../examples/blank.md';
+import TALK_MD from '../examples/talk.md';
+import RECORDING_MD from '../examples/recording.md';
+import SHOWCASE_MD from '../examples/showcase.md';
 import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime} from './core/text.js';
 import {parseDeck as parseDeckCore, cameraDirective, mapDirective, settingsBlock} from './core/parse.js';
 import {CORNERS, clampPipSize, applyPreset, cameraPresets, stepsFor} from './core/steps.js';
 import {normalizeSource, shortLink} from './core/source.js';
 import {encodeDeck, decodeDeck, parseHash, deckHash} from './core/share.js';
 import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from './core/doc.js';
+import {youtubeVideo, embedUrl} from './core/media.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
@@ -25,7 +27,7 @@ const RECORDING_UI = !EMBED || EMBED.recording === true || new URLSearchParams(l
 document.documentElement.classList.toggle('no-record', !RECORDING_UI);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slidetake's own read-only decks
-const BUILTIN = {home: SAMPLE_MD, help: HELP_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
+const BUILTIN = {home: SAMPLE_MD, help: HELP_MD, showcase: SHOWCASE_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
 
 // ---------- DOM refs ----------
 const editor = document.getElementById('editor');
@@ -144,7 +146,7 @@ function toggleMode(){
   else save('slidetake:mode', next);
   applyMode();
   // charts are drawn for one mode; redraw them for the other
-  if (world.querySelector('.echarts-container')) rebuild(true);
+  if (world.querySelector('.echarts-container, .diagram.d2')) rebuild(true);
 }
 
 // ---------- camera layouts ----------
@@ -370,6 +372,99 @@ function applyElementComments(root){
   });
 }
 // fragments in reveal order: by data-fragment-index when given, otherwise document order
+// ---------- images and YouTube in plain markdown ----------
+// A card's media decides its layout, with no classes to write (the alt text is the caption):
+//   one image or video alone        → media card: the image fills the card, caption below
+//   one image or video + text       → split: media on one side (the side it was written on), text on the other
+//   a list of images                → gallery, one per press under <!-- steps -->
+//   several images in one paragraph → grid
+//   a YouTube link alone on a line  → the video (next press plays it; leaving the slide pauses it)
+function figureFor(img){
+  const fig = document.createElement('figure');
+  fig.className = 'media';
+  img.replaceWith(fig);
+  fig.appendChild(img);
+  const alt = img.getAttribute('alt');
+  if (alt) fig.insertAdjacentHTML('beforeend', '<figcaption>' + escapeHtml(alt) + '</figcaption>');
+  return fig;
+}
+function youtubeFigure(v, caption){
+  const fig = document.createElement('figure');
+  fig.className = 'media yt fragment yt-play' + (v.portrait ? ' portrait' : '');
+  fig.innerHTML = '<div class="frame"><iframe src="' + embedUrl(v) + '" title="' + escapeHtml(caption || 'YouTube video') +
+    '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>' +
+    (caption ? '<figcaption>' + escapeHtml(caption) + '</figcaption>' : '');
+  return fig;
+}
+// a paragraph holding only images (and line breaks), or only one link
+const onlyImages = p=>p.querySelector('img') && !p.textContent.trim() && [...p.children].every(c=>/^(IMG|BR)$/.test(c.tagName));
+function applyMedia(el, body){
+  // ```svg: drawn as an image, so nothing inside it can run script
+  body.querySelectorAll('pre > code.language-svg').forEach(code=>{
+    const img = document.createElement('img');
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(code.textContent.trim());
+    img.alt = '';
+    const p = document.createElement('p');
+    p.appendChild(img);
+    code.parentElement.replaceWith(p);
+  });
+  // YouTube: a link alone on its line, or written as an image ![caption](https://youtu.be/…)
+  body.querySelectorAll(':scope > p').forEach(p=>{
+    const only = p.children.length === 1 ? p.children[0] : null;
+    if (!only) return;
+    const href = only.tagName === 'A' && p.textContent.trim() === only.textContent.trim() ? only.getAttribute('href')
+      : only.tagName === 'IMG' ? only.getAttribute('src') : null;
+    const v = href && youtubeVideo(href);
+    if (v) p.replaceWith(youtubeFigure(v, only.tagName === 'IMG' ? only.getAttribute('alt') : ''));
+  });
+  // lists whose items are each just an image: a gallery
+  body.querySelectorAll(':scope > ul, :scope > ol').forEach(list=>{
+    const items = [...list.children];
+    if (!items.length || !items.every(li=>li.querySelector('img') && !li.textContent.trim())) return;
+    list.classList.add('gallery');
+    items.forEach(li=>{ const img = li.querySelector('img'); li.innerHTML = ''; li.appendChild(img); figureFor(img); });
+  });
+  // paragraphs of images: one image is a figure, several a grid
+  body.querySelectorAll(':scope > p').forEach(p=>{
+    if (!onlyImages(p)) return;
+    const imgs = [...p.querySelectorAll('img')];
+    if (imgs.length === 1){ p.replaceWith(imgs[0]); figureFor(imgs[0]); return; }
+    const grid = document.createElement('div');
+    grid.className = 'gallery grid';
+    p.replaceWith(grid);
+    imgs.forEach(img=>{ grid.appendChild(img); figureFor(img); });
+  });
+  // the card's layout, from what's left beside its heading
+  const parts = [...body.children].filter(c=>!/^H[1-6]$/.test(c.tagName) && !(c.nodeType === 1 && c.tagName === 'HR'));
+  const media = parts.filter(c=>c.matches('figure.media'));
+  if (media.length === 1 && parts.length === 1) el.classList.add('card-media');
+  else if (media.length === 1){
+    el.classList.add('card-split', parts.indexOf(media[0]) === 0 ? 'media-first' : 'media-last');
+    const text = document.createElement('div');
+    text.className = 'split-text';
+    parts.filter(c=>c !== media[0]).forEach(c=>text.appendChild(c));
+    media[0].after(text);
+    if (parts.indexOf(media[0]) !== 0) text.after(media[0]);
+  }
+  if (body.querySelector('.gallery')) el.classList.add('card-gallery');
+}
+// next press plays a slide's YouTube video; leaving or stepping back pauses it
+function youtubeCommand(fig, func){
+  const f = fig.querySelector('iframe');
+  if (f && f.contentWindow) f.contentWindow.postMessage(JSON.stringify({event: 'command', func, args: []}), '*');
+}
+
+// <!-- steps --> before a list reveals its items one per press (plain markdown's only step syntax)
+function applyStepsComments(root){
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
+  const found = [];
+  while (walker.nextNode()) if (/^\s*steps\s*$/i.test(walker.currentNode.data)) found.push(walker.currentNode);
+  found.forEach(c=>{
+    let next = c.nextSibling;
+    while (next && next.nodeType !== 1) next = next.nextSibling;
+    if (next && /^(UL|OL)$/.test(next.tagName)) next.querySelectorAll(':scope > li').forEach(li=>li.classList.add('fragment', 'fade-up'));
+  });
+}
 function collectFragments(root){
   const items = [...root.querySelectorAll('.fragment')].map((e, i)=>({e, i, k:e.dataset.fragmentIndex}));
   if (items.every(x=>x.k === undefined)) return items.map(x=>[x.e]);
@@ -387,8 +482,10 @@ function applyFragments(n, count, snap){
   if (!n || !n.frags) return;
   if (snap) n.el.classList.add('snap');
   n.frags.forEach((g, i)=>g.forEach(e=>{
+    const was = e.classList.contains('visible');
     e.classList.toggle('visible', i < count);
     e.classList.toggle('current-fragment', i === count - 1);
+    if (e.classList.contains('yt-play') && was !== (i < count) && !snap) youtubeCommand(e, i < count ? 'playVideo' : 'pauseVideo');
   }));
   if (snap){ void n.el.offsetWidth; n.el.classList.remove('snap'); }
 }
@@ -419,7 +516,7 @@ function sizeCard(n){
   b.style.zoom = '';
   let w = NODE_W;
   // a chart, diagram or embed is a picture: its zoom shouldn't set the section's text size
-  n.visual = !!b.querySelector('iframe, .echarts-container, pre > code.language-dot, .diagram');
+  n.visual = !!b.querySelector('iframe, .echarts-container, pre > code.language-dot, pre > code.language-d2, pre > code.language-echarts, .diagram, figure.media');
   if (n.visual) w = XWIDE_W;
   else if (b.querySelector('[style*="flex"], [style*="grid"], .r-hstack') || b.querySelectorAll('img').length >= 4) w = WIDE_W;
   // tables get the width they naturally need (laid out with the widest card's room), not a tier by
@@ -456,6 +553,18 @@ function relayoutSoon(){
 // ---------- diagrams (Graphviz dot) and charts (ECharts), loaded only when a deck uses them ----------
 const VIZ_URL = 'https://cdn.jsdelivr.net/npm/@viz-js/viz@3.4.0/lib/viz-standalone.js';
 const ECHARTS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js';
+// D2 (https://d2lang.com) ships as an ES module; it loads only when a deck has a ```d2 block
+const D2_URL = 'https://esm.sh/@terrastruct/d2@0.1.33';
+let d2 = null;
+// D2's palette slots in Slidetake's gold, per mode: N = neutrals (text to page), B = the accent and its tints
+const D2_THEME = {
+  dark: {N1:'#e4e4e7', N2:'#a1a1aa', N3:'#a1a1aa', N4:'#323238', N5:'#27272a', N6:'#18181b', N7:'#09090b',
+         B1:'#e0b024', B2:'#907320', B3:'#68551f', B4:'#483c1d', B5:'#38301c', B6:'#2c271c'},
+  light: {N1:'#27272a', N2:'#71717a', N3:'#71717a', N4:'#e4e4e7', N5:'#e4e4e7', N6:'#f4f4f5', N7:'#ffffff',
+          B1:'#7a5c12', B2:'#e5cf87', B3:'#eedfaf', B4:'#f5eccf', B5:'#f8f2df', B6:'#fbf7eb'}
+};
+// ELK lays out D2's containers more cleanly than the default; a deck's own d2-config still wins
+const withD2Defaults = code=>/d2-config\s*:/.test(code) ? code : 'vars: {\n  d2-config: {\n    layout-engine: elk\n  }\n}\n' + code;
 const scripts = {};
 function loadScript(url){
   return scripts[url] || (scripts[url] = new Promise((resolve, reject)=>{
@@ -469,8 +578,16 @@ let buildGen = 0, viz = null;
 async function renderRich(){
   const gen = buildGen;
   const dots = [...world.querySelectorAll('.node pre > code.language-dot')];
+  // ```echarts fences (as on sakthipriyan.com's blogs) become the same chart boxes as the HTML form
+  world.querySelectorAll('.node pre > code.language-echarts').forEach(code=>{
+    const div = document.createElement('div');
+    div.className = 'echarts-container';
+    div.dataset.chart = code.textContent;
+    code.parentElement.replaceWith(div);
+  });
   const charts = [...world.querySelectorAll('.node .echarts-container[data-chart]')];
-  if (!dots.length && !charts.length) return;
+  const d2s = [...world.querySelectorAll('.node pre > code.language-d2')];
+  if (!dots.length && !charts.length && !d2s.length) return;
   const problems = [];
   if (dots.length){
     try {
@@ -485,6 +602,23 @@ async function renderRich(){
         code.parentElement.replaceWith(box);
       });
     } catch(e){ problems.push('diagrams'); }
+  }
+  if (d2s.length){
+    try {
+      if (!d2){ const mod = await import(/* runtime, not bundled */ D2_URL); d2 = new mod.D2(); }
+      if (gen !== buildGen) return;
+      const theme = D2_THEME[currentMode()];
+      for (const code of d2s){
+        const box = document.createElement('div');
+        box.className = 'diagram d2';
+        try {
+          const result = await d2.compile(withD2Defaults(code.textContent));
+          box.innerHTML = await d2.render(result.diagram, {...(result.renderOptions || {}), themeOverrides: theme, darkThemeOverrides: theme});
+        } catch(e){ box.className = 'diagram err'; box.textContent = 'Diagram error: ' + (e.message || e); }
+        if (gen !== buildGen) return;
+        code.parentElement.replaceWith(box);
+      }
+    } catch(e){ problems.push('D2 diagrams'); }
   }
   if (charts.length){
     try {
@@ -561,6 +695,8 @@ function build(){
       (n.err ? '<div class="err-badge">!</div>' : '');
     const body = el.querySelector('.body');
     applyElementComments(body);
+    applyStepsComments(body);
+    applyMedia(el, body);
     // a markdown table needs a header row; a blank one (| | |) is only there to satisfy the syntax
     body.querySelectorAll('thead').forEach(h=>{ if (!h.textContent.trim()) h.remove(); });
     unresolved += resolveUrls(body);
@@ -824,9 +960,25 @@ function applyStepState(snap){
 }
 // data-gsap='{"from":{…},"duration":1,"delay":2,"ease":"…"}' and .title-scramble, as on the site
 const TRANSFORM_PROPS = ['x','y','xPercent','yPercent','scale','scaleX','scaleY','rotation','rotate','skewX','skewY'];
+// The first and last cards animate in by themselves: the title scrambles, then each line fades up in turn.
+// A deck that writes its own data-gsap entrances keeps them instead.
+function autoEntrance(n){
+  if (!order.length || (n.id !== order[0] && n.id !== order[order.length - 1])) return null;
+  if (n.el.querySelector('[data-gsap], .title-scramble')) return null;
+  return [...n.el.querySelector('.body').children].filter(el=>!el.classList.contains('fragment'));
+}
 function playEntrances(n){
   if (n._played || !window.gsap || reduceMotion) return;
   n._played = true;
+  const auto = autoEntrance(n);
+  if (auto && auto.length){
+    n._auto = auto;
+    const [head, ...rest] = auto;
+    // a plain-text title scrambles; one with an icon or link in it just fades up with the rest
+    if (/^H[1-3]$/.test(head.tagName) && !head.children.length){ head.classList.add('auto-scramble'); scramble(head); }
+    else rest.unshift(head);
+    gsap.from(rest, {opacity:0, y:24, duration:0.7, ease:'power2.out', delay:0.5, stagger:0.45});
+  }
   n.el.querySelectorAll('[data-gsap]').forEach(el=>{
     let cfg;
     try { cfg = JSON.parse(el.dataset.gsap); } catch(e){ return; }
@@ -840,6 +992,10 @@ function resetEntrances(n){
   if (!n || !n._played) return;
   n._played = false;
   if (!window.gsap) return;
+  if (n._auto){
+    n._auto.forEach(el=>{ gsap.killTweensOf(el); gsap.set(el, {clearProps:'opacity,transform'}); });
+    n._auto = null;
+  }
   n.el.querySelectorAll('[data-gsap]').forEach(el=>{
     gsap.killTweensOf(el);
     let cfg = {};
@@ -848,7 +1004,7 @@ function resetEntrances(n){
     // clear only what the animation touched, so the element keeps its own inline styles
     if (props.size) gsap.set(el, {clearProps:[...props].join(',')});
   });
-  n.el.querySelectorAll('.title-scramble').forEach(el=>{
+  n.el.querySelectorAll('.title-scramble, .auto-scramble').forEach(el=>{
     if (el._scramble) el._scramble.kill();
     if (el.dataset.text) el.textContent = el.dataset.text;
   });
@@ -919,6 +1075,7 @@ let mapTimer = null;
 function leaveSlide(){
   const prev = nodes.get(currentId);
   if (!prev) return;
+  prev.el.querySelectorAll('figure.yt').forEach(f=>youtubeCommand(f, 'pauseVideo'));
   applyFragments(prev, prev.frags.length, true);
   resetEntrances(prev);
 }
