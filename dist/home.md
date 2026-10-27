@@ -76,7 +76,7 @@ The same app on your own files, offline:
 npx slidetake deck.md
 ```
 
-Images next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. So an AI agent like Claude Code can write `deck.md` while you watch it take shape.
+Images next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. So an AI agent can write `deck.md` while you watch it take shape.
 
 ### Your website: readers view, you record
 
