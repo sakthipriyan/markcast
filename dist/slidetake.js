@@ -452,7 +452,9 @@ pip: none
 
 # ![](/favicon.svg) Slide<span class="st-take">take</span> Privacy
 
-Slidetake has no accounts and keeps no decks. This page lists everything that leaves your browser, and where it goes. Last updated 27 October 2026.
+Slidetake has no accounts and keeps no decks. This page lists everything that leaves your browser, and where it goes.
+
+*Last updated 27 October 2026.*
 
 ## \u{1F4CA} What slidetake.com collects
 
