@@ -21,7 +21,7 @@ if (args.includes('-h') || args.includes('--help')){
 
   npx slidetake [deck.md | folder] [--port 4300] [--open]
 
-  deck.md   the deck to open; a folder opens its index.md, README.md or only .md file (default: .)
+  deck.md   the deck to open; a folder opens its index.md, deck.md, slides.md, README.md or only .md file (default: .)
   --port    the port to try first (default 4300; the next free one is used if it's taken)
   --open    open the deck in the browser
 
