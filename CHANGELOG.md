@@ -5,11 +5,57 @@ All notable changes to Slidetake are documented here. The format follows
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Two things ship from this repository: the app at slidetake.com and the npm
-package `slidetake` (`dist/slidetake.js` for other sites, `dist/index.html`).
+package `slidetake` (`dist/slidetake.js` for other sites, `dist/index.html`,
+and the `npx slidetake` command).
 An entry here is anything a deck author, a reader or a site embedding the
 package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
+
+## [0.3.0] - 2026-10-27
+
+### Added
+
+- `npx slidetake deck.md`: Slidetake on your own computer. It serves the deck
+  and its folder on localhost, so images next to the markdown load as they
+  are; saving the file reloads the deck where you are, and typing in the
+  browser's editor saves back to the file, so an AI agent can write the deck
+  while you watch. A folder opens its `index.md`, `deck.md`, `slides.md` or
+  `README.md`; `--port` and `--open` as expected. Needs Node 20 or later.
+- `/features`, every feature on one line; `/showcase`, one deck that shows
+  them all working, with blue, coral and violet versions of itself in share
+  links; `/privacy`, what slidetake.com collects and which services a deck can
+  reach. `/examples` still opens the showcase.
+- A **Privacy & analytics** button on slidetake.com: Google Analytics stays on
+  by default and can be turned off, which stops it and removes its cookies.
+- The header's left side links Features, Showcase, Docs and GitHub.
+- Camera messages (no camera found, waiting for permission) show inside the
+  camera box.
+
+### Changed
+
+- Slidetake's own colour is seafoam, calmer than the earlier neon green, and
+  dimmer in dark mode; the logo, favicon, icon and link preview match.
+- The guide moves to `/docs` and reads step by step: get started, write,
+  present, record, share. `/help` still opens it.
+- The home deck covers OBS recording, camera moves, the special comments,
+  colours and logo, and the three places Slidetake runs.
+- Layouts are offered in alphabetical order, with keys 1–4 following it, and
+  **path** is the default until you pick one; a deck no longer chooses.
+- The header: name, then the links, then layouts, analytics, light/dark and
+  Editor, all one height; the tagline is gone from it.
+- A full-screen card is a 16:9 frame placed like any other slide, keeping the
+  same margins in the window and when presenting.
+
+### Fixed
+
+- Editing a deck updates it as you type again. Since 0.2.3, re-reading the deck
+  stopped at the camera check for full-screen cards, so no edit showed until
+  the page was reloaded.
+- D2 diagrams no longer sit on a black box in dark mode.
+- Pie and donut labels no longer bleed in dark mode.
+- A camera message keeps its look after going fullscreen and back.
+- HTML in a heading no longer reaches a card's title or address.
 
 ## [0.2.4] - 2026-10-27
 

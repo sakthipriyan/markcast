@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <style>path{fill:#15803d}@media (prefers-color-scheme:dark){path{fill:#4ade80}}</style>
+  <style>path{fill:#047857}@media (prefers-color-scheme:dark){path{fill:#29b685}}</style>
   <!-- the slide just left: faded, behind -->
   <path d="M 10 8 H 38 C 41.3 8 44 10.7 44 14 V 18 H 22 C 16.5 18 12 22.5 12 28 V 36 H 10 C 6.7 36 4 33.3 4 30 V 14 C 4 10.7 6.7 8 10 8 Z" opacity="0.4"/>
   <!-- the current slide, one step down and right, with the record dot (a take) and the camera box cut out -->

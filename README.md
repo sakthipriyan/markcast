@@ -4,13 +4,31 @@ Markdown in, a spatial deck and a finished video out.
 
 Slidetake turns a markdown file into a deck you move through like a map, and, when you are recording, drives the camera and OBS from the deck itself: every slide is a take, a slide spoken badly is retaken on the spot, and at the end you get a frame-exact ffmpeg cut, chapters and a YouTube publish pack.
 
-The built app is a single HTML file, [`dist/index.html`](dist/index.html): open it, copy it or host it anywhere.
+The built app is a single HTML file, [`dist/index.html`](dist/index.html): open it, copy it or host it anywhere. Every feature: [slidetake.com/features](https://slidetake.com/features); step by step: [slidetake.com/docs](https://slidetake.com/docs).
+
+## Three places to use it
+
+| Where | What it's for |
+|---|---|
+| **slidetake.com** | write in the editor, view a deck from a GitHub file, gist or URL, and share a link with the deck inside it |
+| **Your computer** | the same with `npx slidetake deck.md`: your files and the images beside them, offline, reloading as you save, so an AI agent can write `deck.md` while you watch ([llms.txt](https://slidetake.com/llms.txt) tells it how) |
+| **Your website** | `slidetake.js` on your pages ([below](#embed-in-a-site)): users view, and `?obs` makes the page your recorder; the hugo-continuum theme does it for `engine: slidetake` |
+
+### On your computer
+
+```sh
+npx slidetake deck.md          # or a folder: its index.md, deck.md, slides.md or README.md
+```
+
+Opens on `http://localhost:4300` (`--port` to change, `--open` to open the browser). Files next to the deck are served beside it, so `![](diagram.png)` works. Saving the file reloads the deck where you are; typing in the browser's editor saves to the file. Over plain http, so OBS on another machine works too. Node 20+.
 
 ## Examples
 
-[`examples/`](examples) holds the decks to look at and start from: [`showcase.md`](examples/showcase.md) has everything a card can hold (steps, Graphviz, D2, SVG, ECharts, images, galleries, YouTube, camera) and is what [slidetake.com/examples](https://slidetake.com/examples) shows; the starter templates sit beside it.
+[`examples/`](examples) holds the decks to look at and start from: [`showcase.md`](examples/showcase.md) has everything a card can hold (steps, Graphviz, D2, SVG, ECharts, images, galleries, YouTube, camera) and is what [slidetake.com/showcase](https://slidetake.com/showcase) shows; the starter templates sit beside it.
 
-## Run it
+## Develop Slidetake
+
+`npm run dev` builds, rebuilds on change and serves the site at `http://localhost:8787` (Cloudflare's local runtime, with slidetake.com's routes). Or serve the repo statically:
 
 ```sh
 python3 -m http.server 8765
@@ -20,7 +38,7 @@ Then open:
 
 - `http://localhost:8765/dist/` for the sample deck and the editor
 - `http://localhost:8765/dist/?src=https://…/deck.md` for a deck on the web, including GitHub raw URLs (relative images load from next to it)
-- `?edit=0` hides the editor, `?layout=tree|radial|path|focus` picks the layout, `?mode=light` the light theme
+- `?edit=0` hides the editor, `?layout=focus|path|radial|tree` picks the layout, `?mode=light` the light theme
 
 ## Open a deck from a link
 
@@ -37,7 +55,7 @@ https://slidetake.com/?src=https://…/deck.md              anything else
 
 Every deck you open is read-only. Typing in one makes **your copy** at `/edit`, kept in this browser and marked *edited* until you **Save** (a .md file) or **Share** it. A changed deck is shared inside the link itself, like edotor.net: `https://slidetake.com/share#deflate:<compressed markdown>`, never sent to a server. **Reset to original** goes back to the deck you started from, and `/new` starts from a template.
 
-For AI tools: the guide is plain markdown at [slidetake.com/help.md](https://slidetake.com/help.md), indexed by [llms.txt](https://slidetake.com/llms.txt).
+For AI tools: the guide is plain markdown at [slidetake.com/docs.md](https://slidetake.com/docs.md), indexed by [llms.txt](https://slidetake.com/llms.txt).
 
 ## Recording
 
@@ -52,11 +70,11 @@ The bottom bar always has **Camera** (C), **● Record** (R) and **Fullscreen** 
 
 **Recording needs [OBS Studio](https://obsproject.com)** (free) with its WebSocket server on; OBS records and Slidetake drives it. The Record dialog checks the screen: if it isn't 16:9, present on a screen that is, physical or virtual (say 1920×1080), so the video fits YouTube without bars.
 
-From https://slidetake.com, OBS must run on the same computer (`localhost`): browsers block secure pages from plain `ws://` connections to other machines. To record with OBS on another machine, serve `dist/index.html` locally over http.
+From https://slidetake.com, OBS must run on the same computer (`localhost`): browsers block secure pages from plain `ws://` connections to other machines. To record with OBS on another machine, use `npx slidetake`, which serves over http.
 
 ## Decks
 
-Plain markdown (each heading is a card), the older `+++` format, and reveal.js decks (`---` and `--` separators) all open as they are. The full guide is itself a deck: [slidetake.com/help](https://slidetake.com/help) ([src/help.md](src/help.md)). In the app, `?` shows the keys.
+Plain markdown (each heading is a card), the older `+++` format, and reveal.js decks (`---` and `--` separators) all open as they are. The docs are themselves a deck: [slidetake.com/docs](https://slidetake.com/docs) ([src/docs.md](src/docs.md)). In the app, `K` or `?` shows the keys.
 
 ## Embed in a site
 
@@ -78,7 +96,7 @@ window.SLIDETAKE = {
   // recording: true                                 // optional: always show Camera and Record
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/slidetake@0.2.0/dist/slidetake.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/slidetake@0.3.0/dist/slidetake.js"></script>
 ```
 
 `colors` takes any CSS colour per token, for both modes or under `light` / `dark`: `accent` (text and the current slide), `accentSoft` (smaller headings), `line` (borders and the active path), `ring` (the current slide's outline), `header` and `headerText` (a band of colour behind the header). A deck can also set its own with `accent:` in its top block.

@@ -5,8 +5,9 @@ import {shortLink} from '../src/core/source.js';
 
 test('routes', ()=>{
   assert.deepEqual(routeOf('/', '', ''), {page: 'source', source: {kind: 'builtin', id: 'home'}, slide: ''});
-  assert.deepEqual(routeOf('/help', '', '#keys'), {page: 'source', source: {kind: 'builtin', id: 'help'}, slide: 'keys'});
+  assert.deepEqual(routeOf('/docs', '', '#keys'), {page: 'source', source: {kind: 'builtin', id: 'docs'}, slide: 'keys'});
   assert.deepEqual(routeOf('/edit', '', '#two'), {page: 'edit', slide: 'two'});
+  assert.deepEqual(routeOf('/showcase', '', ''), {page: 'source', source: {kind: 'builtin', id: 'showcase'}, slide: ''});
   assert.deepEqual(routeOf('/examples', '', ''), {page: 'source', source: {kind: 'builtin', id: 'showcase'}, slide: ''});
   assert.deepEqual(routeOf('/new', '', ''), {page: 'pick'});
   assert.deepEqual(routeOf('/new', '?template=talk', ''), {page: 'source', source: {kind: 'builtin', id: 'template:talk'}, slide: ''});
@@ -20,13 +21,13 @@ test('routes', ()=>{
 
 test('builtin short links', ()=>{
   assert.equal(shortLink({kind: 'builtin', id: 'home'}), '/');
-  assert.equal(shortLink({kind: 'builtin', id: 'help'}), '/help');
-  assert.equal(shortLink({kind: 'builtin', id: 'showcase'}), '/examples');
+  assert.equal(shortLink({kind: 'builtin', id: 'docs'}), '/docs');
+  assert.equal(shortLink({kind: 'builtin', id: 'showcase'}), '/showcase');
   assert.equal(shortLink({kind: 'builtin', id: 'template:talk'}), '/new?template=talk');
 });
 
 test('labels', ()=>{
-  assert.equal(originLabel({kind: 'builtin', id: 'help'}), 'Help');
+  assert.equal(originLabel({kind: 'builtin', id: 'docs'}), 'the docs');
   assert.equal(originLabel({kind: 'builtin', id: 'template:talk'}), 'the talk template');
   assert.equal(originLabel({kind: 'url', url: 'https://raw.githubusercontent.com/a/b/HEAD/talks/x.md'}), 'a/b/talks/x.md');
   assert.equal(originLabel({kind: 'url', url: 'https://example.com/d/deck.md'}), 'example.com/d/deck.md');
@@ -34,7 +35,7 @@ test('labels', ()=>{
 });
 
 test('the copy: edited until saved or shared, reset by matching the original', ()=>{
-  const c = makeCopy('# A', {kind: 'builtin', id: 'help'});
+  const c = makeCopy('# A', {kind: 'builtin', id: 'docs'});
   assert.equal(isEdited(c), false);
   c.text = '# A!';
   assert.equal(isEdited(c), true);

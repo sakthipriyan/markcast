@@ -1,5 +1,7 @@
 import SAMPLE_MD from './sample.md';
-import HELP_MD from './help.md';
+import DOCS_MD from './docs.md';
+import FEATURES_MD from './features.md';
+import PRIVACY_MD from './privacy.md';
 import BLANK_MD from '../examples/blank.md';
 import TALK_MD from '../examples/talk.md';
 import RECORDING_MD from '../examples/recording.md';
@@ -18,6 +20,8 @@ import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapte
 // Embedded in another site's page (see src/embed.js): window.SLIDETAKE = {markdown, settings, base, back,
 // themeKey}. The page shows that one deck, read-only: no editor, links or copies.
 const EMBED = window.SLIDETAKE || null;
+// served by `npx slidetake` (bin/slidetake.mjs): {deck, file, events, save}, a deck file on this computer
+const LOCAL = window.SLIDETAKE_LOCAL || null;
 // the logo, read once from the header (which an embed replaces): the corner mark and the credit reuse it
 const LOGO = document.querySelector('header .mark .logo').outerHTML;
 document.documentElement.classList.toggle('embed', !!EMBED);
@@ -27,7 +31,7 @@ const RECORDING_UI = !EMBED || EMBED.recording === true || new URLSearchParams(l
 document.documentElement.classList.toggle('no-record', !RECORDING_UI);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slidetake's own read-only decks
-const BUILTIN = {home: SAMPLE_MD, help: HELP_MD, showcase: SHOWCASE_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
+const BUILTIN = {home: SAMPLE_MD, docs: DOCS_MD, features: FEATURES_MD, privacy: PRIVACY_MD, showcase: SHOWCASE_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
 
 // ---------- DOM refs ----------
 const editor = document.getElementById('editor');
@@ -55,7 +59,10 @@ let nodes = new Map();   // id -> node
 let order = [];          // DFS pre-order of node ids
 let roots = [];
 let currentId = null;
-let layoutMode = 'tree'; // 'tree' | 'radial' | 'path' | 'focus'
+// layouts in the order they're offered (alphabetical; keys 1–4 follow it). The one shown is ?layout=, else the
+// reader's own choice, else path, made for presenting and video. A deck doesn't pick: the reader does.
+const LAYOUTS = ['focus', 'path', 'radial', 'tree'];
+let layoutMode = 'path';
 let presenting = false;
 let deck = {};           // settings from the deck's frontmatter: brand, logo, pip, pip_size, pip_shape, title
 // global camera switch (◉ Camera / C): when off, camera comments are ignored, camera-only steps are
@@ -117,7 +124,7 @@ function applyDeckSettings(){
 }
 
 // ---------- colours ----------
-// Everything is drawn from a few colour tokens (styles.css); Slidetake's own are terminal green. Two
+// Everything is drawn from a few colour tokens (styles.css); Slidetake's own are seafoam green. Two
 // things can replace them, the later winning:
 //   window.SLIDETAKE.colors  a host site's: {accent, accentSoft, line, ring, header, headerText} for both
 //                            modes, and/or {light: {…}, dark: {…}}; any CSS colour, gradients for header
@@ -246,7 +253,8 @@ function slideCameraPreset(){
   const n = nodes.get(currentId);
   const own = cameraSteps(n);
   if (own.length) return own[Math.min(currentStep().cam, own.length - 1)];
-  if (n && n.el.classList.contains('card-full')) return 'off';
+  // (a re-read deck has its cards before they're built: no element yet, so nothing to check)
+  if (n && n.el && n.el.classList.contains('card-full')) return 'off';
   for (let i = order.indexOf(currentId) - 1; i >= 0; i--){
     const steps = cameraSteps(nodes.get(order[i])); // order can be stale for a moment while the deck re-parses
     if (steps.length) return steps[steps.length - 1];
@@ -278,7 +286,8 @@ function applyPipState(){
   const first = (!pipEl.hidden && pipEl.offsetWidth) ? pipEl.getBoundingClientRect() : null;
   const st = pipState = computePipState();
   const valid = CORNERS.includes(st.corner);
-  pipEl.className = valid ? [st.corner, st.circle && 'circle', cameraStream && 'live', st.mirror && 'mirror', st.full && 'full'].filter(Boolean).join(' ') : '';
+  // (a message showing in the box keeps its class through a re-layout: fullscreen, resizing, a new slide)
+  pipEl.className = valid ? [st.corner, st.circle && 'circle', cameraStream && 'live', st.mirror && 'mirror', st.full && 'full', pipEl.classList.contains('msg') && 'msg'].filter(Boolean).join(' ') : '';
   pipEl.style.width = st.size + '%';
   pipEl.hidden = !valid || cameraOff || st.off;
   stageWrap.dataset.pip = pipEl.hidden || st.full ? 'none' : st.corner;
@@ -704,6 +713,9 @@ function registerChartTheme(name, t, accent){
     tooltip: {backgroundColor: t.tip, borderColor: t.line, textStyle: {color: t.text}},
     categoryAxis: axis, valueAxis: axis, logAxis: axis, timeAxis: axis,
     line: {symbolSize: 6, lineStyle: {width: 2.5}},
+    // ECharts' own pie labels are #333 with a white outline: a dark smudge in a white halo on a dark card
+    pie: {label: {color: t.text, textBorderWidth: 0}, labelLine: {lineStyle: {color: t.muted}}},
+    funnel: {label: {color: t.text, textBorderWidth: 0}},
   });
 }
 // D2 (https://d2lang.com) ships as an ES module; it loads only when a deck has a ```d2 block
@@ -1341,6 +1353,13 @@ function rebuild(instant){
 }
 // a read-only deck forks into the working copy on the first keystroke; the copy is kept as you type
 editor.addEventListener('input', ()=>{
+  // the local deck file: typing saves to it, no browser copy
+  if (isLocalDeck()){
+    view.text = editor.value;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(()=>{ saveLocal(editor.value); rebuild(true); }, 300);
+    return;
+  }
   if (view.kind !== 'copy' && !forkToCopy()) return;
   copy.text = editor.value;
   updateDocState();
@@ -1540,6 +1559,33 @@ const nextFrame = ()=>Promise.race([new Promise(r=>requestAnimationFrame(()=>req
 function recNow(){ return (rec.paused ? rec.pauseAt : performance.now()) - rec.t0 - rec.pausedMs; }
 
 function openModal(m){ m.classList.add('open'); }
+
+// ---------- analytics: Google Analytics on slidetake.com, which a reader can turn off ----------
+// index.html loads the tag only on slidetake.com and only while this browser hasn't chosen off. Turning it
+// off stops a running tag at once and removes the _ga cookies it set; turning it back on counts from the
+// next page.
+const GA_ID = 'G-3S9FY4MQLS';
+const analyticsDialog = document.getElementById('analytics-dialog');
+const analyticsOn = ()=>load('slidetake:analytics') !== 'off';
+function setAnalytics(on){
+  save('slidetake:analytics', on ? 'on' : 'off');
+  if (!on){
+    window['ga-disable-' + GA_ID] = true;
+    const domains = ['', '; Domain=' + location.hostname, '; Domain=.' + location.hostname.replace(/^www\./, '')];
+    document.cookie.split(';').map(c=>c.split('=')[0].trim()).filter(n=>n === '_ga' || n.startsWith('_ga_'))
+      .forEach(n=>domains.forEach(d=>{ document.cookie = n + '=; Max-Age=0; Path=/' + d; }));
+  }
+  showAnalyticsChoice();
+}
+function showAnalyticsChoice(){
+  analyticsDialog.querySelectorAll('[data-analytics]').forEach(b=>b.setAttribute('aria-checked', String((b.dataset.analytics === 'on') === analyticsOn())));
+}
+analyticsDialog.querySelectorAll('[data-analytics]').forEach(b=>b.onclick = ()=>setAnalytics(b.dataset.analytics === 'on'));
+// only slidetake.com runs analytics, so only there is there a choice to make: elsewhere (localhost,
+// npx slidetake, a self-hosted copy) the button stays hidden
+const analyticsBtn = document.getElementById('btn-analytics');
+analyticsBtn.hidden = !/^(www\.)?slidetake\.com$/.test(location.hostname);
+analyticsBtn.onclick = ()=>{ showAnalyticsChoice(); openModal(analyticsDialog); };
 function closeModals(){ document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open')); }
 document.querySelectorAll('.modal').forEach(m=>{
   m.addEventListener('click', e=>{ if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('open'); });
@@ -2067,14 +2113,25 @@ if (loadObsSettings() && new URLSearchParams(location.search).get('obs')) connec
 const camBtn = document.getElementById('btn-camera');
 const pipMsg = document.getElementById('pip-msg');
 let pipMsgTimer = null;
+const pipLabel = pipEl.querySelector('span');
+// Camera news goes in the camera's own box while it's on screen and empty (no live picture); otherwise in
+// a note over the stage. Errors are sticky: they stay until the camera starts or is turned off.
 function showPipMsg(text, sticky){
   if (rec.active) return;
+  clearTimeout(pipMsgTimer);
+  if (!pipEl.hidden && !pipEl.classList.contains('live')){
+    pipMsg.classList.remove('show');
+    pipLabel.textContent = text;
+    pipEl.classList.add('msg');
+    if (!sticky) pipMsgTimer = setTimeout(resetPipLabel, 9000);
+    return;
+  }
   pipMsg.textContent = text;
   pipMsg.classList.add('show');
-  clearTimeout(pipMsgTimer);
   if (!sticky) pipMsgTimer = setTimeout(()=>pipMsg.classList.remove('show'), 9000);
 }
-function hidePipMsg(){ clearTimeout(pipMsgTimer); pipMsg.classList.remove('show'); }
+function resetPipLabel(){ pipLabel.textContent = 'PIP camera'; pipEl.classList.remove('msg'); }
+function hidePipMsg(){ clearTimeout(pipMsgTimer); pipMsg.classList.remove('show'); resetPipLabel(); }
 // explain the usual reasons a browser refuses the camera
 function cameraHelp(){
   let embedded = false;
@@ -2093,7 +2150,7 @@ async function startWebcam(){
   if (cameraStream || cameraOff) return;
   {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      showPipMsg('Camera not available on this page.' + cameraHelp());
+      showPipMsg('Camera not available on this page.' + cameraHelp(), true);
       return;
     }
     if (camBtn.disabled) return;
@@ -2108,7 +2165,7 @@ async function startWebcam(){
         name === 'NotAllowedError' || name === 'SecurityError' ? 'Camera access was blocked.' + cameraHelp() :
         name === 'NotFoundError' || name === 'OverconstrainedError' ? 'No camera was found. Check that a webcam is connected.' :
         name === 'NotReadableError' ? 'The camera is busy — close other apps using it (Zoom, OBS, FaceTime) and try again.' :
-        'Could not start the camera' + (name ? ' (' + name + ')' : '') + '.' + cameraHelp());
+        'Could not start the camera' + (name ? ' (' + name + ')' : '') + '.' + cameraHelp(), true);
       return;
     } finally {
       camBtn.disabled = false;
@@ -2134,7 +2191,7 @@ function updateCamBtn(){
 function setCameraEnabled(on){
   if (on && !RECORDING_UI) return;
   cameraOff = !on;
-  if (cameraOff) stopWebcam();
+  if (cameraOff){ stopWebcam(); hidePipMsg(); }
   camManual = null; camCycle = -1;
   stepPos = Math.min(stepPos, Math.max(0, slideSteps(nodes.get(currentId)).length - 1));
   updateCamBtn();
@@ -2187,10 +2244,7 @@ window.addEventListener('keydown', e=>{
   else if (k==='e' || k==='E'){ toggleEditor(); }
   else if (k==='f' || k==='F' || k==='p' || k==='P'){ setPresent(!presenting); }
   else if (k==='r' || k==='R'){ openRecordDialog(); }
-  else if (k==='1'){ setMode('tree'); }
-  else if (k==='2'){ setMode('radial'); }
-  else if (k==='3'){ setMode('path'); }
-  else if (k==='4'){ setMode('focus'); }
+  else if (/^[1-4]$/.test(k)){ setMode(LAYOUTS[+k - 1]); }
   else if (k==='c' || k==='C'){ setCameraEnabled(cameraOff); }
   else if (k==='v' || k==='V'){ cycleCamera(); }
   else if (k==='l' || k==='L'){ toggleMode(); }
@@ -2276,13 +2330,13 @@ document.getElementById('btn-share').onclick = async ()=>{
 
 // ---------- boot ----------
 const savedMode = load('slidetake:layout');
-layoutMode = ['tree','radial','path','focus'].includes(savedMode) ? savedMode : 'tree';
+layoutMode = LAYOUTS.includes(savedMode) ? savedMode : 'path';
 document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
 
 // ?src=<url of a .md> loads a deck from the web (relative images resolve next to it),
 // ?edit=0 starts with the editor hidden, ?layout=tree|radial|path|focus picks the layout
 const params = new URLSearchParams(location.search);
-if (['tree','radial','path','focus'].includes(params.get('layout'))){
+if (LAYOUTS.includes(params.get('layout'))){
   layoutMode = params.get('layout');
   document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
 }
@@ -2314,7 +2368,7 @@ if (EMBED){
 }
 
 // ---------- the deck on this page, and the working copy ----------
-// view: what this page shows. A read-only source (home, help, a template, a file on the web), a shared
+// view: what this page shows. A read-only source (home, docs, a template, a file on the web), a shared
 // deck (/share#…), or the working copy (/edit). Typing in a read-only deck forks it into the copy.
 const route = routeOf(location.pathname, location.search, location.hash);
 const startId = route.page === 'pick' ? '' : route.slide;
@@ -2334,7 +2388,9 @@ function saveCopy(){ save('slidetake:copy', JSON.stringify(copy)); }
 function updateDocState(){
   if (EMBED) return;
   let html;
-  if (view.kind === 'copy'){
+  if (isLocalDeck()){
+    html = '<span class="mine">' + escapeHtml(LOCAL.file) + '</span> <span class="ro">· on this computer, saved as you type</span>';
+  } else if (view.kind === 'copy'){
     html = '<span class="mine">Your copy of ' + escapeHtml(originLabel(copy.origin)) + '</span>' +
       (isEdited(copy) ? ' <span class="edited">· edited</span>' : '');
   } else {
@@ -2377,8 +2433,34 @@ function showCopy(){
 // back and forward move between pages (a deck and your copy of it): load what the address says
 window.addEventListener('popstate', ()=>location.reload());
 
+// ---------- npx slidetake: a deck file on this computer, kept in step both ways ----------
+function isLocalDeck(){
+  return !!(LOCAL && view && view.kind === 'source' && view.source.kind === 'url' &&
+    new URL(view.source.url, location.href).pathname === LOCAL.deck);
+}
+function saveLocal(text){
+  fetch(LOCAL.save, {method: 'PUT', body: text}).catch(()=>showToast('Could not save ' + LOCAL.file + ': is npx slidetake still running?', 6000));
+}
+// a change in the deck's folder: new text rebuilds the deck where you are; a changed image reloads in place
+if (LOCAL && window.EventSource){
+  new EventSource(LOCAL.events).onmessage = async e=>{
+    if (!isLocalDeck()) return;
+    const name = (JSON.parse(e.data).file || '').replace(/\\/g, '/');
+    if (name === LOCAL.file){
+      const text = await (await fetch(LOCAL.deck, {cache: 'no-store'})).text();
+      if (text === editor.value) return;
+      editor.value = view.text = text;
+      rebuild(true);
+      return;
+    }
+    world.querySelectorAll('img').forEach(img=>{
+      const u = new URL(img.src);
+      if (decodeURIComponent(u.pathname).endsWith('/' + name)){ u.searchParams.set('t', String(Date.now())); img.src = u.href; }
+    });
+  };
+}
 async function fetchSource(source){
-  if (source.kind === 'builtin') return BUILTIN[source.id] ?? BUILTIN.home;
+  if (source.kind === 'builtin') return BUILTIN[source.id === 'help' ? 'docs' : source.id] ?? BUILTIN.home;
   if (source.kind === 'gist'){
     const res = await fetch('https://api.github.com/gists/' + encodeURIComponent(source.id));
     if (!res.ok) throw new Error(res.status === 404 ? 'no such gist' : res.status + ' ' + res.statusText);
@@ -2398,6 +2480,10 @@ function showHome(){
   return view.text;
 }
 async function loadInitialDeck(){
+  // npx slidetake: the address with no deck named is the local file
+  if (LOCAL && route.page === 'source' && route.source.kind === 'builtin' && route.source.id === 'home' && location.pathname === '/'){
+    route.source = {kind: 'url', url: LOCAL.deck};
+  }
   if (EMBED){
     deckBase = EMBED.base || location.href;
     view = {kind: 'source', source: {kind: 'url', url: deckBase}, text: settingsBlock(EMBED.settings || {}) + String(EMBED.markdown || '')};

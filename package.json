@@ -1,6 +1,6 @@
 {
   "name": "slidetake",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Markdown to finished video: a spatial deck that records itself, take by take",
   "keywords": [
     "slides",
@@ -21,11 +21,18 @@
     "url": "git+https://github.com/slidetake/slidetake.git"
   },
   "type": "module",
+  "bin": {
+    "slidetake": "bin/slidetake.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "main": "dist/slidetake.js",
   "browser": "dist/slidetake.js",
   "unpkg": "dist/slidetake.js",
   "jsdelivr": "dist/slidetake.js",
   "files": [
+    "bin/slidetake.mjs",
     "dist/slidetake.js",
     "dist/index.html",
     "examples/embed.html",

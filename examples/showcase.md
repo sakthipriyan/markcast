@@ -1,12 +1,12 @@
 ---
-title: Slidetake examples
+title: Slidetake Showcase
 brand: slidetake
 duration: 10m
 ---
 
-# Slidetake examples
+# ![](https://slidetake.com/favicon.svg) Slide<span class="st-take">take</span> Showcase
 
-Everything a deck can hold, written in plain markdown. Open **✎ Editor** to see the source of any card, or press **O** for the map.
+Everything a deck can hold, written in plain markdown and working on screen. Open **✎ Editor** to see the source of any card. Press → to walk it, **O** for the map.
 
 ## ✍️ Text
 
@@ -31,7 +31,7 @@ Put `<!-- steps -->` before a list and it reveals one item per press:
 
 | Plan | Price | Users |
 |---|---:|---:|
-| Free | ₹0 | 1 |
+| Starter | ₹0 | 1 |
 | Team | ₹499 | 10 |
 
 ### Code
@@ -41,7 +41,7 @@ def take(slide):
     return slide.best_attempt()
 ```
 
-## 🧭 Diagrams
+## 📐 Diagrams
 
 Write the diagram in a fenced block named after its language.
 
@@ -69,9 +69,9 @@ write -> present -> record: one session
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
-  <rect x="10" y="20" width="90" height="80" rx="10" fill="#22c55e"/>
-  <rect x="115" y="20" width="90" height="80" rx="10" fill="#22c55e" opacity=".7"/>
-  <rect x="220" y="20" width="90" height="80" rx="10" fill="#22c55e" opacity=".4"/>
+  <rect x="10" y="20" width="90" height="80" rx="10" fill="#10b981"/>
+  <rect x="115" y="20" width="90" height="80" rx="10" fill="#10b981" opacity=".7"/>
+  <rect x="220" y="20" width="90" height="80" rx="10" fill="#10b981" opacity=".4"/>
 </svg>
 ```
 
@@ -139,15 +139,36 @@ A YouTube link alone on a line becomes the video. The next press plays it; leavi
 
 https://www.youtube.com/watch?v=jNQXAC9IVRw
 
-## 🎥 Camera and map
+## 🎥 Camera
 
 <!-- camera: on, full, on -->
+
+Try it: press **C** to turn on your camera, then →. This card puts you in the corner, then full screen, then back, from one comment: `<!-- camera: on, full, on -->`.
+
+## 🗺️ Layouts and the map
+
 <!-- view: overview -->
 
-Two comments do what markdown can't: `<!-- camera: on, full, on -->` moves the presenter's camera, and `<!-- view: overview -->` shows the whole map first.
+This card began by pulling back to the whole map: `<!-- view: overview -->` does that. Try it: press **1** to **4** for focus, path (the default), radial and tree, and **O** to zoom out and back.
+
+## 🎨 Colours
+
+Try it: press **L** now. Dark and light switch, charts and diagrams included.
+
+A deck sets its own colour with one line, `accent: "#3b82f6"`, shaded for both modes. See it in [blue](/share#deflate:ZVJNa9wwEL3rV0y1hzZGTummn6YENodCoYVCAjksC9Zak5VY1zKacXZN2Gt-QH9if0kl2aSBnPTGevPmjZ_KshTsuMUKvnewbQcUummw4wrk4mL7eXn3UYoyksTiiSBurCMw2OzBagLfIeCRg4bWRagZ2CKw7xXUL7RqBbozgPcYRrau28Gdb1t_oAo4iqisQSpLNFYHzvRUGad3Qf8-h18BiaAofhRFnAKECFvPFshqg3QenS7gmrEnIb6-KkughKEsL0UZu658a4pCwToO2tPmzVuy_tBowrM8yaI20RUB6z1OLnzrhxB7rz0YjzR5n3b1Xab0mm0krGanIa2lgx_mmlpnEEY_vA6pJRtcTdsJUdc1ZkjiQR5XR0eyggfJY48RyEYz7nwYpQJpNOv4bS1_-i7VNwOm4xZNruyQjm_Byc0pgvGF1r2O6cmTEiAJg8N0u_5_vdXh-ZT3Cj4p-KDgi4J3y81pc0peZ_NzGNm-WQrjAjbsfFfF5XeWxSE4RigvoY9hxReQYKT4YKr8XihGGOlPile62QuxTkfKNP-1ORf4-_jnWUyLKQ86E_8A), [coral](/share#deflate:ZVJNa9wwEL3rV0y1hzZGSkn6EWJKYHMoFFooJNDDsrATa7IS61pGI2fXhL32B-Qn9pdUkk0TyElvrDdv3vhJay2iiy3V8K2DxgdsBTYNdbEGubi_vPhw9lkKnVhi8cwQt9YxGGp2YJHBdwR0iAGhdQlihGgJou8VbF6JbRRgZ4AeKIzRum4L975t_Z5riElEFQ1WRaKxGGKh58o43Ab8fQo_AzFDVX2vqjQFmAjufLTAFg3xabK6gJtIPQvx5Y3WwBmD1ldCp65r35qqUrBKg3a8fveerd83yHRSJllCk1wxRNzR5MK3fgip98aD8cST92lX3xVKj9EmwnJ2GvJaGPww19w6QzD64W3ILcXgctpOiM1mQwWyeJSH5cGxrOFRxrGnBGSDkbY-jFKBNBgxfVvJH77L9e1A-fhFplR2yMfX4OT6mMD4SusB29RxVAIkU3CUb1fP13cYXk75qOBCwScFlwrOztfH9TF7nc3PYRT75lwYF6iJznd1Wn5ro9gHFwn0FfQprPQCMkwUH0xd3gunCBP9v-I1NjshVvnImZa_NucCf_88vYhpMeXBJ-If) or [violet](/share#deflate:ZVJNa9wwEL3rV0y1hzZGTmlo-mFKYHMoFFooJJDDsmCtNVmJdS2jGe-uCXvtD-hP7C-pJJt0ISe9sd68eeOnsiwFO26xgm8d7J1vkYVuGuy4Arn4tLluHj9IUUaaWJxRxL11BAabHVhN4DsEPHLQ0LoINQNbBPa9gvqFWq1AdwZwj2Fk67otPPq29QeqgKOIyhqkskRjdeBMT5Vxehv0r0v4GZAIiuJ7UcQpQIiw8WyBrDZIl9HrAu4YexLiy6uyBEoYyvJGlLHr1remKBSs4qAdrd-8JesPjSa8yJMsahNdEbDe4eTCt34IsffOg_FIk_dpV99lSq_ZRsJydhrSWjr4Ya6pdQZh9MPrkFqyweW0nRB1XWOGJJ7kcXl0JCt4kjz2GIFsNOPWh1EqkEazjt9W8ofvUn0_YDoe0OTKDun4GpxcnyIYX2jtdRs7TkqAJAwO0-3q__VGh_Mp7xV8VHCt4LOCd1fr0_qUvM7m5zCyfXMljAvYsPNdFZffWhaH4BihvIE-hhVfQIKR4oOp8nuhGGGkPyve6mYnxCodKdP81-Zc4O_vP2cxLaY86EL8Aw).
+
+## ✂️ Record a video
+
+Try it with [OBS](https://obsproject.com) open and its WebSocket server on: press **● Record**. This deck records slide by slide; stumble, press ←, say it again. At the end the review hands you the cut and the YouTube chapters. Step by step: [Docs → Record a video](/docs#4-record-a-video).
+
+## 🌐 Open from anywhere
+
+Try it: this deck is a file on GitHub, and opens from there too: **[slidetake.com/gh/slidetake/slidetake/examples/showcase.md](/gh/slidetake/slidetake/examples/showcase.md)**. Gists, any markdown URL, and a link with the deck inside it open the same way, and `npx slidetake deck.md` opens one from your computer.
 
 ## 🚀 Start your own
 
-Press **New** for a template (blank, talk or recording), or type in this deck to make it your copy.
+Open **✎ Editor** and press **New** for a template (blank, talk or recording), or type in this deck to make it your copy.
 
 The templates and this deck live in [examples/](https://github.com/slidetake/slidetake/tree/main/examples) on GitHub.
+
+Next, how it all works, step by step: **[Docs →](/docs)**
