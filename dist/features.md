@@ -68,7 +68,7 @@ The reason Slidetake exists: a talk you record comes out finished.
 |---|---|
 | **slidetake.com**: write, view, share | write in the **✎ Editor** (blank or from a template, taking shape as you type), view any deck from a GitHub file, gist or URL, and share a link with the deck inside it; nothing to install |
 | **Your computer**: all that, plus AI | `npx slidetake` runs the same app on your own files and images, offline, reloading as you save and saving browser edits back to the file, so an AI agent can write the deck while you watch |
-| **Your website**: readers view, you record | `slidetake.js` puts decks inside your own pages, in your colours; readers get a viewer, and `?obs` turns the same page into your recorder (the hugo-continuum theme does it with one frontmatter key) |
+| **Your website**: users view, you record | `slidetake.js` puts decks inside your own pages, in your colours; users get a viewer, and `?obs` turns the same page into your recorder (the hugo-continuum theme does it with one frontmatter key) |
 
 ## 🔒 Private and open
 

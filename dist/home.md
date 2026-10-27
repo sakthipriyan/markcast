@@ -52,13 +52,39 @@ Your headings are the hierarchy: zoom out for the whole system, zoom in for one 
 
 A comment in a slide moves you: corner, full screen, or off. Turn on **Camera** and watch this slide do it.
 
+### Camera moves, step by step
+
+<!-- camera: 40%, full, on -->
+
+With **Camera** on, press →: this slide puts you large in the corner, then full screen, then back to the corner. One comment, one press per move:
+
+```md
+### Camera moves, step by step
+<!-- camera: 40%, full, on -->
+```
+
+Combine `on`, `off`, `full`, a size like `40%`, a corner, `flip` or `circle`.
+
 ## ✍️ Plain markdown in
 
 Markdown you already know: headings, lists, tables, code, steps, diagrams (Graphviz, D2, SVG), charts, images and YouTube links. [See them all in the showcase →](/showcase)
 
+### A few comments do the rest
+
+Markdown has no word for "reveal one at a time" or "move the camera", so a handful of HTML comments say it. They stay invisible anywhere else markdown is read:
+
+```md
+<!-- steps -->             ← one item per press
+<!-- camera: full, on -->  ← move the camera
+<!-- view: overview -->    ← the map first
+<!-- view: full -->        ← a big-image card
+```
+
 ## 🎨 Your colours
 
 One line, `accent: "#3b82f6"`, gives a deck its own colour, shaded for dark and light. On your website, decks wear your site's palette.
+
+`brand:` and `logo:` put your name and logo in the corner of every slide, so every frame of the video carries them.
 
 ## 🌐 Run it anywhere
 
@@ -78,9 +104,9 @@ npx slidetake deck.md
 
 Images next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. So an AI agent can write `deck.md` while you watch it take shape.
 
-### Your website: readers view, you record
+### Your website: users view, you record
 
-`slidetake.js` puts decks inside your own pages, in your site's colours. Readers get a clean viewer; add `?obs` to the address and the same page records your video.
+`slidetake.js` puts decks inside your own pages, in your site's colours. Users get a clean viewer; add `?obs` to the address and the same page records your video.
 
 ## <span class="st-heart" aria-hidden="true"></span> Open source
 

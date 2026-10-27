@@ -16,7 +16,7 @@ Three places to use Slidetake, one deck format for all of them: a markdown file.
 |---|---|
 | **slidetake.com** | writing in the Editor, viewing any deck from a link, sharing |
 | **Your computer** | the same on your own files and images, offline, with an AI agent writing alongside |
-| **Your website** | decks your readers view, and the page you record from |
+| **Your website** | decks your users view, and the page you record from |
 
 ### On slidetake.com
 
@@ -60,7 +60,7 @@ window.SLIDETAKE = {
 <script src="https://cdn.jsdelivr.net/npm/slidetake/dist/slidetake.js"></script>
 ```
 
-Readers get a viewer with no recording controls; `?obs` on the page's address brings them back for you. The hugo-continuum theme writes this for slide pages with `engine: slidetake`, so a Hugo site previews decks locally with `hugo server`.
+Users get a viewer with no recording controls; `?obs` on the page's address brings them back for you. The hugo-continuum theme writes this for slide pages with `engine: slidetake`, so a Hugo site previews decks locally with `hugo server`.
 
 ### With AI
 
