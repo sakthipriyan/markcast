@@ -87,12 +87,12 @@ Open source, Apache 2.0: [github.com/slidetake/slidetake](https://github.com/sli
 
 Every feature: **[/features](/features)** \xB7 Step by step: **[/docs](/docs)** \xB7 **[Privacy](/privacy)**
 `});var qa,Ua=R(()=>{qa=`---
-title: Slidetake docs
+title: Slidetake Docs
 brand: slidetake
 pip: none
 ---
 
-# ![](/favicon.svg) Slide<span class="st-take">take</span> docs
+# ![](/favicon.svg) Slide<span class="st-take">take</span> Docs
 
 Everything in order: **get started \u2192 write \u2192 present \u2192 record \u2192 share**. Press \u2192 to read step by step, \u2193 \u2191 to go into a step and back out, or **O** for the whole map. The features at a glance: [/features](/features).
 
@@ -364,12 +364,12 @@ No accounts, and no decks kept: your copy and settings stay in this browser, and
 
 Slidetake is open source: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake).
 `});var Ga,Ya=R(()=>{Ga=`---
-title: Slidetake features
+title: Slidetake Features
 brand: slidetake
 pip: none
 ---
 
-# ![](/favicon.svg) Slide<span class="st-take">take</span> features
+# ![](/favicon.svg) Slide<span class="st-take">take</span> Features
 
 Every feature, and what it saves you. Press \u2192 to walk them, **O** for the map, or read how each works in the [docs](/docs).
 
@@ -445,12 +445,12 @@ The reason Slidetake exists: a talk you record comes out finished.
 | **Your copy in your browser** | edit any deck freely; the original never changes |
 | **Open source, Apache 2.0** | read it, host it, change it: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake) |
 `});var Ka,$a=R(()=>{Ka=`---
-title: Slidetake privacy
+title: Slidetake Privacy
 brand: slidetake
 pip: none
 ---
 
-# ![](/favicon.svg) Slide<span class="st-take">take</span> privacy
+# ![](/favicon.svg) Slide<span class="st-take">take</span> Privacy
 
 Slidetake has no accounts and keeps no decks. This page lists everything that leaves your browser, and where it goes. Last updated 27 October 2026.
 

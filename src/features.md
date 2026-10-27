@@ -1,10 +1,10 @@
 ---
-title: Slidetake features
+title: Slidetake Features
 brand: slidetake
 pip: none
 ---
 
-# ![](/favicon.svg) Slide<span class="st-take">take</span> features
+# ![](/favicon.svg) Slide<span class="st-take">take</span> Features
 
 Every feature, and what it saves you. Press → to walk them, **O** for the map, or read how each works in the [docs](/docs).
 
