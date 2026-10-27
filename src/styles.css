@@ -71,7 +71,7 @@
     --text:var(--header-ink);--text-muted:color-mix(in srgb, var(--header-ink) 72%, transparent);
     --node-border:color-mix(in srgb, var(--header-ink) 28%, transparent);}
   .brand{display:flex;align-items:baseline;gap:10px;}
-  /* the name and the tagline share one baseline: the mark's baseline is its word's, the logo centred beside it */
+  /* the name and the links beside it share one baseline: the mark's baseline is its word's, the logo centred beside it */
   .brand .mark{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.02em;color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:7px;}
   .brand .mark .word{align-self:baseline;}
   .brand .mark .logo{width:20px;height:20px;fill:var(--accent);flex:none;align-self:center;}
@@ -81,14 +81,11 @@
   /* a heart in the deck's own colour, where an emoji would keep its fixed green */
   .node .body .st-heart{display:inline-block;width:.9em;height:.9em;vertical-align:-.08em;background:var(--accent);
     -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35 10.55 20.03C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.54z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35 10.55 20.03C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.54z'/%3E%3C/svg%3E") center/contain no-repeat;}
-  .brand .tagline{font-family:var(--mono);font-size:13px;color:var(--text-muted);}
-  /* Features and Docs sit with the name and tagline: about Slidetake, not about the deck on screen */
+  /* Features, Docs and GitHub sit with the name: about Slidetake, not about the deck on screen */
   .brand .site-links{display:flex;align-items:center;gap:16px;align-self:center;margin-left:8px;}
   .brand .site-link{font-family:var(--mono);font-size:13px;color:var(--text-muted);text-decoration:none;display:inline-flex;align-items:center;}
   .brand .site-link:hover, .brand .site-link:focus-visible{color:var(--accent);}
   .brand .site-link svg{width:15px;height:15px;display:block;margin-right:5px;}
-  /* the tagline steps aside on narrower screens so the header stays one row */
-  @media (max-width: 1100px){ .brand .tagline{display:none;} }
   .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .btn{
     background:transparent;color:var(--text);
@@ -611,7 +608,6 @@
     #editor-resizer{display:none;}
     #editor-pane.collapsed{height:0;}
     #stage-wrap{flex:1;}
-    .brand .tagline{display:none;}
     #minimap{display:none;}
     #navbar .lbl{display:none;}
   }
