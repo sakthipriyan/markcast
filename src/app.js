@@ -1575,13 +1575,11 @@ function showAnalyticsChoice(){
   analyticsDialog.querySelectorAll('[data-analytics]').forEach(b=>b.setAttribute('aria-checked', String((b.dataset.analytics === 'on') === analyticsOn())));
 }
 analyticsDialog.querySelectorAll('[data-analytics]').forEach(b=>b.onclick = ()=>setAnalytics(b.dataset.analytics === 'on'));
-document.getElementById('btn-analytics').onclick = ()=>{
-  showAnalyticsChoice();
-  // a copy elsewhere (localhost, npx slidetake, a self-hosted page) never loads the tag at all
-  if (!/^(www\.)?slidetake\.com$/.test(location.hostname)) document.getElementById('analytics-note').innerHTML =
-    'This copy is not slidetake.com, so it never loads analytics, whatever you choose. The choice is remembered in <code>slidetake:analytics</code>; everything else is on the <a href="/privacy">privacy page</a>.';
-  openModal(analyticsDialog);
-};
+// only slidetake.com runs analytics, so only there is there a choice to make: elsewhere (localhost,
+// npx slidetake, a self-hosted copy) the button stays hidden
+const analyticsBtn = document.getElementById('btn-analytics');
+analyticsBtn.hidden = !/^(www\.)?slidetake\.com$/.test(location.hostname);
+analyticsBtn.onclick = ()=>{ showAnalyticsChoice(); openModal(analyticsDialog); };
 function closeModals(){ document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open')); }
 document.querySelectorAll('.modal').forEach(m=>{
   m.addEventListener('click', e=>{ if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('open'); });

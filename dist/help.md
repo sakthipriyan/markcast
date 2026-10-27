@@ -270,6 +270,6 @@ Every deck you open is **read-only**: Slidetake's own decks, templates, files on
 
 ## 🔒 Your data
 
-No accounts, and no decks kept: your copy and settings stay in this browser, and decks inside links never reach a server. `npx slidetake` keeps everything on your machine. What slidetake.com does collect (Google Analytics, which the **Analytics** button in the header turns off), and which services a deck can reach, is all on the [privacy page](/privacy).
+No accounts, and no decks kept: your copy and settings stay in this browser, and decks inside links never reach a server. `npx slidetake` keeps everything on your machine. What slidetake.com does collect (Google Analytics, which the **Privacy & analytics** button in the header turns off), and which services a deck can reach, is all on the [privacy page](/privacy).
 
 Slidetake is open source: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake).

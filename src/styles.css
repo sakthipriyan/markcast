@@ -134,6 +134,7 @@
   #doc-state .edited{color:var(--accent);}
   #continue{color:var(--accent);border-color:var(--accent-line);}
   #continue[hidden]{display:none;}
+  #btn-analytics[hidden]{display:none;}
   .modal ul.templates{list-style:none;padding:0;display:grid;gap:8px;margin:12px 0;}
   .modal ul.templates a{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--panel-line);border-radius:8px;text-decoration:none;color:var(--text);}
   .modal ul.templates a:hover{border-color:var(--accent);}
