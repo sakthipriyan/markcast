@@ -713,6 +713,9 @@ function registerChartTheme(name, t, accent){
     tooltip: {backgroundColor: t.tip, borderColor: t.line, textStyle: {color: t.text}},
     categoryAxis: axis, valueAxis: axis, logAxis: axis, timeAxis: axis,
     line: {symbolSize: 6, lineStyle: {width: 2.5}},
+    // ECharts' own pie labels are #333 with a white outline: a dark smudge in a white halo on a dark card
+    pie: {label: {color: t.text, textBorderWidth: 0}, labelLine: {lineStyle: {color: t.muted}}},
+    funnel: {label: {color: t.text, textBorderWidth: 0}},
   });
 }
 // D2 (https://d2lang.com) ships as an ES module; it loads only when a deck has a ```d2 block

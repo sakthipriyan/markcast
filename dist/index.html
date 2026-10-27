@@ -2297,7 +2297,10 @@
       valueAxis: axis,
       logAxis: axis,
       timeAxis: axis,
-      line: { symbolSize: 6, lineStyle: { width: 2.5 } }
+      line: { symbolSize: 6, lineStyle: { width: 2.5 } },
+      // ECharts' own pie labels are #333 with a white outline: a dark smudge in a white halo on a dark card
+      pie: { label: { color: t.text, textBorderWidth: 0 }, labelLine: { lineStyle: { color: t.muted } } },
+      funnel: { label: { color: t.text, textBorderWidth: 0 } }
     });
   }
   var D2_URL = "https://esm.sh/@terrastruct/d2@0.1.33";
