@@ -83,7 +83,9 @@
   .brand .site-links{display:flex;align-items:center;gap:16px;align-self:center;margin-left:8px;}
   .brand .site-link{font-family:var(--mono);font-size:13px;color:var(--text-muted);text-decoration:none;display:inline-flex;align-items:center;}
   .brand .site-link:hover, .brand .site-link:focus-visible{color:var(--accent);}
-  .brand .site-link.icon svg{width:16px;height:16px;display:block;}
+  .brand .site-link svg{width:15px;height:15px;display:block;margin-right:5px;}
+  /* the tagline steps aside on narrower screens so the header stays one row */
+  @media (max-width: 1100px){ .brand .tagline{display:none;} }
   .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .btn{
     background:transparent;color:var(--text);
