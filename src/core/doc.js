@@ -67,6 +67,7 @@ export function originLabel(origin){
       if (origin.id === 'home') return 'Home';
       if (origin.id === 'docs' || origin.id === 'help') return 'the docs';   // help: copies saved before the move
       if (origin.id === 'showcase') return 'the examples';
+      if (origin.id === 'features') return 'the features';
       return 'the ' + origin.id.replace(/^template:/, '') + ' template';
     case 'gist': return 'a gist' + (origin.file ? ' (' + origin.file + ')' : '');
     case 'shared': return 'a shared deck';

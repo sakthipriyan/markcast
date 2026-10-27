@@ -4,13 +4,32 @@ Markdown in, a spatial deck and a finished video out.
 
 Slidetake turns a markdown file into a deck you move through like a map, and, when you are recording, drives the camera and OBS from the deck itself: every slide is a take, a slide spoken badly is retaken on the spot, and at the end you get a frame-exact ffmpeg cut, chapters and a YouTube publish pack.
 
-The built app is a single HTML file, [`dist/index.html`](dist/index.html): open it, copy it or host it anywhere.
+The built app is a single HTML file, [`dist/index.html`](dist/index.html): open it, copy it or host it anywhere. Every feature: [slidetake.com/features](https://slidetake.com/features); step by step: [slidetake.com/docs](https://slidetake.com/docs).
+
+## Four ways to use it
+
+| Where | How |
+|---|---|
+| **slidetake.com** | open a deck from a GitHub file, gist or URL, or type one in the editor |
+| **Your computer** | `npx slidetake deck.md`: the deck and the images beside it, offline, reloading as you save |
+| **Your website** | `slidetake.js` on your pages ([below](#embed-in-a-site)); the hugo-continuum theme does it for `engine: slidetake` |
+| **With AI** | any AI writes the markdown ([llms.txt](https://slidetake.com/llms.txt) tells it how); an agent writes `deck.md` and `npx slidetake` shows it live |
+
+### On your computer
+
+```sh
+npx slidetake deck.md          # or a folder: its index.md, deck.md, slides.md or README.md
+```
+
+Opens on `http://localhost:4300` (`--port` to change, `--open` to open the browser). Files next to the deck are served beside it, so `![](diagram.png)` works. Saving the file reloads the deck where you are; typing in the browser's editor saves to the file. Over plain http, so OBS on another machine works too. Node 20+.
 
 ## Examples
 
 [`examples/`](examples) holds the decks to look at and start from: [`showcase.md`](examples/showcase.md) has everything a card can hold (steps, Graphviz, D2, SVG, ECharts, images, galleries, YouTube, camera) and is what [slidetake.com/examples](https://slidetake.com/examples) shows; the starter templates sit beside it.
 
-## Run it
+## Develop Slidetake
+
+`npm run dev` builds, rebuilds on change and serves the site at `http://localhost:8787` (Cloudflare's local runtime, with slidetake.com's routes). Or serve the repo statically:
 
 ```sh
 python3 -m http.server 8765
@@ -52,7 +71,7 @@ The bottom bar always has **Camera** (C), **● Record** (R) and **Fullscreen** 
 
 **Recording needs [OBS Studio](https://obsproject.com)** (free) with its WebSocket server on; OBS records and Slidetake drives it. The Record dialog checks the screen: if it isn't 16:9, present on a screen that is, physical or virtual (say 1920×1080), so the video fits YouTube without bars.
 
-From https://slidetake.com, OBS must run on the same computer (`localhost`): browsers block secure pages from plain `ws://` connections to other machines. To record with OBS on another machine, serve `dist/index.html` locally over http.
+From https://slidetake.com, OBS must run on the same computer (`localhost`): browsers block secure pages from plain `ws://` connections to other machines. To record with OBS on another machine, use `npx slidetake`, which serves over http.
 
 ## Decks
 

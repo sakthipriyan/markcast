@@ -2,11 +2,12 @@
 
 > Write in markdown. Present on a spatial canvas. Record without timeline editing. A markdown file becomes a spatial deck you move through like a map; recording with OBS, every slide is a take, so a fumbled line is retaken on the spot, and Slidetake writes the frame-exact ffmpeg cut, YouTube chapters and description. For developers and technical educators.
 
-Slidetake runs in the browser at https://slidetake.com. It is open source (Apache 2.0): https://github.com/slidetake/slidetake
+Slidetake runs in the browser at https://slidetake.com, on your own computer with `npx slidetake deck.md`, and inside other sites with `slidetake.js`. It is open source (Apache 2.0): https://github.com/slidetake/slidetake
 
 ## Docs
 
 - [Docs](https://slidetake.com/docs.md): the full guide as markdown, itself a Slidetake deck (writing decks, opening and sharing, layouts and keys, presenting, recording, camera directives, review and cut, publish pack)
+- [Features](https://slidetake.com/features.md): every feature and what it's for
 - [Home deck](https://slidetake.com/home.md): the short introduction shown at https://slidetake.com
 
 ## Writing a deck for Slidetake
@@ -21,6 +22,19 @@ Slidetake runs in the browser at https://slidetake.com. It is open source (Apach
 - An optional frontmatter block sets deck options: title, brand, duration (e.g. 10m), pip, camera, accent (the deck's colour; Slidetake's own is green).
 - `<!-- view: full -->` makes a card a 16:9 frame for a big image, without the camera unless the card asks for it.
 - `<!-- camera: full, on -->` inside a slide steps the presenter's camera; `<!-- view: overview -->` pulls back to the map first.
+
+## Writing a good deck (for an AI asked to make one)
+
+- Save it as one markdown file, e.g. `deck.md`, with a frontmatter block: `title`, and `duration` for a timed talk.
+- `#` is the title card; each `##` is a section of the talk; `###` cards are the details under a section. Aim for 5–9 sections.
+- One idea per card, a few short lines or a short list each; put long explanation in the speaker's words, not on the card.
+- Use `<!-- steps -->` for lists the speaker reveals point by point, ```d2 for flows and architecture, ```echarts for numbers, tables for comparisons.
+- Images go next to the file and are referenced relatively (`![caption](diagram.png)`); the alt text is the caption.
+- To show it: `npx slidetake deck.md` (reloads as the file changes), or paste the markdown into the editor at https://slidetake.com.
+
+## Running it locally
+
+- `npx slidetake deck.md` serves the deck and its folder at http://localhost:4300: relative images work, saving the file reloads the deck, and typing in the browser's editor saves back to the file. Node 20+. `--open` opens the browser, `--port` picks the port.
 
 ## Opening a deck
 
