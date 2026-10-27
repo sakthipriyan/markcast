@@ -238,11 +238,15 @@ function currentStep(){
   return steps[Math.min(stepPos, steps.length - 1)] || {cam:0, frag:0};
 }
 // the layout in force for the current slide: its own current step, otherwise the final step
-// of the nearest directive before it in document order
+// of the nearest directive before it in document order. A full-screen card is the slide alone, so the
+// camera stays off it unless the card has its own directive (V still brings the camera back), and the
+// slides after it carry on with the camera as before.
 function slideCameraPreset(){
   if (!currentId) return null;
-  const own = cameraSteps(nodes.get(currentId));
+  const n = nodes.get(currentId);
+  const own = cameraSteps(n);
   if (own.length) return own[Math.min(currentStep().cam, own.length - 1)];
+  if (n && n.el.classList.contains('card-full')) return 'off';
   for (let i = order.indexOf(currentId) - 1; i >= 0; i--){
     const steps = cameraSteps(nodes.get(order[i])); // order can be stale for a moment while the deck re-parses
     if (steps.length) return steps[steps.length - 1];
@@ -261,6 +265,8 @@ function computePipState(){
     full: false, off: false, flip: false, used: false
   };
   applyPreset(st, slideCameraPreset());
+  // a layout picked with V shows the camera unless it is "off" itself, even on a slide that turns it off
+  if (camManual && !/\b(off|hide)\b/i.test(camManual)) st.off = false;
   applyPreset(st, camManual);
   // a live camera or a camera preset needs somewhere to go even if the deck didn't set a corner
   if (!CORNERS.includes(st.corner) && (cameraStream || st.used)) st.corner = 'bottom-right';
