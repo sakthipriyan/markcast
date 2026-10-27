@@ -81,7 +81,7 @@ Ask Claude, or any AI, for a Slidetake deck: an agent writes \`deck.md\` and \`n
 - **Your computer:** \`npx slidetake\`.
 - **Your website:** \`slidetake.js\` puts decks inside your pages, in your site's colours.
 
-## \u{1F49A} Free and open
+## \u{1F49A} Open source
 
 Open source, Apache 2.0: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake).
 
