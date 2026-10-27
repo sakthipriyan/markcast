@@ -988,6 +988,8 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
   .btn.small{padding:3px 9px;font-size:11px;}
   .btn.icon{padding:4px 9px;min-width:30px;display:inline-flex;align-items:center;justify-content:center;}
   .btn.icon svg{width:15px;height:15px;display:block;}
+  /* in the header, icon buttons stand as tall as the layout switch and the text buttons beside them */
+  .hdr-actions .btn.icon{height:32px;min-width:32px;padding:0 8px;}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   .pane-label{
     font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
