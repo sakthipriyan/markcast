@@ -6,7 +6,7 @@ pip: none
 
 # ![](/favicon.svg) Slide<span class="st-take">take</span> Docs
 
-Everything in order: **get started → write → present → record → share**. Press → to read step by step, ↓ ↑ to go into a step and back out, or **O** for the whole map. The features at a glance: [/features](/features).
+Everything in order: **get started → write → present → record → share**. Press → to walk it, ↓ ↑ to go into a step and back out, **O** for the map.
 
 ## 1️⃣ Get started
 
@@ -14,7 +14,7 @@ Four ways to use Slidetake, one deck format for all of them: a markdown file.
 
 | Where | Best for |
 |---|---|
-| **slidetake.com** | opening any deck from a link, or typing one |
+| **slidetake.com** | creating a deck in the Editor, or opening any deck from a link |
 | **Your computer** | your own files and images, offline |
 | **Your website** | decks inside your own pages |
 | **With AI** | having Claude or another AI write the deck |
@@ -176,7 +176,7 @@ With `duration: 10m` (or `90s`, `1h`, `12:30`), a lighter layer of the same colo
 
 ## 4️⃣ Record a video
 
-Recording takes **[OBS Studio](https://obsproject.com)** (free). OBS records at full quality; Slidetake drives it, slide by slide, so there's no timeline to edit afterwards.
+Recording takes **[OBS Studio](https://obsproject.com)** (free and open source). OBS records at full quality; Slidetake drives it, slide by slide, so there's no timeline to edit afterwards.
 
 ### Set up OBS
 
@@ -232,7 +232,7 @@ Clicks, dragging and the map are locked so the take only moves forward.
 
 ### Review, cut and publish
 
-Then the review opens: every slide with its takes (the last one picked), previews from the OBS file, a ready-to-run **ffmpeg** command for the picked takes (frame-exact), and the YouTube title, description with **chapters** and links, and tags. Sessions are kept in this browser, so a take can be reviewed again later from ● Record.
+Then the review opens: every slide with its takes (the last one picked), previews from the OBS file, a ready-to-run **[ffmpeg](https://ffmpeg.org)** command for the picked takes (frame-exact), and the YouTube title, description with **chapters** and links, and tags. Sessions are kept in this browser, so a take can be reviewed again later from ● Record.
 
 The description comes from the deck's top block:
 
@@ -265,7 +265,7 @@ Every deck you open is **read-only**: Slidetake's own decks, templates, files on
 | Option | Does |
 |---|---|
 | `?edit=1` | opens the editor |
-| `?layout=tree` (radial, path, focus) | picks the layout |
+| `?layout=focus` (path, radial, tree) | picks the layout; path is the default |
 | `?mode=light` | light theme |
 | `?duration=10m` | talk length for the timer |
 | `#card-id` | opens at a card |

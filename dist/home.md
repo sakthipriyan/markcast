@@ -10,7 +10,7 @@ pip: bottom-right
 
 **Write in markdown. Present on a spatial canvas. Record without timeline editing.**
 
-For developers and technical educators who explain things on video. You're inside a Slidetake deck right now: press → to walk it, **O** for the map.
+For developers and technical educators who explain things on video. You're inside a Slidetake deck right now. Press → to walk it, **O** for the map.
 
 ## ✂️ Record without timeline editing
 
@@ -27,6 +27,10 @@ Stumbled on a slide? Press ← and say it again. Every attempt is kept, and reco
 ### Pick, don't scrub
 
 Choose the best take of each slide. Slidetake writes the frame-exact **[ffmpeg](https://ffmpeg.org)** cut, the YouTube **chapters** and the description.
+
+### One session, one finished video
+
+Write, present and record in one sitting. What comes out is ready to upload.
 
 ## 🗺️ A map, not a stack
 
@@ -48,19 +52,23 @@ Your headings are the hierarchy: zoom out for the whole system, zoom in for one 
 
 A comment in a slide moves you: corner, full screen, or off. Turn on **Camera** and watch this slide do it.
 
-### One session, one finished video
-
-Write, present and record in one sitting. What comes out is ready to upload.
-
 ## ✍️ Plain markdown in
 
 Markdown you already know: headings, lists, tables, code, steps, diagrams (Graphviz, D2, SVG), charts, images and YouTube links. [See them all in the showcase →](/showcase)
 
-### Your colours
+## 🎨 Your colours
 
-`accent:` in a deck gives it its own colour, shaded for dark and light.
+One line, `accent: "#3b82f6"`, gives a deck its own colour, shaded for dark and light. On your website, decks wear your site's palette.
 
-## 💻 Iterate locally
+## 🌐 Run it anywhere
+
+Four ways, one deck format: a markdown file.
+
+### slidetake.com
+
+Create a deck in the **✎ Editor**, or open a GitHub file, gist or URL. **Share** a link with the deck inside it.
+
+### Your computer
 
 Keep the deck and its images in a folder, and run:
 
@@ -70,18 +78,16 @@ npx slidetake deck.md
 
 Images next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. Offline, nothing uploaded.
 
-### Write it with AI
+### Your website
 
-Ask Claude, or any AI, for a Slidetake deck: an agent writes `deck.md` and `npx slidetake` shows it as it changes; a chat's markdown pastes straight into the editor here.
+`slidetake.js` puts decks inside your own pages, in your site's colours.
 
-## 🌐 Run it anywhere
+### With AI
 
-- **slidetake.com:** create a deck in the **✎ Editor**, or open a GitHub file, gist or URL; **Share** a link with the deck inside it.
-- **Your computer:** `npx slidetake`.
-- **Your website:** `slidetake.js` puts decks inside your pages, in your site's colours.
+Ask Claude, or any AI, for a Slidetake deck: an agent writes `deck.md` and `npx slidetake` shows it as it changes; a chat's markdown pastes straight into the **✎ Editor**.
 
 ## <span class="st-heart" aria-hidden="true"></span> Open source
 
-Open source, Apache 2.0: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake).
+Open source, Apache 2.0: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake). Nothing to sign up for, and your decks stay yours: [Privacy](/privacy).
 
-Every feature: **[/features](/features)** · Step by step: **[/docs](/docs)** · **[Privacy](/privacy)**
+Next, every feature and what it saves you: **[Features →](/features)**
