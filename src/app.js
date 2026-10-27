@@ -2162,8 +2162,7 @@ document.addEventListener('fullscreenchange', ()=>{
 });
 
 const help = document.getElementById('help');
-// ? (the key) shows the keys; the ? button opens the full guide, itself a deck, in a new tab
-document.getElementById('btn-help').onclick = ()=>window.open(EMBED ? 'https://slidetake.com/help' : '/help', '_blank', 'noopener');
+// ? or K shows the keys; Docs (a link in the header) opens the full guide, itself a deck, in a new tab
 document.getElementById('btn-keys').onclick = ()=>help.classList.add('open');
 document.getElementById('help-close').onclick = ()=>help.classList.remove('open');
 help.addEventListener('click', e=>{ if (e.target===help) help.classList.remove('open'); });

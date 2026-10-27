@@ -503,7 +503,7 @@
   #credit .logo{width:18px;height:18px;fill:var(--accent);}
   #credit .word > span{color:var(--accent);}
   #credit:hover{opacity:.85;}
-  html.embed #btn-help, html.embed #btn-github{display:none !important;}
+  html.embed #btn-docs, html.embed #btn-github{display:none !important;}
   /* a reader's page (embedded, not recording): no bottom bar, except the arrows on touch screens */
   html.embed.no-record #navbar{display:none;}
   @media (pointer:coarse){
