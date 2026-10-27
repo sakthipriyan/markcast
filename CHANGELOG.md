@@ -11,6 +11,34 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-10-27
+
+### Added
+
+- A GitHub button beside light/dark on slidetake.com, linking to the
+  repository. Embedded decks don't show it.
+
+### Changed
+
+- A full-screen card whose image leaves room beside it (a screenshot or photo
+  narrower than 16:9) puts the image on the right and the heading and caption
+  in that room, as a portrait card does, rather than over the image. Images
+  close to 16:9 still fill the card with the text over them.
+- A full-screen card is a 16:9 frame placed like every other slide, with the
+  same margins in the window and when presenting, instead of filling the screen
+  edge to edge (which left it touching the top and bottom, under the
+  breadcrumbs).
+- A full-screen card turns the camera off while it's on screen, unless the
+  card has its own `<!-- camera: … -->`; **V** still brings the camera back,
+  and the slides after it keep their camera as before.
+
+### Fixed
+
+- D2 diagrams sit on their card: the colour D2 paints behind a diagram is now
+  the card's own, not the page's near-black.
+- A camera layout picked with **V** shows the camera even on a slide whose
+  `<!-- camera: … -->` turns it off; before, a size such as `24%` stayed hidden.
+
 ## [0.2.2] - 2026-10-27
 
 ### Changed

@@ -19,7 +19,7 @@ Slidetake runs in the browser at https://slidetake.com. It is open source (Apach
 - A YouTube link alone on a line embeds the video; the next press plays it.
 - Every feature in one deck: https://slidetake.com/examples (source: https://github.com/slidetake/slidetake/blob/main/examples/showcase.md)
 - An optional frontmatter block sets deck options: title, brand, duration (e.g. 10m), pip, camera, accent (the deck's colour; Slidetake's own is green).
-- `<!-- view: full -->` makes a card fill the whole screen.
+- `<!-- view: full -->` makes a card a 16:9 frame for a big image, without the camera unless the card asks for it.
 - `<!-- camera: full, on -->` inside a slide steps the presenter's camera; `<!-- view: overview -->` pulls back to the map first.
 
 ## Opening a deck

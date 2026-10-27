@@ -238,11 +238,15 @@ function currentStep(){
   return steps[Math.min(stepPos, steps.length - 1)] || {cam:0, frag:0};
 }
 // the layout in force for the current slide: its own current step, otherwise the final step
-// of the nearest directive before it in document order
+// of the nearest directive before it in document order. A full-screen card is the slide alone, so the
+// camera stays off it unless the card has its own directive (V still brings the camera back), and the
+// slides after it carry on with the camera as before.
 function slideCameraPreset(){
   if (!currentId) return null;
-  const own = cameraSteps(nodes.get(currentId));
+  const n = nodes.get(currentId);
+  const own = cameraSteps(n);
   if (own.length) return own[Math.min(currentStep().cam, own.length - 1)];
+  if (n && n.el.classList.contains('card-full')) return 'off';
   for (let i = order.indexOf(currentId) - 1; i >= 0; i--){
     const steps = cameraSteps(nodes.get(order[i])); // order can be stale for a moment while the deck re-parses
     if (steps.length) return steps[steps.length - 1];
@@ -261,6 +265,8 @@ function computePipState(){
     full: false, off: false, flip: false, used: false
   };
   applyPreset(st, slideCameraPreset());
+  // a layout picked with V shows the camera unless it is "off" itself, even on a slide that turns it off
+  if (camManual && !/\b(off|hide)\b/i.test(camManual)) st.off = false;
   applyPreset(st, camManual);
   // a live camera or a camera preset needs somewhere to go even if the deck didn't set a corner
   if (!CORNERS.includes(st.corner) && (cameraStream || st.used)) st.corner = 'bottom-right';
@@ -522,7 +528,7 @@ function applyMedia(el, body){
   if (media.length === 1 && parts.length === 1) el.classList.add('card-media');
   // an image or a carousel alone runs edge to edge, the heading and caption laid over it
   if (parts.length === 1 && (parts[0].matches('figure.media:not(.yt)') || parts[0].matches('.gallery.carousel'))) el.classList.add('card-bleed');
-  // <!-- view: full --> fills the screen with the card: 16:9, the camera fitting it edge to edge
+  // <!-- view: full --> makes the card a 16:9 frame for its image, placed like any other slide
   const walker = document.createTreeWalker(body, NodeFilter.SHOW_COMMENT);
   while (walker.nextNode()) if (/^\s*view\s*:\s*full\s*$/i.test(walker.currentNode.data)) el.classList.add('card-full');
   else if (media.length === 1){
@@ -608,13 +614,22 @@ function sizeCard(n){
   // an image card takes its layout from the image's shape (the widest image, for a carousel):
   //   portrait or near-square → image on the right at the card's height, the heading and caption beside it
   //   wider     → image edge to edge across the card, the heading above it and the caption below
-  //   16:9, or a <!-- view: full --> card → the image fills the card (fitted whole, never cropped), the heading and caption over it
+  //   16:9 → the image fills the card, the heading and caption over it
+  // A <!-- view: full --> card is 16:9 and fits its image whole, never cropped: an image narrow enough to leave
+  // room beside it sits on the right with the text in that room, as a portrait card does; a wider one fills
+  // the card with the text over it.
   const full = el.classList.contains('card-full');
   el.classList.remove('img-portrait', 'img-landscape', 'img-overlay');
   if (full) w = XWIDE_W;
   if (el.classList.contains('card-bleed')){
     const aspect = Math.max(0, ...[...b.querySelectorAll('img')].map(i=>i.naturalWidth && i.naturalHeight ? i.naturalWidth / i.naturalHeight : 0)) || 16 / 9;
-    if (full || Math.abs(aspect - 16 / 9) < 0.08){ el.classList.add('img-overlay'); w = XWIDE_W; }
+    const roomBeside = XWIDE_W - BLEED_H * aspect >= 260;
+    if (full && roomBeside){
+      el.classList.add('img-portrait');
+      el.style.setProperty('--img-w', Math.round(BLEED_H * aspect) + 'px');
+      w = XWIDE_W;
+    }
+    else if (full || Math.abs(aspect - 16 / 9) < 0.08){ el.classList.add('img-overlay'); w = XWIDE_W; }
     else if (aspect < 1.3){
       const iw = Math.min(Math.round(BLEED_H * aspect), XWIDE_W - 300);   // leave the text at least 300px
       el.classList.add('img-portrait');
@@ -704,7 +719,8 @@ function d2Theme(){
   // dark tints the bright accent into the card; light tints the line colour, the deep accent being for text
   const tint = mode === 'dark' ? tokenHex('--accent') : tokenHex('--accent-line');
   const steps = mode === 'dark' ? [0.58, 0.38, 0.25, 0.18, 0.12] : [0.7, 0.45, 0.25, 0.15, 0.08];
-  const t = {...D2_NEUTRALS[mode], B1: tokenHex('--accent')};
+  // N7 is the colour D2 paints behind the whole diagram: the card's own, so the diagram sits on the card
+  const t = {...D2_NEUTRALS[mode], N7: card, B1: tokenHex('--accent')};
   steps.forEach((x, i)=>{ t['B' + (i + 2)] = mixHex(tint, card, x); });
   return t;
 }
@@ -1004,12 +1020,6 @@ function focusOn(id, instant){
   // text one size across a section: cards share the section's typical zoom, and only a card that
   // wouldn't fit at it (a big table or chart) goes smaller. Charts and embeds don't vote: a section
   // of two charts and a list would otherwise show the list at the charts' small zoom
-  document.body.classList.toggle('full-card', n.el.classList.contains('card-full'));
-  if (n.el.classList.contains('card-full')){
-    const zoom = Math.min(stage.clientWidth / n._w, stage.clientHeight / n._h);
-    flyTo({x:n.cx, y:n.cy, zoom}, instant);
-    return;
-  }
   const f = fitInSafe(n._w, n._h, slideFill);
   const sec = sectionOf(id);
   const peers = order.filter(x=>sectionOf(x) === sec && !nodes.get(x).visual).map(x=>{ const m = nodes.get(x); return fitInSafe(m._w, m._h, slideFill).zoom; }).sort((a, b)=>a - b);
@@ -1019,7 +1029,6 @@ function focusOn(id, instant){
 }
 
 function fitAll(instant){
-  document.body.classList.remove('full-card');
   const all = [...nodes.values()];
   if (!all.length) return;
   const vw = stage.clientWidth, vh = stage.clientHeight;
