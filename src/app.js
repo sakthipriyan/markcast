@@ -282,7 +282,8 @@ function applyPipState(){
   const first = (!pipEl.hidden && pipEl.offsetWidth) ? pipEl.getBoundingClientRect() : null;
   const st = pipState = computePipState();
   const valid = CORNERS.includes(st.corner);
-  pipEl.className = valid ? [st.corner, st.circle && 'circle', cameraStream && 'live', st.mirror && 'mirror', st.full && 'full'].filter(Boolean).join(' ') : '';
+  // (a message showing in the box keeps its class through a re-layout: fullscreen, resizing, a new slide)
+  pipEl.className = valid ? [st.corner, st.circle && 'circle', cameraStream && 'live', st.mirror && 'mirror', st.full && 'full', pipEl.classList.contains('msg') && 'msg'].filter(Boolean).join(' ') : '';
   pipEl.style.width = st.size + '%';
   pipEl.hidden = !valid || cameraOff || st.off;
   stageWrap.dataset.pip = pipEl.hidden || st.full ? 'none' : st.corner;

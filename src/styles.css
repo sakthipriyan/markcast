@@ -536,7 +536,7 @@
   }
   #pip[hidden]{display:none;}
   /* a message in the box (no camera found, waiting for permission, a layout picked with V) */
-  #pip.msg span{padding:10px 14px;text-align:center;text-transform:none;letter-spacing:0;font-size:12px;line-height:1.45;color:var(--text);
+  #pip.msg span{padding:10px 14px;text-align:center;text-transform:none;letter-spacing:0;font-size:12px;line-height:1.45;color:var(--accent);
     background:color-mix(in srgb, var(--panel) 88%, transparent);border-radius:6px;max-width:92%;max-height:92%;overflow:hidden;}
   #pip.circle{aspect-ratio:1;border-radius:50%;}
   #pip.top-left{top:16px;left:16px;}
