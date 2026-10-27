@@ -60,7 +60,7 @@ let order = [];          // DFS pre-order of node ids
 let roots = [];
 let currentId = null;
 // layouts in the order they're offered (alphabetical; keys 1–4 follow it). The one shown is ?layout=, else the
-// reader's own choice, else the deck's layout:, else path, made for presenting and video.
+// reader's own choice, else path, made for presenting and video. A deck doesn't pick: the reader does.
 const LAYOUTS = ['focus', 'path', 'radial', 'tree'];
 let layoutMode = 'path';
 let presenting = false;
@@ -2333,7 +2333,6 @@ document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.togg
 // ?src=<url of a .md> loads a deck from the web (relative images resolve next to it),
 // ?edit=0 starts with the editor hidden, ?layout=tree|radial|path|focus picks the layout
 const params = new URLSearchParams(location.search);
-const layoutChosen = LAYOUTS.includes(params.get('layout')) || LAYOUTS.includes(savedMode);
 if (LAYOUTS.includes(params.get('layout'))){
   layoutMode = params.get('layout');
   document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
@@ -2515,12 +2514,6 @@ loadInitialDeck().then(text=>{
   editor.value = text;
   updateDocState();
   parseDeck(editor.value);
-  // the deck's own layout:, unless the address or the reader chose one (a Hugo deck's layout: "slides" isn't one)
-  const deckLayout = String(deck.layout || '').toLowerCase();
-  if (!layoutChosen && LAYOUTS.includes(deckLayout)){
-    layoutMode = deckLayout;
-    document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
-  }
   build();
   // wait for web fonts before measuring card sizes
   return document.fonts ? document.fonts.ready : null;

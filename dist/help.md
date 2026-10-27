@@ -122,7 +122,6 @@ An optional block at the top of the file:
 title: My talk               ← the page title, and the video's
 duration: 10m                ← talk length, for the timer
 accent: "#3b82f6"            ← the deck's colour (Slidetake's own is green)
-layout: tree                 ← the layout it opens in (focus, path, radial, tree; path if unset)
 brand: example.com/talks     ← text in the top-right corner
 logo: https://…/logo.png     ← image beside it
 base: https://…/deck-folder/ ← where relative images live, for a file opened from elsewhere
@@ -161,7 +160,7 @@ Click a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch scre
 
 **Radial** rings out from the first card, and **tree** is a top-down chart.
 
-The layout you pick is remembered in this browser. A deck can choose its own with `layout: tree` (or focus, path, radial) in its top block; your own choice still wins.
+The layout you pick is remembered in this browser, for every deck.
 
 ### On screen
 
