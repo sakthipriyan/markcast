@@ -1,4 +1,4 @@
-  /* Every colour comes from these tokens. Slidetake's own is terminal green: bright on zinc in dark mode,
+  /* Every colour comes from these tokens. Slidetake's own is seafoam green: bright on zinc in dark mode,
      deep on white in light mode. A host page passes its own (window.SLIDETAKE.colors) and a deck can carry
      its own (accent: in its top block); see applyColors in app.js. */
   :root{
@@ -8,14 +8,14 @@
     --panel-line:#27272a;
     --node-bg:#18181b;
     --node-border:#323238;
-    --accent:#4ade80;
-    --accent-teal:#86efac;              /* headings below h2 */
+    --accent:#34d399;
+    --accent-teal:#6ee7b7;              /* headings below h2 */
     --text:#e4e4e7;
     --text-muted:#a1a1aa;
     --danger:#e0645c;
     --code-bg:#0f0f12;
     --overlay:rgba(17,17,19,.9);       /* breadcrumbs, nav bar, minimap */
-    --on-accent:#052e16;               /* text on an accent-filled button */
+    --on-accent:#022c22;               /* text on an accent-filled button */
     --card-shadow:0 6px 24px rgba(0,0,0,.35);
     --brand-shadow:0 1px 6px rgba(0,0,0,.6);
     --mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -25,18 +25,18 @@
   /* Tokens derived from others are declared on body, not :root: a custom property resolves var() where
      it is declared, so on :root these would freeze the default palette's colours. */
   body{
-    --accent-line:#15803d;             /* borders and connector lines on the active path */
+    --accent-line:#047857;             /* borders and connector lines on the active path */
     --accent-ring:var(--accent);        /* the current slide's border, glow and the progress bar */
     --edge:var(--node-border);          /* connector lines off the active path */
     --header-bg:none;                   /* a host's band of colour behind the header (an image layer) */
     --header-ink:var(--text);           /* text on that band */
   }
-  /* Light mode (L, mode: light, ?mode=light): #15803d carries text (5.0:1 on white); the brighter green
+  /* Light mode (L, mode: light, ?mode=light): #047857 carries text (5.5:1 on white); the brighter seafoam
      only rings and lines, which never need to be read. */
   body[data-mode="light"]{
     --bg:#fafaf9; --grid-dot:#e7e5e4; --panel:#ffffff; --panel-line:#e4e4e7;
     --node-bg:#ffffff; --node-border:#e4e4e7; --edge:#d4d4d8;
-    --accent:#15803d; --accent-teal:#166534; --accent-line:#4ade80; --accent-ring:#22c55e;
+    --accent:#047857; --accent-teal:#065f46; --accent-line:#34d399; --accent-ring:#10b981;
     --text:#27272a; --text-muted:#71717a; --danger:#c2410c;
     --code-bg:#f4f4f5; --overlay:rgba(255,255,255,.92); --on-accent:#ffffff;
     --card-shadow:0 4px 18px rgba(24,24,27,.08); --brand-shadow:0 1px 4px rgba(255,255,255,.9);

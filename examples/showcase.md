@@ -69,9 +69,9 @@ write -> present -> record: one session
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
-  <rect x="10" y="20" width="90" height="80" rx="10" fill="#22c55e"/>
-  <rect x="115" y="20" width="90" height="80" rx="10" fill="#22c55e" opacity=".7"/>
-  <rect x="220" y="20" width="90" height="80" rx="10" fill="#22c55e" opacity=".4"/>
+  <rect x="10" y="20" width="90" height="80" rx="10" fill="#10b981"/>
+  <rect x="115" y="20" width="90" height="80" rx="10" fill="#10b981" opacity=".7"/>
+  <rect x="220" y="20" width="90" height="80" rx="10" fill="#10b981" opacity=".4"/>
 </svg>
 ```
 

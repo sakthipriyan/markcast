@@ -124,7 +124,7 @@ function applyDeckSettings(){
 }
 
 // ---------- colours ----------
-// Everything is drawn from a few colour tokens (styles.css); Slidetake's own are terminal green. Two
+// Everything is drawn from a few colour tokens (styles.css); Slidetake's own are seafoam green. Two
 // things can replace them, the later winning:
 //   window.SLIDETAKE.colors  a host site's: {accent, accentSoft, line, ring, header, headerText} for both
 //                            modes, and/or {light: {…}, dark: {…}}; any CSS colour, gradients for header
