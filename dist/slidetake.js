@@ -27,7 +27,7 @@ Stumbled on a slide? Press \u2190 and say it again. Every attempt is kept, and r
 
 ### Pick, don't scrub
 
-Choose the best take of each slide. Slidetake writes the frame-exact **ffmpeg** cut, the YouTube **chapters** and the description.
+Choose the best take of each slide. Slidetake writes the frame-exact **[ffmpeg](https://ffmpeg.org)** cut, the YouTube **chapters** and the description.
 
 ## \u{1F5FA}\uFE0F A map, not a stack
 

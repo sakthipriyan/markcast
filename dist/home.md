@@ -26,7 +26,7 @@ Stumbled on a slide? Press ← and say it again. Every attempt is kept, and reco
 
 ### Pick, don't scrub
 
-Choose the best take of each slide. Slidetake writes the frame-exact **ffmpeg** cut, the YouTube **chapters** and the description.
+Choose the best take of each slide. Slidetake writes the frame-exact **[ffmpeg](https://ffmpeg.org)** cut, the YouTube **chapters** and the description.
 
 ## 🗺️ A map, not a stack
 
