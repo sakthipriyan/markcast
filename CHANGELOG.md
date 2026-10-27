@@ -29,6 +29,8 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ### Fixed
 
+- D2 diagrams sit on their card: the colour D2 paints behind a diagram is now
+  the card's own, not the page's near-black.
 - A camera layout picked with **V** shows the camera even on a slide whose
   `<!-- camera: … -->` turns it off; before, a size such as `24%` stayed hidden.
 

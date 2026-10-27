@@ -719,7 +719,8 @@ function d2Theme(){
   // dark tints the bright accent into the card; light tints the line colour, the deep accent being for text
   const tint = mode === 'dark' ? tokenHex('--accent') : tokenHex('--accent-line');
   const steps = mode === 'dark' ? [0.58, 0.38, 0.25, 0.18, 0.12] : [0.7, 0.45, 0.25, 0.15, 0.08];
-  const t = {...D2_NEUTRALS[mode], B1: tokenHex('--accent')};
+  // N7 is the colour D2 paints behind the whole diagram: the card's own, so the diagram sits on the card
+  const t = {...D2_NEUTRALS[mode], N7: card, B1: tokenHex('--accent')};
   steps.forEach((x, i)=>{ t['B' + (i + 2)] = mixHex(tint, card, x); });
   return t;
 }
