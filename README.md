@@ -6,14 +6,13 @@ Slidetake turns a markdown file into a deck you move through like a map, and, wh
 
 The built app is a single HTML file, [`dist/index.html`](dist/index.html): open it, copy it or host it anywhere. Every feature: [slidetake.com/features](https://slidetake.com/features); step by step: [slidetake.com/docs](https://slidetake.com/docs).
 
-## Four ways to use it
+## Three places to use it
 
-| Where | How |
+| Where | What it's for |
 |---|---|
-| **slidetake.com** | open a deck from a GitHub file, gist or URL, or type one in the editor |
-| **Your computer** | `npx slidetake deck.md`: the deck and the images beside it, offline, reloading as you save |
-| **Your website** | `slidetake.js` on your pages ([below](#embed-in-a-site)); the hugo-continuum theme does it for `engine: slidetake` |
-| **With AI** | any AI writes the markdown ([llms.txt](https://slidetake.com/llms.txt) tells it how); an agent writes `deck.md` and `npx slidetake` shows it live |
+| **slidetake.com** | write in the editor, view a deck from a GitHub file, gist or URL, and share a link with the deck inside it |
+| **Your computer** | the same with `npx slidetake deck.md`: your files and the images beside them, offline, reloading as you save, so an AI agent can write `deck.md` while you watch ([llms.txt](https://slidetake.com/llms.txt) tells it how) |
+| **Your website** | `slidetake.js` on your pages ([below](#embed-in-a-site)): readers view, and `?obs` makes the page your recorder; the hugo-continuum theme does it for `engine: slidetake` |
 
 ### On your computer
 

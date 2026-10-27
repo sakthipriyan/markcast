@@ -10,14 +10,13 @@ Everything in order: **get started → write → present → record → share**.
 
 ## 1️⃣ Get started
 
-Four ways to use Slidetake, one deck format for all of them: a markdown file.
+Three places to use Slidetake, one deck format for all of them: a markdown file. And any AI can write the deck.
 
 | Where | Best for |
 |---|---|
-| **slidetake.com** | creating a deck in the Editor, or opening any deck from a link |
-| **Your computer** | your own files and images, offline |
-| **Your website** | decks inside your own pages |
-| **With AI** | having Claude or another AI write the deck |
+| **slidetake.com** | writing in the Editor, viewing any deck from a link, sharing |
+| **Your computer** | the same on your own files and images, offline, with an AI agent writing alongside |
+| **Your website** | decks your readers view, and the page you record from |
 
 ### On slidetake.com
 

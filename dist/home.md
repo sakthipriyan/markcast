@@ -62,29 +62,25 @@ One line, `accent: "#3b82f6"`, gives a deck its own colour, shaded for dark and 
 
 ## 🌐 Run it anywhere
 
-Four ways, one deck format: a markdown file.
+Three places, one deck format: a markdown file.
 
-### slidetake.com
+### slidetake.com: write, view, share
 
-Create a deck in the **✎ Editor**, or open a GitHub file, gist or URL. **Share** a link with the deck inside it.
+Write a deck in the **✎ Editor**, or view one straight from a link: a GitHub file, a gist or any markdown URL. **Share** a link with the deck inside it. Nothing to install.
 
-### Your computer
+### Your computer: all that, plus AI
 
-Keep the deck and its images in a folder, and run:
+The same app on your own files, offline:
 
 ```sh
 npx slidetake deck.md
 ```
 
-Images next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. Offline, nothing uploaded.
+Images next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. So an AI agent like Claude Code can write `deck.md` while you watch it take shape.
 
-### Your website
+### Your website: readers view, you record
 
-`slidetake.js` puts decks inside your own pages, in your site's colours.
-
-### With AI
-
-Ask Claude, or any AI, for a Slidetake deck: an agent writes `deck.md` and `npx slidetake` shows it as it changes; a chat's markdown pastes straight into the **✎ Editor**.
+`slidetake.js` puts decks inside your own pages, in your site's colours. Readers get a clean viewer; add `?obs` to the address and the same page records your video.
 
 ## <span class="st-heart" aria-hidden="true"></span> Open source
 

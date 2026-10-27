@@ -63,29 +63,25 @@ One line, \`accent: "#3b82f6"\`, gives a deck its own colour, shaded for dark an
 
 ## \u{1F310} Run it anywhere
 
-Four ways, one deck format: a markdown file.
+Three places, one deck format: a markdown file.
 
-### slidetake.com
+### slidetake.com: write, view, share
 
-Create a deck in the **\u270E Editor**, or open a GitHub file, gist or URL. **Share** a link with the deck inside it.
+Write a deck in the **\u270E Editor**, or view one straight from a link: a GitHub file, a gist or any markdown URL. **Share** a link with the deck inside it. Nothing to install.
 
-### Your computer
+### Your computer: all that, plus AI
 
-Keep the deck and its images in a folder, and run:
+The same app on your own files, offline:
 
 \`\`\`sh
 npx slidetake deck.md
 \`\`\`
 
-Images next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. Offline, nothing uploaded.
+Images next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. So an AI agent like Claude Code can write \`deck.md\` while you watch it take shape.
 
-### Your website
+### Your website: readers view, you record
 
-\`slidetake.js\` puts decks inside your own pages, in your site's colours.
-
-### With AI
-
-Ask Claude, or any AI, for a Slidetake deck: an agent writes \`deck.md\` and \`npx slidetake\` shows it as it changes; a chat's markdown pastes straight into the **\u270E Editor**.
+\`slidetake.js\` puts decks inside your own pages, in your site's colours. Readers get a clean viewer; add \`?obs\` to the address and the same page records your video.
 
 ## <span class="st-heart" aria-hidden="true"></span> Open source
 
@@ -104,14 +100,13 @@ Everything in order: **get started \u2192 write \u2192 present \u2192 record \u2
 
 ## 1\uFE0F\u20E3 Get started
 
-Four ways to use Slidetake, one deck format for all of them: a markdown file.
+Three places to use Slidetake, one deck format for all of them: a markdown file. And any AI can write the deck.
 
 | Where | Best for |
 |---|---|
-| **slidetake.com** | creating a deck in the Editor, or opening any deck from a link |
-| **Your computer** | your own files and images, offline |
-| **Your website** | decks inside your own pages |
-| **With AI** | having Claude or another AI write the deck |
+| **slidetake.com** | writing in the Editor, viewing any deck from a link, sharing |
+| **Your computer** | the same on your own files and images, offline, with an AI agent writing alongside |
+| **Your website** | decks your readers view, and the page you record from |
 
 ### On slidetake.com
 
@@ -435,12 +430,11 @@ The reason Slidetake exists: a talk you record comes out finished.
 
 ## \u{1F310} Run it anywhere
 
-| Way | Advantage |
+| Where | Advantage |
 |---|---|
-| **slidetake.com** | create a deck in the **\u270E Editor** (start blank or from a template, see it take shape as you type), or open any deck from a GitHub link, gist or URL; nothing to install |
-| **Your computer**: \`npx slidetake\` | your files and images, offline, reloading as you save, and edits in the browser save back to the file |
-| **Your website**: \`slidetake.js\` | decks inside your own pages; the hugo-continuum theme does it with one frontmatter key |
-| **With AI** | any AI writes the markdown; an agent writes the file and \`npx slidetake\` shows it as it changes |
+| **slidetake.com**: write, view, share | write in the **\u270E Editor** (blank or from a template, taking shape as you type), view any deck from a GitHub file, gist or URL, and share a link with the deck inside it; nothing to install |
+| **Your computer**: all that, plus AI | \`npx slidetake\` runs the same app on your own files and images, offline, reloading as you save and saving browser edits back to the file, so an AI agent can write the deck while you watch |
+| **Your website**: readers view, you record | \`slidetake.js\` puts decks inside your own pages, in your colours; readers get a viewer, and \`?obs\` turns the same page into your recorder (the hugo-continuum theme does it with one frontmatter key) |
 
 ## \u{1F512} Private and open
 
