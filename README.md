@@ -37,7 +37,7 @@ https://slidetake.com/?src=https://…/deck.md              anything else
 
 Every deck you open is read-only. Typing in one makes **your copy** at `/edit`, kept in this browser and marked *edited* until you **Save** (a .md file) or **Share** it. A changed deck is shared inside the link itself, like edotor.net: `https://slidetake.com/share#deflate:<compressed markdown>`, never sent to a server. **Reset to original** goes back to the deck you started from, and `/new` starts from a template.
 
-For AI tools: the guide is plain markdown at [slidetake.com/help.md](https://slidetake.com/help.md), indexed by [llms.txt](https://slidetake.com/llms.txt).
+For AI tools: the guide is plain markdown at [slidetake.com/docs.md](https://slidetake.com/docs.md), indexed by [llms.txt](https://slidetake.com/llms.txt).
 
 ## Recording
 
@@ -56,7 +56,7 @@ From https://slidetake.com, OBS must run on the same computer (`localhost`): bro
 
 ## Decks
 
-Plain markdown (each heading is a card), the older `+++` format, and reveal.js decks (`---` and `--` separators) all open as they are. The full guide is itself a deck: [slidetake.com/help](https://slidetake.com/help) ([src/help.md](src/help.md)). In the app, `?` shows the keys.
+Plain markdown (each heading is a card), the older `+++` format, and reveal.js decks (`---` and `--` separators) all open as they are. The docs are themselves a deck: [slidetake.com/docs](https://slidetake.com/docs) ([src/docs.md](src/docs.md)). In the app, `K` or `?` shows the keys.
 
 ## Embed in a site
 

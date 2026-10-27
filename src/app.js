@@ -1,5 +1,5 @@
 import SAMPLE_MD from './sample.md';
-import HELP_MD from './help.md';
+import DOCS_MD from './docs.md';
 import BLANK_MD from '../examples/blank.md';
 import TALK_MD from '../examples/talk.md';
 import RECORDING_MD from '../examples/recording.md';
@@ -29,7 +29,7 @@ const RECORDING_UI = !EMBED || EMBED.recording === true || new URLSearchParams(l
 document.documentElement.classList.toggle('no-record', !RECORDING_UI);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slidetake's own read-only decks
-const BUILTIN = {home: SAMPLE_MD, help: HELP_MD, showcase: SHOWCASE_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
+const BUILTIN = {home: SAMPLE_MD, docs: DOCS_MD, showcase: SHOWCASE_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
 
 // ---------- DOM refs ----------
 const editor = document.getElementById('editor');
@@ -2324,7 +2324,7 @@ if (EMBED){
 }
 
 // ---------- the deck on this page, and the working copy ----------
-// view: what this page shows. A read-only source (home, help, a template, a file on the web), a shared
+// view: what this page shows. A read-only source (home, docs, a template, a file on the web), a shared
 // deck (/share#…), or the working copy (/edit). Typing in a read-only deck forks it into the copy.
 const route = routeOf(location.pathname, location.search, location.hash);
 const startId = route.page === 'pick' ? '' : route.slide;
@@ -2416,7 +2416,7 @@ if (LOCAL && window.EventSource){
   };
 }
 async function fetchSource(source){
-  if (source.kind === 'builtin') return BUILTIN[source.id] ?? BUILTIN.home;
+  if (source.kind === 'builtin') return BUILTIN[source.id === 'help' ? 'docs' : source.id] ?? BUILTIN.home;
   if (source.kind === 'gist'){
     const res = await fetch('https://api.github.com/gists/' + encodeURIComponent(source.id));
     if (!res.ok) throw new Error(res.status === 404 ? 'no such gist' : res.status + ' ' + res.statusText);

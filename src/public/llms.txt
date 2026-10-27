@@ -6,7 +6,7 @@ Slidetake runs in the browser at https://slidetake.com. It is open source (Apach
 
 ## Docs
 
-- [Guide](https://slidetake.com/help.md): the full guide as markdown, itself a Slidetake deck (writing decks, opening and sharing, layouts and keys, presenting, recording, camera directives, review and cut, publish pack)
+- [Docs](https://slidetake.com/docs.md): the full guide as markdown, itself a Slidetake deck (writing decks, opening and sharing, layouts and keys, presenting, recording, camera directives, review and cut, publish pack)
 - [Home deck](https://slidetake.com/home.md): the short introduction shown at https://slidetake.com
 
 ## Writing a deck for Slidetake

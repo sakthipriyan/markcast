@@ -4,7 +4,7 @@
 //   /gh/owner/repo/path/deck.md        a file on GitHub, default branch
 //   /gh/owner/repo@branch/path/deck.md a file on a branch or tag
 //   /gist/<id>                         a gist (its first markdown file)
-//   /help                              the help deck, built in
+//   /docs                              the guide, built in (/help, its old address, still opens it)
 //   /examples                          the showcase deck, built in
 //   ?src=<any URL>                     anything else that allows cross-site reads
 //
@@ -14,7 +14,7 @@ const RAW = 'https://raw.githubusercontent.com/';
 
 /**
  * @typedef {{kind: 'url', url: string} | {kind: 'gist', id: string, file?: string} | {kind: 'builtin', id: string}} DeckSource
- *   builtin ids: home, help, showcase, template:<name>
+ *   builtin ids: home, docs, showcase, template:<name>
  */
 
 /**
@@ -68,7 +68,7 @@ export function sourceFromPath(pathname){
     if (!owner || !repo || !ref) return null;
     return {kind: 'url', url: RAW + [owner, repo, ref, ...rest].map(encodeURIComponent).join('/')};
   }
-  if (parts.length === 1 && parts[0] === 'help') return {kind: 'builtin', id: 'help'};
+  if (parts.length === 1 && (parts[0] === 'docs' || parts[0] === 'help')) return {kind: 'builtin', id: 'docs'};
   if (parts.length === 1 && parts[0] === 'examples') return {kind: 'builtin', id: 'showcase'};
   if (parts[0] === 'gist' && parts[1] && /^[\da-f]+$/i.test(parts[1])){
     return parts[2] ? {kind: 'gist', id: parts[1], file: parts[2]} : {kind: 'gist', id: parts[1]};

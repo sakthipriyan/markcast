@@ -28,11 +28,12 @@ test('short-link paths', ()=>{
   assert.equal(sourceFromPath('/'), null);
   assert.equal(sourceFromPath('/gh/a/b'), null);
   assert.equal(sourceFromPath('/about'), null);
-  assert.deepEqual(sourceFromPath('/help'), {kind: 'builtin', id: 'help'});
+  assert.deepEqual(sourceFromPath('/docs'), {kind: 'builtin', id: 'docs'});
+  assert.deepEqual(sourceFromPath('/help'), {kind: 'builtin', id: 'docs'});
 });
 
 test('short links round-trip', ()=>{
-  for (const path of ['/gh/a/b/talks/deck.md', '/gh/a/b@v2/deck.md', '/gist/0123abcd', '/help']){
+  for (const path of ['/gh/a/b/talks/deck.md', '/gh/a/b@v2/deck.md', '/gist/0123abcd', '/docs']){
     assert.equal(shortLink(/** @type {any} */ (sourceFromPath(path))), path);
   }
   assert.equal(shortLink({kind: 'url', url: 'https://x.org/d.md'}), '/?src=https%3A%2F%2Fx.org%2Fd.md');
