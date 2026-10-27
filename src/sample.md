@@ -76,7 +76,7 @@ Ask Claude, or any AI, for a Slidetake deck: an agent writes `deck.md` and `npx 
 
 ## 🌐 Run it anywhere
 
-- **slidetake.com:** open a GitHub file, gist or URL, or type; **Share** a link with the deck inside it.
+- **slidetake.com:** create a deck in the **✎ Editor**, or open a GitHub file, gist or URL; **Share** a link with the deck inside it.
 - **Your computer:** `npx slidetake`.
 - **Your website:** `slidetake.js` puts decks inside your pages, in your site's colours.
 
