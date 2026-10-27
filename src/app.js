@@ -2078,14 +2078,25 @@ if (loadObsSettings() && new URLSearchParams(location.search).get('obs')) connec
 const camBtn = document.getElementById('btn-camera');
 const pipMsg = document.getElementById('pip-msg');
 let pipMsgTimer = null;
+const pipLabel = pipEl.querySelector('span');
+// Camera news goes in the camera's own box while it's on screen and empty (no live picture); otherwise in
+// a note over the stage. Errors are sticky: they stay until the camera starts or is turned off.
 function showPipMsg(text, sticky){
   if (rec.active) return;
+  clearTimeout(pipMsgTimer);
+  if (!pipEl.hidden && !pipEl.classList.contains('live')){
+    pipMsg.classList.remove('show');
+    pipLabel.textContent = text;
+    pipEl.classList.add('msg');
+    if (!sticky) pipMsgTimer = setTimeout(resetPipLabel, 9000);
+    return;
+  }
   pipMsg.textContent = text;
   pipMsg.classList.add('show');
-  clearTimeout(pipMsgTimer);
   if (!sticky) pipMsgTimer = setTimeout(()=>pipMsg.classList.remove('show'), 9000);
 }
-function hidePipMsg(){ clearTimeout(pipMsgTimer); pipMsg.classList.remove('show'); }
+function resetPipLabel(){ pipLabel.textContent = 'PIP camera'; pipEl.classList.remove('msg'); }
+function hidePipMsg(){ clearTimeout(pipMsgTimer); pipMsg.classList.remove('show'); resetPipLabel(); }
 // explain the usual reasons a browser refuses the camera
 function cameraHelp(){
   let embedded = false;
@@ -2104,7 +2115,7 @@ async function startWebcam(){
   if (cameraStream || cameraOff) return;
   {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      showPipMsg('Camera not available on this page.' + cameraHelp());
+      showPipMsg('Camera not available on this page.' + cameraHelp(), true);
       return;
     }
     if (camBtn.disabled) return;
@@ -2119,7 +2130,7 @@ async function startWebcam(){
         name === 'NotAllowedError' || name === 'SecurityError' ? 'Camera access was blocked.' + cameraHelp() :
         name === 'NotFoundError' || name === 'OverconstrainedError' ? 'No camera was found. Check that a webcam is connected.' :
         name === 'NotReadableError' ? 'The camera is busy — close other apps using it (Zoom, OBS, FaceTime) and try again.' :
-        'Could not start the camera' + (name ? ' (' + name + ')' : '') + '.' + cameraHelp());
+        'Could not start the camera' + (name ? ' (' + name + ')' : '') + '.' + cameraHelp(), true);
       return;
     } finally {
       camBtn.disabled = false;
@@ -2145,7 +2156,7 @@ function updateCamBtn(){
 function setCameraEnabled(on){
   if (on && !RECORDING_UI) return;
   cameraOff = !on;
-  if (cameraOff) stopWebcam();
+  if (cameraOff){ stopWebcam(); hidePipMsg(); }
   camManual = null; camCycle = -1;
   stepPos = Math.min(stepPos, Math.max(0, slideSteps(nodes.get(currentId)).length - 1));
   updateCamBtn();

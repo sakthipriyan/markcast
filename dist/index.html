@@ -574,6 +574,9 @@
     background:color-mix(in srgb, var(--accent-teal) 4%, transparent);
   }
   #pip[hidden]{display:none;}
+  /* a message in the box (no camera found, waiting for permission, a layout picked with V) */
+  #pip.msg span{padding:10px 14px;text-align:center;text-transform:none;letter-spacing:0;font-size:12px;line-height:1.45;color:var(--text);
+    background:color-mix(in srgb, var(--panel) 88%, transparent);border-radius:6px;max-width:92%;max-height:92%;overflow:hidden;}
   #pip.circle{aspect-ratio:1;border-radius:50%;}
   #pip.top-left{top:16px;left:16px;}
   #pip.top-right{top:16px;right:16px;}
@@ -3817,16 +3820,29 @@
   var camBtn = document.getElementById("btn-camera");
   var pipMsg = document.getElementById("pip-msg");
   var pipMsgTimer = null;
+  var pipLabel = pipEl.querySelector("span");
   function showPipMsg(text, sticky) {
     if (rec.active) return;
+    clearTimeout(pipMsgTimer);
+    if (!pipEl.hidden && !pipEl.classList.contains("live")) {
+      pipMsg.classList.remove("show");
+      pipLabel.textContent = text;
+      pipEl.classList.add("msg");
+      if (!sticky) pipMsgTimer = setTimeout(resetPipLabel, 9e3);
+      return;
+    }
     pipMsg.textContent = text;
     pipMsg.classList.add("show");
-    clearTimeout(pipMsgTimer);
     if (!sticky) pipMsgTimer = setTimeout(() => pipMsg.classList.remove("show"), 9e3);
+  }
+  function resetPipLabel() {
+    pipLabel.textContent = "PIP camera";
+    pipEl.classList.remove("msg");
   }
   function hidePipMsg() {
     clearTimeout(pipMsgTimer);
     pipMsg.classList.remove("show");
+    resetPipLabel();
   }
   function cameraHelp() {
     let embedded = false;
@@ -3849,7 +3865,7 @@
     if (cameraStream || cameraOff) return;
     {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showPipMsg("Camera not available on this page." + cameraHelp());
+        showPipMsg("Camera not available on this page." + cameraHelp(), true);
         return;
       }
       if (camBtn.disabled) return;
@@ -3861,7 +3877,8 @@
       } catch (e) {
         const name = e && e.name;
         showPipMsg(
-          name === "NotAllowedError" || name === "SecurityError" ? "Camera access was blocked." + cameraHelp() : name === "NotFoundError" || name === "OverconstrainedError" ? "No camera was found. Check that a webcam is connected." : name === "NotReadableError" ? "The camera is busy \u2014 close other apps using it (Zoom, OBS, FaceTime) and try again." : "Could not start the camera" + (name ? " (" + name + ")" : "") + "." + cameraHelp()
+          name === "NotAllowedError" || name === "SecurityError" ? "Camera access was blocked." + cameraHelp() : name === "NotFoundError" || name === "OverconstrainedError" ? "No camera was found. Check that a webcam is connected." : name === "NotReadableError" ? "The camera is busy \u2014 close other apps using it (Zoom, OBS, FaceTime) and try again." : "Could not start the camera" + (name ? " (" + name + ")" : "") + "." + cameraHelp(),
+          true
         );
         return;
       } finally {
@@ -3893,7 +3910,10 @@
   function setCameraEnabled(on) {
     if (on && !RECORDING_UI) return;
     cameraOff = !on;
-    if (cameraOff) stopWebcam();
+    if (cameraOff) {
+      stopWebcam();
+      hidePipMsg();
+    }
     camManual = null;
     camCycle = -1;
     stepPos = Math.min(stepPos, Math.max(0, slideSteps(nodes.get(currentId)).length - 1));
