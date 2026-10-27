@@ -615,7 +615,7 @@ brand: slidetake
 duration: 10m
 ---
 
-# Slide<span class="st-take">take</span> Showcase
+# ![](https://slidetake.com/favicon.svg) Slide<span class="st-take">take</span> Showcase
 
 Everything a deck can hold, written in plain markdown. Open **\u270E Editor** to see the source of any card, or press **O** for the map.
 
