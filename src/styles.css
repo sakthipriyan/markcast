@@ -423,9 +423,8 @@
   .node.img-overlay .body figure.media figcaption{position:absolute;left:0;right:0;bottom:0;padding:36px 18px 14px;
     color:#f4f4f5;background:linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.78));}
   .node.img-overlay .body .gallery.carousel figure.media figcaption::before{color:color-mix(in srgb, var(--accent) 55%, #fff);}
-  /* <!-- view: full -->: a 16:9 card that fills the screen, with the map and breadcrumbs out of the way */
+  /* <!-- view: full -->: a 16:9 card, framed and placed like any other slide */
   div.node.card-full{height:540px;overflow:hidden;}
-  body.full-card #breadcrumbs, body.full-card #minimap{opacity:0;pointer-events:none;}
   /* measure cards at their resting size, without grow/zoom transforms */
   div.node.measuring .fragment{transform:none !important;transition:none !important;}
   /* a card re-measured mid-entrance (a theme switch replays it) must not count a gsap "from" state such

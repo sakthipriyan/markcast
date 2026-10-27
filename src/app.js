@@ -528,7 +528,7 @@ function applyMedia(el, body){
   if (media.length === 1 && parts.length === 1) el.classList.add('card-media');
   // an image or a carousel alone runs edge to edge, the heading and caption laid over it
   if (parts.length === 1 && (parts[0].matches('figure.media:not(.yt)') || parts[0].matches('.gallery.carousel'))) el.classList.add('card-bleed');
-  // <!-- view: full --> fills the screen with the card: 16:9, the camera fitting it edge to edge
+  // <!-- view: full --> makes the card a 16:9 frame for its image, placed like any other slide
   const walker = document.createTreeWalker(body, NodeFilter.SHOW_COMMENT);
   while (walker.nextNode()) if (/^\s*view\s*:\s*full\s*$/i.test(walker.currentNode.data)) el.classList.add('card-full');
   else if (media.length === 1){
@@ -1019,15 +1019,6 @@ function focusOn(id, instant){
   // text one size across a section: cards share the section's typical zoom, and only a card that
   // wouldn't fit at it (a big table or chart) goes smaller. Charts and embeds don't vote: a section
   // of two charts and a list would otherwise show the list at the charts' small zoom
-  // a full-screen card fills the screen when presenting (F, and what a recording captures); in the window
-  // it keeps every slide's margins, clear of the breadcrumbs and the control bar
-  const fill = presenting && n.el.classList.contains('card-full');
-  document.body.classList.toggle('full-card', fill);
-  if (fill){
-    const zoom = Math.min(stage.clientWidth / n._w, stage.clientHeight / n._h);
-    flyTo({x:n.cx, y:n.cy, zoom}, instant);
-    return;
-  }
   const f = fitInSafe(n._w, n._h, slideFill);
   const sec = sectionOf(id);
   const peers = order.filter(x=>sectionOf(x) === sec && !nodes.get(x).visual).map(x=>{ const m = nodes.get(x); return fitInSafe(m._w, m._h, slideFill).zoom; }).sort((a, b)=>a - b);
@@ -1037,7 +1028,6 @@ function focusOn(id, instant){
 }
 
 function fitAll(instant){
-  document.body.classList.remove('full-card');
   const all = [...nodes.values()];
   if (!all.length) return;
   const vw = stage.clientWidth, vh = stage.clientHeight;
@@ -1525,7 +1515,6 @@ function setPresent(on){
   if (on) scheduleAutoslide(nodes.get(currentId)); else clearTimeout(autoTimer);
   if (on) startTalkClock(); else stopTalkClock();
   updateProgress();
-  refocus(true);   // a full-screen card fills the screen only while presenting
 }
 document.getElementById('btn-present').onclick = ()=>setPresent(!presenting);
 

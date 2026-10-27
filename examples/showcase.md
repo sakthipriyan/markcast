@@ -131,7 +131,7 @@ Several images in one paragraph sit side by side, up to four a row:
 
 <!-- view: full -->
 
-![A card tagged view: full fills the whole screen](https://slidetake.com/og.jpg)
+![A card tagged view: full is a 16:9 frame for a big image](https://slidetake.com/og.jpg)
 
 ## ▶️ YouTube
 
