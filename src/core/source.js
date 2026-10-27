@@ -5,7 +5,8 @@
 //   /gh/owner/repo@branch/path/deck.md a file on a branch or tag
 //   /gist/<id>                         a gist (its first markdown file)
 //   /docs                              the guide, built in (/help, its old address, still opens it)
-//   /examples                          the showcase deck, built in
+//   /examples                          the examples, each opened from GitHub, built in
+//   /examples/showcase                 the showcase deck, built in (also on GitHub in examples/)
 //   /features                          every feature and its advantage, built in
 //   /privacy                           what leaves the browser, and where it goes, built in
 //   ?src=<any URL>                     anything else that allows cross-site reads
@@ -16,7 +17,7 @@ const RAW = 'https://raw.githubusercontent.com/';
 
 /**
  * @typedef {{kind: 'url', url: string} | {kind: 'gist', id: string, file?: string} | {kind: 'builtin', id: string}} DeckSource
- *   builtin ids: home, docs, features, privacy, showcase, template:<name>
+ *   builtin ids: home, docs, examples, features, privacy, showcase, template:<name>
  */
 
 /**
@@ -71,7 +72,8 @@ export function sourceFromPath(pathname){
     return {kind: 'url', url: RAW + [owner, repo, ref, ...rest].map(encodeURIComponent).join('/')};
   }
   if (parts.length === 1 && (parts[0] === 'docs' || parts[0] === 'help')) return {kind: 'builtin', id: 'docs'};
-  if (parts.length === 1 && parts[0] === 'examples') return {kind: 'builtin', id: 'showcase'};
+  if (parts.length === 1 && parts[0] === 'examples') return {kind: 'builtin', id: 'examples'};
+  if (parts.length === 2 && parts[0] === 'examples' && parts[1] === 'showcase') return {kind: 'builtin', id: 'showcase'};
   if (parts.length === 1 && parts[0] === 'features') return {kind: 'builtin', id: 'features'};
   if (parts.length === 1 && parts[0] === 'privacy') return {kind: 'builtin', id: 'privacy'};
   if (parts[0] === 'gist' && parts[1] && /^[\da-f]+$/i.test(parts[1])){
@@ -88,7 +90,7 @@ export function sourceFromPath(pathname){
 export function shortLink(source){
   if (source.kind === 'builtin'){
     if (source.id === 'home') return '/';
-    if (source.id === 'showcase') return '/examples';
+    if (source.id === 'showcase') return '/examples/showcase';
     if (source.id.startsWith('template:')) return '/new?template=' + source.id.slice(9);
     return '/' + source.id;
   }

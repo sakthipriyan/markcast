@@ -25,7 +25,7 @@ Opens on `http://localhost:4300` (`--port` to change, `--open` to open the brows
 
 ## Examples
 
-[`examples/`](examples) holds the decks to look at and start from: [`showcase.md`](examples/showcase.md) has everything a card can hold (steps, Graphviz, D2, SVG, ECharts, images, galleries, YouTube, camera) and is what [slidetake.com/examples](https://slidetake.com/examples) shows; the starter templates sit beside it.
+[`examples/`](examples) holds the decks to look at and start from: [`showcase.md`](examples/showcase.md) has everything a card can hold (steps, Graphviz, D2, SVG, ECharts, images, galleries, YouTube, camera) and is what [slidetake.com/examples/showcase](https://slidetake.com/examples/showcase) shows; [slidetake.com/examples](https://slidetake.com/examples) opens each example from GitHub; the starter templates sit beside it.
 
 ## Develop Slidetake
 

@@ -66,7 +66,8 @@ export function originLabel(origin){
     case 'builtin':
       if (origin.id === 'home') return 'Home';
       if (origin.id === 'docs' || origin.id === 'help') return 'the docs';   // help: copies saved before the move
-      if (origin.id === 'showcase') return 'the examples';
+      if (origin.id === 'showcase') return 'the showcase';
+      if (origin.id === 'examples') return 'the examples';
       if (origin.id === 'features') return 'the features';
       if (origin.id === 'privacy') return 'the privacy page';
       return 'the ' + origin.id.replace(/^template:/, '') + ' template';

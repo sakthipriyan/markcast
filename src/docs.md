@@ -96,7 +96,7 @@ See the [roadmap](#plan).
 
 ### What a card can hold
 
-Plain markdown, and the layout follows from what's on the card. [See every one →](/examples)
+Plain markdown, and the layout follows from what's on the card. [See every one in the showcase →](/examples/showcase)
 
 | Write | Get |
 |---|---|

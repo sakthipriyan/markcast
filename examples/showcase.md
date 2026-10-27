@@ -1,10 +1,10 @@
 ---
-title: Slidetake examples
+title: Slidetake Showcase
 brand: slidetake
 duration: 10m
 ---
 
-# Slidetake examples
+# Slide<span class="st-take">take</span> Showcase
 
 Everything a deck can hold, written in plain markdown. Open **✎ Editor** to see the source of any card, or press **O** for the map.
 
