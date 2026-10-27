@@ -13,6 +13,11 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [0.2.3] - 2026-10-27
 
+### Added
+
+- A GitHub button beside light/dark on slidetake.com, linking to the
+  repository. Embedded decks don't show it.
+
 ### Changed
 
 - A full-screen card whose image leaves room beside it (a screenshot or photo
