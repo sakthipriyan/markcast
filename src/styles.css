@@ -79,6 +79,8 @@
   /* Slidetake's two-tone name in its own decks' titles, as in the header */
   .node .body .st-take{color:var(--accent);}
   .brand .tagline{font-family:var(--mono);font-size:13px;color:var(--text-muted);}
+  /* Features and Docs sit with the name and tagline: about Slidetake, not about the deck on screen */
+  .brand .site-links{display:flex;gap:8px;align-self:center;margin-left:6px;}
   .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .btn{
     background:transparent;color:var(--text);
@@ -507,7 +509,7 @@
   #credit .logo{width:18px;height:18px;fill:var(--accent);}
   #credit .word > span{color:var(--accent);}
   #credit:hover{opacity:.85;}
-  html.embed #btn-docs, html.embed #btn-github{display:none !important;}
+  html.embed .site-links, html.embed #btn-github{display:none !important;}
   /* a reader's page (embedded, not recording): no bottom bar, except the arrows on touch screens */
   html.embed.no-record #navbar{display:none;}
   @media (pointer:coarse){
