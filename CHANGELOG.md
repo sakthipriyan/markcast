@@ -11,6 +11,14 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-10-27
+
+### Fixed
+
+- Editing a deck updates it as you type again. Since 0.2.3, re-reading the deck
+  stopped at the camera check for full-screen cards, so no edit (text,
+  `accent:`, headings) showed until the page was reloaded.
+
 ## [0.2.4] - 2026-10-27
 
 ### Changed

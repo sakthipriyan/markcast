@@ -246,7 +246,8 @@ function slideCameraPreset(){
   const n = nodes.get(currentId);
   const own = cameraSteps(n);
   if (own.length) return own[Math.min(currentStep().cam, own.length - 1)];
-  if (n && n.el.classList.contains('card-full')) return 'off';
+  // (a re-read deck has its cards before they're built: no element yet, so nothing to check)
+  if (n && n.el && n.el.classList.contains('card-full')) return 'off';
   for (let i = order.indexOf(currentId) - 1; i >= 0; i--){
     const steps = cameraSteps(nodes.get(order[i])); // order can be stale for a moment while the deck re-parses
     if (steps.length) return steps[steps.length - 1];
