@@ -75,7 +75,7 @@ The reason Slidetake exists: a talk you record comes out finished.
 
 | Feature | Advantage |
 |---|---|
-| **No accounts, no stored decks** | nothing to sign up for or lose |
+| **No accounts, no stored decks** | nothing to sign up for or lose; everything that leaves the browser is listed on the [privacy page](/privacy) |
 | **Decks inside links** | share without uploading; the deck stays in the `#` part of the address |
 | **Your copy in your browser** | edit any deck freely; the original never changes |
 | **Open source, Apache 2.0** | read it, host it, change it: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake) |

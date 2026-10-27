@@ -28,6 +28,7 @@ const inlinePage = {
       // the guide and the home deck as plain markdown, for people and AI tools (see llms.txt)
       await cp('src/docs.md', 'dist/docs.md');
       await cp('src/features.md', 'dist/features.md');
+      await cp('src/privacy.md', 'dist/privacy.md');
       await cp('src/docs.md', 'dist/help.md');   // the old address, kept for links already out there
       await cp('src/sample.md', 'dist/home.md');
       console.log('built dist/index.html (' + Math.round(page.length / 1024) + ' KB)');

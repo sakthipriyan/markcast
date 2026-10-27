@@ -84,4 +84,4 @@ Ask Claude, or any AI, for a Slidetake deck: an agent writes `deck.md` and `npx 
 
 Open source, Apache 2.0: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake).
 
-Every feature: **[/features](/features)** · Step by step: **[/docs](/docs)**
+Every feature: **[/features](/features)** · Step by step: **[/docs](/docs)** · **[Privacy](/privacy)**

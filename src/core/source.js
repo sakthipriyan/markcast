@@ -7,6 +7,7 @@
 //   /docs                              the guide, built in (/help, its old address, still opens it)
 //   /examples                          the showcase deck, built in
 //   /features                          every feature and its advantage, built in
+//   /privacy                           what leaves the browser, and where it goes, built in
 //   ?src=<any URL>                     anything else that allows cross-site reads
 //
 // GitHub page URLs pasted by people (github.com/…/blob/…, gist.github.com/…) are turned into these.
@@ -15,7 +16,7 @@ const RAW = 'https://raw.githubusercontent.com/';
 
 /**
  * @typedef {{kind: 'url', url: string} | {kind: 'gist', id: string, file?: string} | {kind: 'builtin', id: string}} DeckSource
- *   builtin ids: home, docs, features, showcase, template:<name>
+ *   builtin ids: home, docs, features, privacy, showcase, template:<name>
  */
 
 /**
@@ -72,6 +73,7 @@ export function sourceFromPath(pathname){
   if (parts.length === 1 && (parts[0] === 'docs' || parts[0] === 'help')) return {kind: 'builtin', id: 'docs'};
   if (parts.length === 1 && parts[0] === 'examples') return {kind: 'builtin', id: 'showcase'};
   if (parts.length === 1 && parts[0] === 'features') return {kind: 'builtin', id: 'features'};
+  if (parts.length === 1 && parts[0] === 'privacy') return {kind: 'builtin', id: 'privacy'};
   if (parts[0] === 'gist' && parts[1] && /^[\da-f]+$/i.test(parts[1])){
     return parts[2] ? {kind: 'gist', id: parts[1], file: parts[2]} : {kind: 'gist', id: parts[1]};
   }

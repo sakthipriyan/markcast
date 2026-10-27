@@ -1,6 +1,7 @@
 import SAMPLE_MD from './sample.md';
 import DOCS_MD from './docs.md';
 import FEATURES_MD from './features.md';
+import PRIVACY_MD from './privacy.md';
 import BLANK_MD from '../examples/blank.md';
 import TALK_MD from '../examples/talk.md';
 import RECORDING_MD from '../examples/recording.md';
@@ -30,7 +31,7 @@ const RECORDING_UI = !EMBED || EMBED.recording === true || new URLSearchParams(l
 document.documentElement.classList.toggle('no-record', !RECORDING_UI);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slidetake's own read-only decks
-const BUILTIN = {home: SAMPLE_MD, docs: DOCS_MD, features: FEATURES_MD, showcase: SHOWCASE_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
+const BUILTIN = {home: SAMPLE_MD, docs: DOCS_MD, features: FEATURES_MD, privacy: PRIVACY_MD, showcase: SHOWCASE_MD, 'template:blank': BLANK_MD, 'template:talk': TALK_MD, 'template:recording': RECORDING_MD};
 
 // ---------- DOM refs ----------
 const editor = document.getElementById('editor');

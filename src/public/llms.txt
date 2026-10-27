@@ -8,6 +8,7 @@ Slidetake runs in the browser at https://slidetake.com, on your own computer wit
 
 - [Docs](https://slidetake.com/docs.md): the full guide as markdown, itself a Slidetake deck (writing decks, opening and sharing, layouts and keys, presenting, recording, camera directives, review and cut, publish pack)
 - [Features](https://slidetake.com/features.md): every feature and what it's for
+- [Privacy](https://slidetake.com/privacy.md): what slidetake.com collects, what stays in the browser, and which services a deck can reach
 - [Home deck](https://slidetake.com/home.md): the short introduction shown at https://slidetake.com
 
 ## Writing a deck for Slidetake

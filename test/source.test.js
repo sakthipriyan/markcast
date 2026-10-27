@@ -30,6 +30,7 @@ test('short-link paths', ()=>{
   assert.equal(sourceFromPath('/about'), null);
   assert.deepEqual(sourceFromPath('/docs'), {kind: 'builtin', id: 'docs'});
   assert.deepEqual(sourceFromPath('/features'), {kind: 'builtin', id: 'features'});
+  assert.deepEqual(sourceFromPath('/privacy'), {kind: 'builtin', id: 'privacy'});
   assert.deepEqual(sourceFromPath('/help'), {kind: 'builtin', id: 'docs'});
 });
 
