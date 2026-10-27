@@ -120,3 +120,10 @@ test('settingsBlock: frontmatter data from a host round-trips through the parser
   assert.equal(deck.nested, undefined);
   assert.equal(settingsBlock({}), '');
 });
+
+test('HTML in a heading is styling: the card keeps a clean title and id', ()=>{
+  const {nodes} = parseDeck('# Slide<span class="st-take">take</span>\n\n## Next\n', {render: s=>s});
+  const first = [...nodes.values()][0];
+  assert.equal(first.id, 'slidetake');
+  assert.equal(first.title, 'Slidetake');
+});

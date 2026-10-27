@@ -7,7 +7,7 @@ pip: bottom-right
 
 <!-- camera: on, full, on -->
 
-# ![](/favicon.svg) Slidetake
+# ![](/favicon.svg) Slide<span class="st-take">take</span>
 
 **Write in markdown. Present on a spatial canvas. Record without timeline editing.**
 
@@ -92,7 +92,7 @@ brand: slidetake
 pip: none
 ---
 
-# ![](/favicon.svg) Slidetake docs
+# ![](/favicon.svg) Slide<span class="st-take">take</span> docs
 
 Everything in order: **get started \u2192 write \u2192 present \u2192 record \u2192 share**. Press \u2192 to read step by step, \u2193 \u2191 to go into a step and back out, or **O** for the whole map. The features at a glance: [/features](/features).
 
@@ -369,7 +369,7 @@ brand: slidetake
 pip: none
 ---
 
-# ![](/favicon.svg) Slidetake features
+# ![](/favicon.svg) Slide<span class="st-take">take</span> features
 
 Every feature, and what it saves you. Press \u2192 to walk them, **O** for the map, or read how each works in the [docs](/docs).
 
@@ -702,7 +702,7 @@ Two comments do what markdown can't: \`<!-- camera: on, full, on -->\` moves the
 Press **New** for a template (blank, talk or recording), or type in this deck to make it your copy.
 
 The templates and this deck live in [examples/](https://github.com/slidetake/slidetake/tree/main/examples) on GitHub.
-`});function Me(e){return e.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"")||"card"}function We(e){return e.replace(/!?\[([^\]]*)\]\([^)]*\)/g,"$1").replace(/[*_`~]/g,"").trim()}function C(e){return String(e).replace(/[&<>"]/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[t])}function Qn(e){if(typeof document<"u"){let t=document.createElement("textarea");return t.innerHTML=e,t.value}return e.replace(/&(#x[\da-f]+|#\d+|\w+);/gi,(t,n)=>n[0]==="#"?String.fromCodePoint(n[1].toLowerCase()==="x"?parseInt(n.slice(2),16):parseInt(n.slice(1),10)):Ua[n.toLowerCase()]??t)}function Ue(e){let t={};for(let n of e.matchAll(/([\w-]+)="([^"]*)"/g))t[n[1]]=n[2];return t}function qe(e,t){let n=[[]],o=null;return e.split(`
+`});function Me(e){return e.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"")||"card"}function We(e){return e.replace(/<[^>]*>/g,"").replace(/!?\[([^\]]*)\]\([^)]*\)/g,"$1").replace(/[*_`~]/g,"").trim()}function C(e){return String(e).replace(/[&<>"]/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[t])}function Qn(e){if(typeof document<"u"){let t=document.createElement("textarea");return t.innerHTML=e,t.value}return e.replace(/&(#x[\da-f]+|#\d+|\w+);/gi,(t,n)=>n[0]==="#"?String.fromCodePoint(n[1].toLowerCase()==="x"?parseInt(n.slice(2),16):parseInt(n.slice(1),10)):Ua[n.toLowerCase()]??t)}function Ue(e){let t={};for(let n of e.matchAll(/([\w-]+)="([^"]*)"/g))t[n[1]]=n[2];return t}function qe(e,t){let n=[[]],o=null;return e.split(`
 `).forEach(a=>{let r=a.match(/^\s{0,3}(`{3,}|~{3,})/);r&&(o?r[1][0]===o[0]&&r[1].length>=o.length&&(o=null):o=r[1]),!o&&!r&&t.test(a)?n.push([]):n[n.length-1].push(a)}),n.map(a=>a.join(`
 `))}function eo(e){let t=String(e??"").trim().toLowerCase();if(!t)return 0;let n=t.match(/^(\d+):(\d{1,2})$/);if(n)return(+n[1]*60+ +n[2])*1e3;if(n=t.match(/^(\d+(?:\.\d+)?)\s*(h|hrs?|hours?|m|mins?|minutes?|s|secs?|seconds?)?$/),!n)return 0;let o=(n[2]||"m")[0];return parseFloat(n[1])*(o==="h"?3600:o==="s"?1:60)*1e3}function V(e){let t=Math.max(0,Math.round(e/1e3)),n=Math.floor(t/3600),o=Math.floor(t%3600/60),a=t%60;return(n?n+":"+String(o).padStart(2,"0"):o)+":"+String(a).padStart(2,"0")}var Ua,pt=D(()=>{"use strict";Ua={amp:"&",lt:"<",gt:">",quot:'"',apos:"'",nbsp:"\xA0",mdash:"\u2014",ndash:"\u2013",hellip:"\u2026",rsquo:"\u2019",lsquo:"\u2018",rdquo:"\u201D",ldquo:"\u201C"}});function no(e){let t=null;return e.split(`
 `).filter(n=>{let o=n.match(/^\s{0,3}(`{3,}|~{3,})/);return o?(t?o[1][0]===t[0]&&o[1].length>=t.length&&(t=null):t=o[1],!1):!t}).join(`
@@ -848,9 +848,13 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
     --text:var(--header-ink);--text-muted:color-mix(in srgb, var(--header-ink) 72%, transparent);
     --node-border:color-mix(in srgb, var(--header-ink) 28%, transparent);}
   .brand{display:flex;align-items:baseline;gap:10px;}
-  .brand .mark{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.02em;color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:7px;align-self:center;}
-  .brand .mark .logo{width:20px;height:20px;fill:var(--accent);flex:none;}
+  /* the name and the tagline share one baseline: the mark's baseline is its word's, the logo centred beside it */
+  .brand .mark{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.02em;color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:7px;}
+  .brand .mark .word{align-self:baseline;}
+  .brand .mark .logo{width:20px;height:20px;fill:var(--accent);flex:none;align-self:center;}
   .brand .mark .word > span{color:var(--accent);}
+  /* Slidetake's two-tone name in its own decks' titles, as in the header */
+  .node .body .st-take{color:var(--accent);}
   .brand .tagline{font-family:var(--mono);font-size:13px;color:var(--text-muted);}
   .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .btn{

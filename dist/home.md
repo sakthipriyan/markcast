@@ -6,7 +6,7 @@ pip: bottom-right
 
 <!-- camera: on, full, on -->
 
-# ![](/favicon.svg) Slidetake
+# ![](/favicon.svg) Slide<span class="st-take">take</span>
 
 **Write in markdown. Present on a spatial canvas. Record without timeline editing.**
 

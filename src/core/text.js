@@ -6,9 +6,9 @@ export function slugify(s){
   return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '') || 'card';
 }
 
-/** Markdown inline syntax stripped: links keep their text, emphasis marks go. @param {string} s */
+/** Markdown inline syntax stripped: links keep their text, emphasis marks and HTML tags go. @param {string} s */
 export function plainText(s){
-  return s.replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`~]/g, '').trim();
+  return s.replace(/<[^>]*>/g, '').replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`~]/g, '').trim();
 }
 
 /** @param {unknown} s */

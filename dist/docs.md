@@ -4,7 +4,7 @@ brand: slidetake
 pip: none
 ---
 
-# ![](/favicon.svg) Slidetake docs
+# ![](/favicon.svg) Slide<span class="st-take">take</span> docs
 
 Everything in order: **get started → write → present → record → share**. Press → to read step by step, ↓ ↑ to go into a step and back out, or **O** for the whole map. The features at a glance: [/features](/features).
 
