@@ -11,6 +11,16 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-10-27
+
+### Changed
+
+- slidetake.com's header, left to right: the name and tagline (now *plain
+  markdown → spatial deck → video, no timeline editing*), then layouts,
+  **Docs**, **Editor**, GitHub and light/dark. **Docs** opens the guide and
+  replaces the **?** button; **?** and **K** still show the keys.
+- **Your copy →** moves from the header into the editor's toolbar.
+
 ## [0.2.3] - 2026-10-27
 
 ### Added
