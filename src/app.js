@@ -18,6 +18,8 @@ import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapte
 // Embedded in another site's page (see src/embed.js): window.SLIDETAKE = {markdown, settings, base, back,
 // themeKey}. The page shows that one deck, read-only: no editor, links or copies.
 const EMBED = window.SLIDETAKE || null;
+// served by `npx slidetake` (bin/slidetake.mjs): {deck, file, events, save}, a deck file on this computer
+const LOCAL = window.SLIDETAKE_LOCAL || null;
 // the logo, read once from the header (which an embed replaces): the corner mark and the credit reuse it
 const LOGO = document.querySelector('header .mark .logo').outerHTML;
 document.documentElement.classList.toggle('embed', !!EMBED);
@@ -1342,6 +1344,13 @@ function rebuild(instant){
 }
 // a read-only deck forks into the working copy on the first keystroke; the copy is kept as you type
 editor.addEventListener('input', ()=>{
+  // the local deck file: typing saves to it, no browser copy
+  if (isLocalDeck()){
+    view.text = editor.value;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(()=>{ saveLocal(editor.value); rebuild(true); }, 300);
+    return;
+  }
   if (view.kind !== 'copy' && !forkToCopy()) return;
   copy.text = editor.value;
   updateDocState();
@@ -2335,7 +2344,9 @@ function saveCopy(){ save('slidetake:copy', JSON.stringify(copy)); }
 function updateDocState(){
   if (EMBED) return;
   let html;
-  if (view.kind === 'copy'){
+  if (isLocalDeck()){
+    html = '<span class="mine">' + escapeHtml(LOCAL.file) + '</span> <span class="ro">· on this computer, saved as you type</span>';
+  } else if (view.kind === 'copy'){
     html = '<span class="mine">Your copy of ' + escapeHtml(originLabel(copy.origin)) + '</span>' +
       (isEdited(copy) ? ' <span class="edited">· edited</span>' : '');
   } else {
@@ -2378,6 +2389,32 @@ function showCopy(){
 // back and forward move between pages (a deck and your copy of it): load what the address says
 window.addEventListener('popstate', ()=>location.reload());
 
+// ---------- npx slidetake: a deck file on this computer, kept in step both ways ----------
+function isLocalDeck(){
+  return !!(LOCAL && view && view.kind === 'source' && view.source.kind === 'url' &&
+    new URL(view.source.url, location.href).pathname === LOCAL.deck);
+}
+function saveLocal(text){
+  fetch(LOCAL.save, {method: 'PUT', body: text}).catch(()=>showToast('Could not save ' + LOCAL.file + ': is npx slidetake still running?', 6000));
+}
+// a change in the deck's folder: new text rebuilds the deck where you are; a changed image reloads in place
+if (LOCAL && window.EventSource){
+  new EventSource(LOCAL.events).onmessage = async e=>{
+    if (!isLocalDeck()) return;
+    const name = (JSON.parse(e.data).file || '').replace(/\\/g, '/');
+    if (name === LOCAL.file){
+      const text = await (await fetch(LOCAL.deck, {cache: 'no-store'})).text();
+      if (text === editor.value) return;
+      editor.value = view.text = text;
+      rebuild(true);
+      return;
+    }
+    world.querySelectorAll('img').forEach(img=>{
+      const u = new URL(img.src);
+      if (decodeURIComponent(u.pathname).endsWith('/' + name)){ u.searchParams.set('t', String(Date.now())); img.src = u.href; }
+    });
+  };
+}
 async function fetchSource(source){
   if (source.kind === 'builtin') return BUILTIN[source.id] ?? BUILTIN.home;
   if (source.kind === 'gist'){
@@ -2399,6 +2436,10 @@ function showHome(){
   return view.text;
 }
 async function loadInitialDeck(){
+  // npx slidetake: the address with no deck named is the local file
+  if (LOCAL && route.page === 'source' && route.source.kind === 'builtin' && route.source.id === 'home' && location.pathname === '/'){
+    route.source = {kind: 'url', url: LOCAL.deck};
+  }
   if (EMBED){
     deckBase = EMBED.base || location.href;
     view = {kind: 'source', source: {kind: 'url', url: deckBase}, text: settingsBlock(EMBED.settings || {}) + String(EMBED.markdown || '')};

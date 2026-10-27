@@ -21,11 +21,18 @@
     "url": "git+https://github.com/slidetake/slidetake.git"
   },
   "type": "module",
+  "bin": {
+    "slidetake": "bin/slidetake.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "main": "dist/slidetake.js",
   "browser": "dist/slidetake.js",
   "unpkg": "dist/slidetake.js",
   "jsdelivr": "dist/slidetake.js",
   "files": [
+    "bin/slidetake.mjs",
     "dist/slidetake.js",
     "dist/index.html",
     "examples/embed.html",

@@ -1565,6 +1565,7 @@
 
   // src/app.js
   var EMBED = window.SLIDETAKE || null;
+  var LOCAL = window.SLIDETAKE_LOCAL || null;
   var LOGO = document.querySelector("header .mark .logo").outerHTML;
   document.documentElement.classList.toggle("embed", !!EMBED);
   var RECORDING_UI = !EMBED || EMBED.recording === true || new URLSearchParams(location.search).has("obs");
@@ -2948,6 +2949,15 @@
     }
   }
   editor.addEventListener("input", () => {
+    if (isLocalDeck()) {
+      view.text = editor.value;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        saveLocal(editor.value);
+        rebuild(true);
+      }, 300);
+      return;
+    }
     if (view.kind !== "copy" && !forkToCopy()) return;
     copy.text = editor.value;
     updateDocState();
@@ -4109,7 +4119,9 @@
   function updateDocState() {
     if (EMBED) return;
     let html;
-    if (view.kind === "copy") {
+    if (isLocalDeck()) {
+      html = '<span class="mine">' + escapeHtml(LOCAL.file) + '</span> <span class="ro">\xB7 on this computer, saved as you type</span>';
+    } else if (view.kind === "copy") {
       html = '<span class="mine">Your copy of ' + escapeHtml(originLabel(copy.origin)) + "</span>" + (isEdited(copy) ? ' <span class="edited">\xB7 edited</span>' : "");
     } else {
       const name = view.kind === "share" ? "a shared deck" : originLabel(view.source);
@@ -4156,6 +4168,32 @@
     updateDocState();
   }
   window.addEventListener("popstate", () => location.reload());
+  function isLocalDeck() {
+    return !!(LOCAL && view && view.kind === "source" && view.source.kind === "url" && new URL(view.source.url, location.href).pathname === LOCAL.deck);
+  }
+  function saveLocal(text) {
+    fetch(LOCAL.save, { method: "PUT", body: text }).catch(() => showToast("Could not save " + LOCAL.file + ": is npx slidetake still running?", 6e3));
+  }
+  if (LOCAL && window.EventSource) {
+    new EventSource(LOCAL.events).onmessage = async (e) => {
+      if (!isLocalDeck()) return;
+      const name = (JSON.parse(e.data).file || "").replace(/\\/g, "/");
+      if (name === LOCAL.file) {
+        const text = await (await fetch(LOCAL.deck, { cache: "no-store" })).text();
+        if (text === editor.value) return;
+        editor.value = view.text = text;
+        rebuild(true);
+        return;
+      }
+      world.querySelectorAll("img").forEach((img) => {
+        const u = new URL(img.src);
+        if (decodeURIComponent(u.pathname).endsWith("/" + name)) {
+          u.searchParams.set("t", String(Date.now()));
+          img.src = u.href;
+        }
+      });
+    };
+  }
   async function fetchSource(source) {
     if (source.kind === "builtin") return BUILTIN[source.id] ?? BUILTIN.home;
     if (source.kind === "gist") {
@@ -4177,6 +4215,9 @@
     return view.text;
   }
   async function loadInitialDeck() {
+    if (LOCAL && route.page === "source" && route.source.kind === "builtin" && route.source.id === "home" && location.pathname === "/") {
+      route.source = { kind: "url", url: LOCAL.deck };
+    }
     if (EMBED) {
       deckBase = EMBED.base || location.href;
       view = { kind: "source", source: { kind: "url", url: deckBase }, text: settingsBlock(EMBED.settings || {}) + String(EMBED.markdown || "") };
