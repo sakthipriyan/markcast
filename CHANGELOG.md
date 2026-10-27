@@ -19,6 +19,9 @@ package can notice. Tests, CI and tooling do not belong here.
   narrower than the screen) puts the image on the right and the heading and
   caption in that room, as a portrait card does, rather than over the image.
   Images close to the screen's shape still fill it with the text over them.
+- A full-screen card fills the screen while presenting (**F**, and what a
+  recording captures); in the window it keeps the margins every slide has, so
+  it no longer touches the top and bottom or runs under the breadcrumbs.
 - A full-screen card turns the camera off while it's on screen, unless the
   card has its own `<!-- camera: … -->`; **V** still brings the camera back,
   and the slides after it keep their camera as before.

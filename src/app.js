@@ -1019,8 +1019,11 @@ function focusOn(id, instant){
   // text one size across a section: cards share the section's typical zoom, and only a card that
   // wouldn't fit at it (a big table or chart) goes smaller. Charts and embeds don't vote: a section
   // of two charts and a list would otherwise show the list at the charts' small zoom
-  document.body.classList.toggle('full-card', n.el.classList.contains('card-full'));
-  if (n.el.classList.contains('card-full')){
+  // a full-screen card fills the screen when presenting (F, and what a recording captures); in the window
+  // it keeps every slide's margins, clear of the breadcrumbs and the control bar
+  const fill = presenting && n.el.classList.contains('card-full');
+  document.body.classList.toggle('full-card', fill);
+  if (fill){
     const zoom = Math.min(stage.clientWidth / n._w, stage.clientHeight / n._h);
     flyTo({x:n.cx, y:n.cy, zoom}, instant);
     return;
@@ -1522,6 +1525,7 @@ function setPresent(on){
   if (on) scheduleAutoslide(nodes.get(currentId)); else clearTimeout(autoTimer);
   if (on) startTalkClock(); else stopTalkClock();
   updateProgress();
+  refocus(true);   // a full-screen card fills the screen only while presenting
 }
 document.getElementById('btn-present').onclick = ()=>setPresent(!presenting);
 
