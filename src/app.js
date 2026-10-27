@@ -1553,6 +1553,35 @@ const nextFrame = ()=>Promise.race([new Promise(r=>requestAnimationFrame(()=>req
 function recNow(){ return (rec.paused ? rec.pauseAt : performance.now()) - rec.t0 - rec.pausedMs; }
 
 function openModal(m){ m.classList.add('open'); }
+
+// ---------- analytics: Google Analytics on slidetake.com, which a reader can turn off ----------
+// index.html loads the tag only on slidetake.com and only while this browser hasn't chosen off. Turning it
+// off stops a running tag at once and removes the _ga cookies it set; turning it back on counts from the
+// next page.
+const GA_ID = 'G-3S9FY4MQLS';
+const analyticsDialog = document.getElementById('analytics-dialog');
+const analyticsOn = ()=>load('slidetake:analytics') !== 'off';
+function setAnalytics(on){
+  save('slidetake:analytics', on ? 'on' : 'off');
+  if (!on){
+    window['ga-disable-' + GA_ID] = true;
+    const domains = ['', '; Domain=' + location.hostname, '; Domain=.' + location.hostname.replace(/^www\./, '')];
+    document.cookie.split(';').map(c=>c.split('=')[0].trim()).filter(n=>n === '_ga' || n.startsWith('_ga_'))
+      .forEach(n=>domains.forEach(d=>{ document.cookie = n + '=; Max-Age=0; Path=/' + d; }));
+  }
+  showAnalyticsChoice();
+}
+function showAnalyticsChoice(){
+  analyticsDialog.querySelectorAll('[data-analytics]').forEach(b=>b.setAttribute('aria-checked', String((b.dataset.analytics === 'on') === analyticsOn())));
+}
+analyticsDialog.querySelectorAll('[data-analytics]').forEach(b=>b.onclick = ()=>setAnalytics(b.dataset.analytics === 'on'));
+document.getElementById('btn-analytics').onclick = ()=>{
+  showAnalyticsChoice();
+  // a copy elsewhere (localhost, npx slidetake, a self-hosted page) never loads the tag at all
+  if (!/^(www\.)?slidetake\.com$/.test(location.hostname)) document.getElementById('analytics-note').innerHTML =
+    'This copy is not slidetake.com, so it never loads analytics, whatever you choose. The choice is remembered in <code>slidetake:analytics</code>; everything else is on the <a href="/privacy">privacy page</a>.';
+  openModal(analyticsDialog);
+};
 function closeModals(){ document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open')); }
 document.querySelectorAll('.modal').forEach(m=>{
   m.addEventListener('click', e=>{ if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('open'); });

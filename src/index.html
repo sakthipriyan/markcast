@@ -18,10 +18,12 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <script>
-  // Google Analytics, on slidetake.com only (not localhost, previews or self-hosted copies).
-  // The page address it records drops the #hash, which can hold a whole deck, and ?obs=, which can hold
-  // an OBS password.
-  if (/^(www\.)?slidetake\.com$/.test(location.hostname)) {
+  // Google Analytics, on slidetake.com only (not localhost, previews or self-hosted copies), and never for a
+  // reader who turned it off (the Analytics button; slidetake:analytics=off in this browser). The page
+  // address it records drops the #hash, which can hold a whole deck, and ?obs=, which can hold an OBS password.
+  var analyticsOff = false;
+  try { analyticsOff = localStorage.getItem('slidetake:analytics') === 'off'; } catch (e) {}
+  if (/^(www\.)?slidetake\.com$/.test(location.hostname) && !analyticsOff) {
     var u = new URL(location.href); u.hash = ''; u.searchParams.delete('obs');
     var ga = document.createElement('script'); ga.async = true;
     ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-3S9FY4MQLS';
@@ -64,6 +66,7 @@
       <button class="seg-btn" data-mode="path" title="Path: slides in presenting order (3)">path</button>
       <button class="seg-btn" data-mode="focus" title="Focus: one slide at a time, no travel (4)">focus</button>
     </div>
+    <button class="btn icon" id="btn-analytics" title="Analytics" aria-label="Analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></button>
     <button class="btn icon" id="btn-mode" title="Light / dark (L)" aria-label="Light / dark"></button>
     <button class="btn" id="btn-edit-toggle" title="Editor: write, open, share (E)">✎ Editor</button>
   </div>
@@ -128,6 +131,25 @@
     </table>
     <p>Drag to pan, scroll or pinch to zoom, click a card to fly to it.</p>
     <p><a href="/docs" target="_blank" rel="noopener">The docs →</a> writing decks, sharing, recording, camera, review and cut.</p>
+  </div>
+</div>
+
+<div id="analytics-dialog" class="modal" role="dialog" aria-labelledby="analytics-title">
+  <div class="panel">
+    <button class="close" data-close aria-label="Close">✕</button>
+    <h2 id="analytics-title">Analytics</h2>
+    <p>Your decks, copies and recordings never leave this browser. This is only about counting visits to slidetake.com.</p>
+    <div class="choices" role="radiogroup" aria-label="Analytics">
+      <button class="choice" role="radio" data-analytics="on">
+        <strong>Allow analytics</strong>
+        <span>Standard Google Analytics (<code>G-3S9FY4MQLS</code>), to see which pages get read and where readers come from. Sets the <code>_ga</code> cookies. The address it records leaves out the part after <code>#</code> and <code>?obs=</code>, so never a deck or an OBS password.</span>
+      </button>
+      <button class="choice" role="radio" data-analytics="off">
+        <strong>Turn analytics off</strong>
+        <span>Nothing more is sent from this browser, and the <code>_ga</code> cookies are removed. Cloudflare, which serves the site, still sees each request the way any web server does.</span>
+      </button>
+    </div>
+    <p class="note" id="analytics-note"><code>slidetake:analytics</code> in this browser remembers your choice. Everything else is on the <a href="/privacy">privacy page</a>.</p>
   </div>
 </div>
 

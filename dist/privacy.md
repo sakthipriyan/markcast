@@ -14,6 +14,8 @@ slidetake.com counts visits with **Google Analytics**: the page's address, your 
 
 The address it records leaves out the part after `#` and `?obs=`, so neither a deck carried in a link nor an OBS password reaches it.
 
+**You can turn it off:** the **Analytics** button in the header (the pulse icon) → *Turn analytics off*. Nothing more is sent from that browser, the `_ga` cookies are removed, and the tag isn't loaded on later visits. Cloudflare, which serves the site, still sees each request the way any web server does.
+
 That is the only analytics. A copy of Slidetake you host yourself, the embed on your own site, and `npx slidetake` send none.
 
 ## 💾 What stays in your browser
@@ -26,6 +28,7 @@ Kept in this browser's storage on your device, and never sent anywhere:
 | Theme, layout, slide size, editor width | your preferences |
 | Recorded sessions and publish-pack settings | to review takes later |
 | OBS host, port and password | only if you tick *Remember*, stored as plain text |
+| Your analytics choice | so *off* stays off |
 
 Clearing this site's data in your browser removes all of it.
 

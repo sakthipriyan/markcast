@@ -138,6 +138,15 @@
   .modal ul.templates a{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--panel-line);border-radius:8px;text-decoration:none;color:var(--text);}
   .modal ul.templates a:hover{border-color:var(--accent);}
   .modal ul.templates span{font-size:12px;color:var(--text-muted);}
+  /* the analytics choice: two cards, the chosen one in the accent */
+  .modal .choices{display:grid;gap:8px;margin:12px 0;}
+  .modal .choice{display:flex;flex-direction:column;gap:4px;text-align:left;padding:10px 12px;border:1px solid var(--panel-line);border-radius:8px;
+    background:transparent;color:var(--text);font:inherit;cursor:pointer;}
+  .modal .choice:hover{border-color:var(--accent-line);}
+  .modal .choice[aria-checked="true"]{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 8%, transparent);}
+  .modal .choice strong{font-family:var(--display);font-size:14px;}
+  .modal .choice span{font-size:12px;line-height:1.55;color:var(--text-muted);}
+  .modal .note{font-size:12px;}
   #editor-pane.unsaved .pane-bar{box-shadow:inset 0 -2px 0 var(--accent);}
   #editor-pane.unsaved #btn-share, #editor-pane.unsaved #btn-save{border-color:var(--accent);color:var(--accent);}
   .btn.small{padding:3px 9px;font-size:11px;}
@@ -517,7 +526,7 @@
   #credit .logo{width:18px;height:18px;fill:var(--accent);}
   #credit .word > span{color:var(--accent);}
   #credit:hover{opacity:.85;}
-  html.embed .site-links, html.embed #btn-github{display:none !important;}
+  html.embed .site-links, html.embed #btn-github, html.embed #btn-analytics{display:none !important;}
   /* a reader's page (embedded, not recording): no bottom bar, except the arrows on touch screens */
   html.embed.no-record #navbar{display:none;}
   @media (pointer:coarse){
