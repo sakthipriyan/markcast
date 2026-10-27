@@ -146,6 +146,22 @@ https://www.youtube.com/watch?v=jNQXAC9IVRw
 
 Two comments do what markdown can't: `<!-- camera: on, full, on -->` moves the presenter's camera, and `<!-- view: overview -->` shows the whole map first.
 
+## 🧭 Layouts
+
+Press **1** to **4**, or use the switch in the header: **focus** (one slide at a time), **path** (a staircase in presenting order, the default), **radial** and **tree** (the whole map). **O** zooms out to the map and back.
+
+## 🎨 Colours
+
+**L** switches dark and light. A deck gives itself a colour with one line, `accent: "#3b82f6"`, shaded for both modes; a website passes its own palette and header.
+
+## ⏺️ Record a video
+
+**● Record** drives [OBS](https://obsproject.com): each slide is a take, **←** says it again, and the review writes the frame-exact ffmpeg cut, YouTube chapters and description. **C** turns on the camera; this deck's camera card above shows it moving.
+
+## 🔗 Open from anywhere
+
+This deck is a file on GitHub, and opens from there too: **[slidetake.com/gh/slidetake/slidetake/examples/showcase.md](/gh/slidetake/slidetake/examples/showcase.md)**. Gists, any markdown URL, and a link with the deck inside it open the same way, and `npx slidetake deck.md` opens one from your computer.
+
 ## 🚀 Start your own
 
 Press **New** for a template (blank, talk or recording), or type in this deck to make it your copy.

@@ -7,7 +7,7 @@ Slidetake runs in the browser at https://slidetake.com, on your own computer wit
 ## Docs
 
 - [Docs](https://slidetake.com/docs.md): the full guide as markdown, itself a Slidetake deck (writing decks, opening and sharing, layouts and keys, presenting, recording, camera directives, review and cut, publish pack)
-- [Examples](https://slidetake.com/examples.md): real decks, each opened from GitHub
+- [Showcase](https://slidetake.com/showcase.md): every feature in one deck
 - [Features](https://slidetake.com/features.md): every feature and what it's for
 - [Privacy](https://slidetake.com/privacy.md): what slidetake.com collects, what stays in the browser, and which services a deck can reach
 - [Home deck](https://slidetake.com/home.md): the short introduction shown at https://slidetake.com
@@ -20,7 +20,7 @@ Slidetake runs in the browser at https://slidetake.com, on your own computer wit
 - Fenced blocks ```dot, ```d2, ```echarts (JSON options) and ```svg render as diagrams, charts and drawings.
 - Images: alone fills the card; beside text makes a split card; a list of images is a gallery (a one-at-a-time carousel under <!-- steps -->); several in one paragraph a grid. Alt text is the caption.
 - A YouTube link alone on a line embeds the video; the next press plays it.
-- Every feature in one deck: https://slidetake.com/examples/showcase (source: https://github.com/slidetake/slidetake/blob/main/examples/showcase.md)
+- Every feature in one deck: https://slidetake.com/showcase (source: https://github.com/slidetake/slidetake/blob/main/examples/showcase.md)
 - An optional frontmatter block sets deck options: title, brand, duration (e.g. 10m), pip, camera, accent (the deck's colour; Slidetake's own is green).
 - `<!-- view: full -->` makes a card a 16:9 frame for a big image, without the camera unless the card asks for it.
 - `<!-- camera: full, on -->` inside a slide steps the presenter's camera; `<!-- view: overview -->` pulls back to the map first.

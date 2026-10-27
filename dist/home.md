@@ -54,7 +54,7 @@ Write, present and record in one sitting. What comes out is ready to upload.
 
 ## ✍️ Plain markdown in
 
-Markdown you already know: headings, lists, tables, code, steps, diagrams (Graphviz, D2, SVG), charts, images and YouTube links. [See every example →](/examples)
+Markdown you already know: headings, lists, tables, code, steps, diagrams (Graphviz, D2, SVG), charts, images and YouTube links. [See them all in the showcase →](/showcase)
 
 ### Your colours
 
