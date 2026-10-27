@@ -66,7 +66,7 @@ The reason Slidetake exists: a talk you record comes out finished.
 
 | Way | Advantage |
 |---|---|
-| **slidetake.com** | open any deck from a GitHub link, gist or URL, or type one; nothing to install |
+| **slidetake.com** | create a deck in the **Editor** (start blank or from a template, see it take shape as you type), or open any deck from a GitHub link, gist or URL; nothing to install |
 | **npx slidetake** | your files and images, offline, reloading as you save, and edits in the browser save back to the file |
 | **slidetake.js on your site** | decks inside your own pages; the hugo-continuum theme does it with one frontmatter key |
 | **With AI** | any AI writes the markdown; an agent writes the file and `npx slidetake` shows it as it changes |
