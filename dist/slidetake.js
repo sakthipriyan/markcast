@@ -19,7 +19,7 @@ For developers and technical educators who explain things on video. You're insid
 
 ### OBS records, the deck drives it
 
-**[OBS Studio](https://obsproject.com)** records at full quality. Press **\u25CF Record** and Slidetake starts it, moves through your slides and stops it at the end. No scenes to switch, no recording to watch.
+**[OBS Studio](https://obsproject.com)** records at full quality. Press **<span class="st-rec">\u25CF Record</span>** and Slidetake starts it, moves through your slides and stops it at the end. No scenes to switch, no recording to watch.
 
 ### Every slide is a take
 
@@ -933,6 +933,9 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
   .brand .mark .word > span{color:var(--accent);}
   /* Slidetake's two-tone name in its own decks' titles, as in the header */
   .node .body .st-take{color:var(--accent);}
+  /* the Record button's red, where a deck names the button; deeper on white so it reads */
+  .node .body .st-rec{color:#f87171;}
+  body[data-mode="light"] .node .body .st-rec{color:#dc2626;}
   /* a heart in the deck's own colour, where an emoji would keep its fixed green */
   .node .body .st-heart{display:inline-block;width:.9em;height:.9em;vertical-align:-.08em;background:var(--accent);
     -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35 10.55 20.03C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.54z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35 10.55 20.03C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.54z'/%3E%3C/svg%3E") center/contain no-repeat;}

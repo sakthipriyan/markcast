@@ -18,7 +18,7 @@ For developers and technical educators who explain things on video. You're insid
 
 ### OBS records, the deck drives it
 
-**[OBS Studio](https://obsproject.com)** records at full quality. Press **● Record** and Slidetake starts it, moves through your slides and stops it at the end. No scenes to switch, no recording to watch.
+**[OBS Studio](https://obsproject.com)** records at full quality. Press **<span class="st-rec">● Record</span>** and Slidetake starts it, moves through your slides and stops it at the end. No scenes to switch, no recording to watch.
 
 ### Every slide is a take
 
