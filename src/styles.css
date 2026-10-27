@@ -80,7 +80,10 @@
   .node .body .st-take{color:var(--accent);}
   .brand .tagline{font-family:var(--mono);font-size:13px;color:var(--text-muted);}
   /* Features and Docs sit with the name and tagline: about Slidetake, not about the deck on screen */
-  .brand .site-links{display:flex;gap:8px;align-self:center;margin-left:6px;}
+  .brand .site-links{display:flex;align-items:center;gap:16px;align-self:center;margin-left:8px;}
+  .brand .site-link{font-family:var(--mono);font-size:13px;color:var(--text-muted);text-decoration:none;display:inline-flex;align-items:center;}
+  .brand .site-link:hover, .brand .site-link:focus-visible{color:var(--accent);}
+  .brand .site-link.icon svg{width:16px;height:16px;display:block;}
   .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .btn{
     background:transparent;color:var(--text);
