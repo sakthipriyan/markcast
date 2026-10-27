@@ -21,9 +21,9 @@ package can notice. Tests, CI and tooling do not belong here.
 ### Changed
 
 - A full-screen card whose image leaves room beside it (a screenshot or photo
-  narrower than the screen) puts the image on the right and the heading and
-  caption in that room, as a portrait card does, rather than over the image.
-  Images close to the screen's shape still fill it with the text over them.
+  narrower than 16:9) puts the image on the right and the heading and caption
+  in that room, as a portrait card does, rather than over the image. Images
+  close to 16:9 still fill the card with the text over them.
 - A full-screen card is a 16:9 frame placed like every other slide, with the
   same margins in the window and when presenting, instead of filling the screen
   edge to edge (which left it touching the top and bottom, under the
