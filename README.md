@@ -39,7 +39,7 @@ Then open:
 
 - `http://localhost:8765/dist/` for the sample deck and the editor
 - `http://localhost:8765/dist/?src=https://…/deck.md` for a deck on the web, including GitHub raw URLs (relative images load from next to it)
-- `?edit=0` hides the editor, `?layout=tree|radial|path|focus` picks the layout, `?mode=light` the light theme
+- `?edit=0` hides the editor, `?layout=focus|path|radial|tree` picks the layout, `?mode=light` the light theme
 
 ## Open a deck from a link
 

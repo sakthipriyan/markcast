@@ -26,7 +26,7 @@ The reason Slidetake exists: a talk you record comes out finished.
 | Feature | Advantage |
 |---|---|
 | **Headings become cards** | the structure of your talk is its layout; nothing to draw |
-| **Four layouts**: tree, radial, path, focus | a map to explain systems, a staircase for video, or one slide at a time |
+| **Four layouts**: focus, path, radial, tree | a map to explain systems, a staircase for video, or one slide at a time |
 | **The map** (O) and **map moments** | show the whole picture before diving in, and the audience never gets lost |
 | **Steady text** | text keeps its size within a section, so slides don't jump |
 | **Smooth camera moves** | each step is a short, readable flight, made for video |

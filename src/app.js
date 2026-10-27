@@ -59,7 +59,10 @@ let nodes = new Map();   // id -> node
 let order = [];          // DFS pre-order of node ids
 let roots = [];
 let currentId = null;
-let layoutMode = 'tree'; // 'tree' | 'radial' | 'path' | 'focus'
+// layouts in the order they're offered (alphabetical; keys 1–4 follow it). The one shown is ?layout=, else the
+// reader's own choice, else the deck's layout:, else path, made for presenting and video.
+const LAYOUTS = ['focus', 'path', 'radial', 'tree'];
+let layoutMode = 'path';
 let presenting = false;
 let deck = {};           // settings from the deck's frontmatter: brand, logo, pip, pip_size, pip_shape, title
 // global camera switch (◉ Camera / C): when off, camera comments are ignored, camera-only steps are
@@ -2238,10 +2241,7 @@ window.addEventListener('keydown', e=>{
   else if (k==='e' || k==='E'){ toggleEditor(); }
   else if (k==='f' || k==='F' || k==='p' || k==='P'){ setPresent(!presenting); }
   else if (k==='r' || k==='R'){ openRecordDialog(); }
-  else if (k==='1'){ setMode('tree'); }
-  else if (k==='2'){ setMode('radial'); }
-  else if (k==='3'){ setMode('path'); }
-  else if (k==='4'){ setMode('focus'); }
+  else if (/^[1-4]$/.test(k)){ setMode(LAYOUTS[+k - 1]); }
   else if (k==='c' || k==='C'){ setCameraEnabled(cameraOff); }
   else if (k==='v' || k==='V'){ cycleCamera(); }
   else if (k==='l' || k==='L'){ toggleMode(); }
@@ -2327,13 +2327,14 @@ document.getElementById('btn-share').onclick = async ()=>{
 
 // ---------- boot ----------
 const savedMode = load('slidetake:layout');
-layoutMode = ['tree','radial','path','focus'].includes(savedMode) ? savedMode : 'tree';
+layoutMode = LAYOUTS.includes(savedMode) ? savedMode : 'path';
 document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
 
 // ?src=<url of a .md> loads a deck from the web (relative images resolve next to it),
 // ?edit=0 starts with the editor hidden, ?layout=tree|radial|path|focus picks the layout
 const params = new URLSearchParams(location.search);
-if (['tree','radial','path','focus'].includes(params.get('layout'))){
+const layoutChosen = LAYOUTS.includes(params.get('layout')) || LAYOUTS.includes(savedMode);
+if (LAYOUTS.includes(params.get('layout'))){
   layoutMode = params.get('layout');
   document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
 }
@@ -2514,6 +2515,12 @@ loadInitialDeck().then(text=>{
   editor.value = text;
   updateDocState();
   parseDeck(editor.value);
+  // the deck's own layout:, unless the address or the reader chose one (a Hugo deck's layout: "slides" isn't one)
+  const deckLayout = String(deck.layout || '').toLowerCase();
+  if (!layoutChosen && LAYOUTS.includes(deckLayout)){
+    layoutMode = deckLayout;
+    document.querySelectorAll('#layout-toggle .seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.mode === layoutMode));
+  }
   build();
   // wait for web fonts before measuring card sizes
   return document.fonts ? document.fonts.ready : null;

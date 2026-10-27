@@ -122,6 +122,7 @@ An optional block at the top of the file:
 title: My talk               ← the page title, and the video's
 duration: 10m                ← talk length, for the timer
 accent: "#3b82f6"            ← the deck's colour (Slidetake's own is green)
+layout: tree                 ← the layout it opens in (focus, path, radial, tree; path if unset)
 brand: example.com/talks     ← text in the top-right corner
 logo: https://…/logo.png     ← image beside it
 base: https://…/deck-folder/ ← where relative images live, for a file opened from elsewhere
@@ -147,18 +148,20 @@ Click a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch scre
 | O | the whole map; **O** again or Esc goes back |
 | F | fullscreen; **F** again or Esc leaves |
 | K or ? | these keys; again closes them |
-| 1 2 3 4 | tree, radial, path, focus |
+| 1 2 3 4 | focus, path, radial, tree |
 | + − | bigger / smaller slides (remembered) |
 | E · L | editor · light / dark |
 | C · V · R | camera · camera layouts · record |
 
 ### Layouts
 
-**Tree** is a top-down chart and **radial** rings out from the root.
-
-**Path** is made for video: a staircase in presenting order. Each section is a row, and the next one starts just below where the last ended, so every move is a short step right or down.
-
 **Focus** doesn't travel at all: the next slide fades in where the last one was.
+
+**Path**, the default, is made for presenting and video: a staircase in presenting order. Each section is a row, and the next one starts just below where the last ended, so every move is a short step right or down.
+
+**Radial** rings out from the first card, and **tree** is a top-down chart.
+
+The layout you pick is remembered in this browser. A deck can choose its own with `layout: tree` (or focus, path, radial) in its top block; your own choice still wins.
 
 ### On screen
 
