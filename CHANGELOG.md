@@ -11,6 +11,15 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-10-27
+
+### Changed
+
+- A full-screen card whose image leaves room beside it (a screenshot or photo
+  narrower than the screen) puts the image on the right and the heading and
+  caption in that room, as a portrait card does, rather than over the image.
+  Images close to the screen's shape still fill it with the text over them.
+
 ## [0.2.2] - 2026-10-27
 
 ### Changed

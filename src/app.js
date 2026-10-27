@@ -608,13 +608,22 @@ function sizeCard(n){
   // an image card takes its layout from the image's shape (the widest image, for a carousel):
   //   portrait or near-square → image on the right at the card's height, the heading and caption beside it
   //   wider     → image edge to edge across the card, the heading above it and the caption below
-  //   16:9, or a <!-- view: full --> card → the image fills the card (fitted whole, never cropped), the heading and caption over it
+  //   16:9 → the image fills the card, the heading and caption over it
+  // A <!-- view: full --> card is 16:9 and fits its image whole, never cropped: an image narrow enough to leave
+  // room beside it sits on the right with the text in that room, as a portrait card does; a wider one fills
+  // the card with the text over it.
   const full = el.classList.contains('card-full');
   el.classList.remove('img-portrait', 'img-landscape', 'img-overlay');
   if (full) w = XWIDE_W;
   if (el.classList.contains('card-bleed')){
     const aspect = Math.max(0, ...[...b.querySelectorAll('img')].map(i=>i.naturalWidth && i.naturalHeight ? i.naturalWidth / i.naturalHeight : 0)) || 16 / 9;
-    if (full || Math.abs(aspect - 16 / 9) < 0.08){ el.classList.add('img-overlay'); w = XWIDE_W; }
+    const roomBeside = XWIDE_W - BLEED_H * aspect >= 260;
+    if (full && roomBeside){
+      el.classList.add('img-portrait');
+      el.style.setProperty('--img-w', Math.round(BLEED_H * aspect) + 'px');
+      w = XWIDE_W;
+    }
+    else if (full || Math.abs(aspect - 16 / 9) < 0.08){ el.classList.add('img-overlay'); w = XWIDE_W; }
     else if (aspect < 1.3){
       const iw = Math.min(Math.round(BLEED_H * aspect), XWIDE_W - 300);   // leave the text at least 300px
       el.classList.add('img-portrait');

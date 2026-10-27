@@ -43,7 +43,7 @@ Plain markdown, and the layout follows from what's on the card. [See every one â
 | an image alone | an image card: a phone shot sits beside the heading and caption, a landscape one spans the card between them, a 16:9 one fills it |
 | an image and text | a split card: the image sits on the side written first |
 | a list of images | a gallery; with `<!-- steps -->` a carousel, one image per press, laid out like an image card |
-| `<!-- view: full -->` in a card | the card fills the whole screen |
+| `<!-- view: full -->` in a card | the card fills the whole screen; an image narrower than the screen sits on the right, with the text beside it |
 | images in one paragraph | a grid, up to four a row |
 | a YouTube link alone on a line | the video: the next press plays it, leaving pauses it |
 
