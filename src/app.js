@@ -456,7 +456,8 @@ function applyElementComments(root){
 // A card's media decides its layout, with no classes to write (the alt text is the caption):
 //   one image or video alone        → media card: the image fills the card, caption below
 //   one image or video + text       → split: media on one side (the side it was written on), text on the other
-//   a list of images                → gallery; under <!-- steps --> a carousel, one image per press
+//   a list of images or diagrams    → gallery; under <!-- steps --> a carousel, one per press
+//   (under <!-- steps -->, two or more images or diagrams in a row are such a list)
 //   several images in one paragraph → grid
 //   a YouTube link alone on a line  → the video (next press plays it; leaving the slide pauses it)
 // a block swapped for what it renders as (a diagram, a figure) keeps its place in the card's steps
@@ -511,13 +512,14 @@ function applyMedia(el, body){
     const v = href && youtubeVideo(href);
     if (v) replaceBlock(p, youtubeFigure(v, only.tagName === 'IMG' ? only.getAttribute('alt') : ''));
   });
-  // lists whose items are each just an image: a gallery
+  // lists whose items are each just an image or a diagram or chart: a gallery
   body.querySelectorAll(':scope > ul, :scope > ol').forEach(list=>{
     const items = [...list.children];
-    if (!items.length || !items.every(li=>li.querySelector('img') && !li.textContent.trim())) return;
+    if (!items.length || !items.every(li=>isImageItem(li) || isDiagramItem(li))) return;
     list.classList.add('gallery');
-    items.forEach(li=>{ const img = li.querySelector('img'); li.innerHTML = ''; li.appendChild(img); figureFor(img); });
-    // under <!-- steps -->: a carousel, one image at a time and large; the first is up before any press
+    if (items.some(li=>!isImageItem(li))) list.classList.add('diagrams');
+    items.forEach(li=>{ if (!isImageItem(li)) return; const img = li.querySelector('img'); li.innerHTML = ''; li.appendChild(img); figureFor(img); });
+    // under <!-- steps -->: a carousel, one visual at a time and large; the first is up before any press
     if (items.length > 1 && items.every(li=>li.classList.contains('fragment'))){
       list.classList.add('carousel');
       items[0].classList.remove('fragment', 'fade-up');
@@ -544,7 +546,7 @@ function applyMedia(el, body){
   const media = parts.filter(c=>c.matches('figure.media'));
   if (media.length === 1 && parts.length === 1) el.classList.add('card-media');
   // an image or a carousel alone runs edge to edge, the heading and caption laid over it
-  if (parts.length === 1 && (parts[0].matches('figure.media:not(.yt)') || parts[0].matches('.gallery.carousel'))) el.classList.add('card-bleed');
+  if (parts.length === 1 && (parts[0].matches('figure.media:not(.yt)') || parts[0].matches('.gallery.carousel:not(.diagrams)'))) el.classList.add('card-bleed');
   // <!-- view: full --> makes the card a 16:9 frame for its image, placed like any other slide
   const walker = document.createTreeWalker(body, NodeFilter.SHOW_COMMENT);
   while (walker.nextNode()) if (/^\s*view\s*:\s*full\s*$/i.test(walker.currentNode.data)) el.classList.add('card-full');
@@ -577,6 +579,35 @@ function applyStepsComments(root){
       if (/^(UL|OL)$/.test(next.tagName)) next.querySelectorAll(':scope > li').forEach(li=>li.classList.add('fragment', 'fade-up'));
       else next.classList.add('fragment', 'fade-up');
     }
+  });
+}
+// visual blocks: what renders as a picture, so it can sit in a gallery or a carousel
+const DIAGRAM_CODE = ['dot', 'd2', 'echarts', 'svg'].map(l=>':scope > code.language-' + l).join(', ');
+const isImageItem = e=>!!e.querySelector('img') && !e.textContent.trim();
+const isDiagramItem = e=>e.children.length === 1 && e.children[0].tagName === 'PRE' && !!e.children[0].querySelector(DIAGRAM_CODE);
+// under <!-- steps -->, two or more visuals in a row become a list, so they show as one carousel rather than a stack
+function groupVisualRuns(root){
+  const visual = e=>e.classList.contains('fragment') && (
+    (e.tagName === 'P' && e.children.length === 1 && e.children[0].tagName === 'IMG' && !e.textContent.trim()
+      && !youtubeVideo(e.children[0].getAttribute('src') || '')) ||
+    (e.tagName === 'PRE' && !!e.querySelector(DIAGRAM_CODE)));
+  const runs = [];
+  let run = [];
+  [...root.children].forEach(e=>{
+    if (visual(e)) run.push(e);
+    else { if (run.length > 1) runs.push(run); run = []; }
+  });
+  if (run.length > 1) runs.push(run);
+  runs.forEach(r=>{
+    const list = document.createElement('ul');
+    r[0].before(list);
+    r.forEach(e=>{
+      const li = document.createElement('li');
+      li.className = 'fragment fade-up';
+      e.classList.remove('fragment', 'fade-up');
+      li.appendChild(e);
+      list.appendChild(li);
+    });
   });
 }
 function collectFragments(root){
@@ -883,6 +914,7 @@ function build(){
     const body = el.querySelector('.body');
     applyElementComments(body);
     applyStepsComments(body);
+    groupVisualRuns(body);
     applyMedia(el, body);
     // a markdown table needs a header row; a blank one (| | |) is only there to satisfy the syntax
     body.querySelectorAll('thead').forEach(h=>{ if (!h.textContent.trim()) h.remove(); });

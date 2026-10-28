@@ -116,7 +116,7 @@ An image beside text makes a split card. Write the text first and the image move
 
 ### A gallery
 
-A list of images is a gallery. With `<!-- steps -->` it becomes a carousel: one image at a time, the next on each press.
+A list of images is a gallery. With `<!-- steps -->` it becomes a carousel: one image at a time, the next on each press. Diagrams and charts work the same, and after `<!-- steps -->` two or more of them in a row are a carousel without the list.
 
 <!-- steps -->
 - ![The logo](https://slidetake.com/favicon.svg)

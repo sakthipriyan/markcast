@@ -20,6 +20,13 @@ package can notice. Tests, CI and tooling do not belong here.
   `<!-- steps: off -->` ends the steps early; what follows it shows from the
   start.
 
+### Added
+
+- Carousels for diagrams and charts as well as images: a list of Graphviz, D2,
+  SVG or ECharts blocks is a gallery, and a carousel under `<!-- steps -->`.
+  After `<!-- steps -->`, two or more images, diagrams or charts in a row are
+  a carousel on their own, one per press, without writing them as a list.
+
 ### Fixed
 
 - On a site page, the header trail and the active layout button stay in the
