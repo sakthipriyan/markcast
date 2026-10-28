@@ -12,6 +12,8 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-28
+
 ### Changed
 
 - ` ```svg ` drawings are drawn inline instead of as images, so they can use
