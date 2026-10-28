@@ -197,6 +197,10 @@
   .btn.icon svg{width:15px;height:15px;display:block;}
   /* in the header, icon buttons stand as tall as the layout switch and the text buttons beside them */
   .hdr-actions .btn.icon{height:32px;min-width:32px;padding:0 8px;}
+  /* every header control is exactly 32px, whatever the font's line height, so they line up on any machine */
+  .hdr-actions > .btn, .hdr-actions > .seg{height:32px;}
+  .hdr-actions > .btn:not(.icon){padding-top:0;padding-bottom:0;}
+  .hdr-actions .seg-btn{height:100%;display:flex;align-items:center;padding-top:0;padding-bottom:0;}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   .pane-label{
     font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
@@ -748,7 +752,7 @@
       <tr><td><kbd>K</kbd> <kbd>?</kbd></td><td>this card; again or <kbd>Esc</kbd> closes it</td></tr>
     </table>
     <p>Drag to pan, scroll or pinch to zoom, click a card to fly to it.</p>
-    <p><a href="/docs" target="_blank" rel="noopener">The docs →</a> writing decks, sharing, recording, camera, review and cut.</p>
+    <p><a href="https://slidetake.com/docs" target="_blank" rel="noopener">The docs →</a> writing decks, sharing, recording, camera, review and cut.</p>
   </div>
 </div>
 
@@ -2176,7 +2180,7 @@
       const v = el.getAttribute(attr);
       if (!v || /^(#|[a-z][a-z0-9+.-]*:|\/\/)/i.test(v)) return;
       if (!base) {
-        if (attr === "src") unresolved++;
+        if (attr === "src" && !v.startsWith("/")) unresolved++;
         return;
       }
       let site = base;
