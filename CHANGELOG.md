@@ -12,13 +12,7 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
-### Changed
-
-- `<!-- steps -->` reveals everything after it on the card, not just the next
-  list: a list item by item, and a paragraph, quote, table or diagram as one
-  press each, so a closing line no longer shows before the points it sums up.
-  `<!-- steps: off -->` ends the steps early; what follows it shows from the
-  start.
+## [0.3.2] - 2026-10-28
 
 ### Added
 
@@ -26,6 +20,14 @@ package can notice. Tests, CI and tooling do not belong here.
   SVG or ECharts blocks is a gallery, and a carousel under `<!-- steps -->`.
   After `<!-- steps -->`, two or more images, diagrams or charts in a row are
   a carousel on their own, one per press, without writing them as a list.
+
+### Changed
+
+- `<!-- steps -->` reveals everything after it on the card, not just the next
+  list: a list item by item, and a paragraph, quote, table or diagram as one
+  press each, so a closing line no longer shows before the points it sums up.
+  `<!-- steps: off -->` ends the steps early; what follows it shows from the
+  start.
 
 ### Fixed
 
