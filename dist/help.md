@@ -102,7 +102,8 @@ Plain markdown, and the layout follows from what's on the card. [See every one i
 | `<!-- steps -->` | what follows, one press each (a list item by item), to the end of the card or a `<!-- steps: off -->` |
 | ` ```dot `, ` ```d2 ` | a Graphviz or D2 diagram |
 | ` ```echarts ` with JSON options | a chart, in the deck's colours for dark and light |
-| ` ```svg ` or `![](drawing.svg)` | an SVG drawing |
+| ` ```svg ` | an SVG drawing, inline: `currentColor` is the text colour and `var(--text)`, `var(--text-muted)`, `var(--accent)` switch with dark and light; scripts, styles and links are removed |
+| `![](drawing.svg)` | an SVG image, as drawn |
 | an image alone | an image card: a phone shot sits beside the heading and caption, a landscape one spans the card between them, a 16:9 one fills it |
 | an image and text | a split card: the image sits on the side written first |
 | a list of images, diagrams or charts | a gallery; with `<!-- steps -->` a carousel, one per press |

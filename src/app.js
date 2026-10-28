@@ -460,6 +460,35 @@ function applyElementComments(root){
 //   (under <!-- steps -->, two or more images or diagrams in a row are such a list)
 //   several images in one paragraph → grid
 //   a YouTube link alone on a line  → the video (next press plays it; leaving the slide pauses it)
+// An SVG drawing kept to what draws: shapes, text, gradients, markers and filters. Scripts, styles, links,
+// foreign content, animation and external references are dropped, and its ids are made its own.
+const SVG_TAGS = new Set(('svg g defs symbol use path rect circle ellipse line polyline polygon text tspan textPath ' +
+  'title desc marker linearGradient radialGradient stop clipPath mask pattern filter feGaussianBlur feOffset ' +
+  'feBlend feFlood feComposite feMerge feMergeNode feColorMatrix feDropShadow').split(' '));
+let svgCount = 0;
+function inlineSvg(src){
+  const doc = new DOMParser().parseFromString(src, 'image/svg+xml');
+  const root = doc.documentElement;
+  if (!root || root.localName !== 'svg' || doc.getElementsByTagName('parsererror').length) return null;
+  const ns = root.namespaceURI;
+  const clean = el=>{
+    [...el.children].forEach(c=>{ if (c.namespaceURI !== ns || !SVG_TAGS.has(c.localName)) c.remove(); else clean(c); });
+    [...el.attributes].forEach(a=>{
+      const name = a.name.toLowerCase(), v = a.value;
+      if (name.startsWith('on') || /javascript:|expression\(/i.test(v) || /url\(\s*['"]?(?!#)/i.test(v) ||
+          ((name === 'href' || name === 'xlink:href') && !v.trim().startsWith('#'))) el.removeAttribute(a.name);
+    });
+  };
+  clean(root);
+  // two drawings on one page must not pick up each other's markers or gradients
+  const pre = 'st-svg' + (++svgCount) + '-';
+  [root, ...root.querySelectorAll('*')].forEach(e=>[...e.attributes].forEach(a=>{
+    let v = a.name === 'id' ? pre + a.value : a.value.replace(/url\(\s*(['"]?)#/g, 'url($1#' + pre);
+    if ((a.name === 'href' || a.name === 'xlink:href') && v.startsWith('#')) v = '#' + pre + v.slice(1);
+    if (v !== a.value) a.value = v;
+  }));
+  return document.importNode(root, true);
+}
 // a block swapped for what it renders as (a diagram, a figure) keeps its place in the card's steps
 function replaceBlock(old, neu){
   const stepped = old.classList.contains('fragment');
@@ -494,14 +523,14 @@ function gridSize(el, n){
 // a paragraph holding only images (and line breaks), or only one link
 const onlyImages = p=>p.querySelector('img') && !p.textContent.trim() && [...p.children].every(c=>/^(IMG|BR)$/.test(c.tagName));
 function applyMedia(el, body){
-  // ```svg: drawn as an image, so nothing inside it can run script
+  // ```svg: drawn inline, so it can use the deck's colours (currentColor, var(--text), var(--accent) …) and
+  // switch with dark and light; only drawing elements survive, so nothing inside it can run script
   body.querySelectorAll('pre > code.language-svg').forEach(code=>{
-    const img = document.createElement('img');
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(code.textContent.trim());
-    img.alt = '';
-    const p = document.createElement('p');
-    p.appendChild(img);
-    replaceBlock(code.parentElement, p);
+    const svg = inlineSvg(code.textContent.trim());
+    const box = document.createElement('div');
+    box.className = svg ? 'diagram svg' : 'diagram err';
+    if (svg) box.appendChild(svg); else box.textContent = 'SVG error: not a valid <svg> drawing';
+    replaceBlock(code.parentElement, box);
   });
   // YouTube: a link alone on its line, or written as an image ![caption](https://youtu.be/…)
   body.querySelectorAll(':scope > p').forEach(p=>{
@@ -584,7 +613,8 @@ function applyStepsComments(root){
 // visual blocks: what renders as a picture, so it can sit in a gallery or a carousel
 const DIAGRAM_CODE = ['dot', 'd2', 'echarts', 'svg'].map(l=>':scope > code.language-' + l).join(', ');
 const isImageItem = e=>!!e.querySelector('img') && !e.textContent.trim();
-const isDiagramItem = e=>e.children.length === 1 && e.children[0].tagName === 'PRE' && !!e.children[0].querySelector(DIAGRAM_CODE);
+const isDiagramItem = e=>e.children.length === 1 &&
+  ((e.children[0].tagName === 'PRE' && !!e.children[0].querySelector(DIAGRAM_CODE)) || e.children[0].matches('div.diagram'));
 // under <!-- steps -->, two or more visuals in a row become a list, so they show as one carousel rather than a stack
 function groupVisualRuns(root){
   const visual = e=>e.classList.contains('fragment') && (

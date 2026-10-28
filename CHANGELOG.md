@@ -12,6 +12,18 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-28
+
+### Changed
+
+- ` ```svg ` drawings are drawn inline instead of as images, so they can use
+  the deck's colours: `currentColor` is the text colour, and `var(--text)`,
+  `var(--text-muted)` and `var(--accent)` switch with dark and light. Only
+  drawing elements are kept: scripts, `<style>`, links, `<foreignObject>`,
+  images, animation, event handlers and external `url()` references are
+  removed, and each drawing's ids are made its own. `![](drawing.svg)` is
+  unchanged, an image as drawn.
+
 ## [0.3.2] - 2026-10-28
 
 ### Added
