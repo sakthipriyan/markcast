@@ -18,12 +18,14 @@ Paragraphs, **bold**, *italic*, `code`, [links](https://slidetake.com) and lists
 
 ### Steps
 
-Put `<!-- steps -->` before a list and it reveals one item per press:
+Put `<!-- steps -->` before a list and it reveals one item per press. Everything after it on the card steps too, so a closing line waits its turn:
 
 <!-- steps -->
 - First, the problem
 - Then, the idea
 - Finally, the result
+
+> The conclusion comes last. `<!-- steps: off -->` ends the steps early.
 
 ### Quotes and tables
 

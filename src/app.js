@@ -459,10 +459,18 @@ function applyElementComments(root){
 //   a list of images                → gallery; under <!-- steps --> a carousel, one image per press
 //   several images in one paragraph → grid
 //   a YouTube link alone on a line  → the video (next press plays it; leaving the slide pauses it)
+// a block swapped for what it renders as (a diagram, a figure) keeps its place in the card's steps
+function replaceBlock(old, neu){
+  const stepped = old.classList.contains('fragment');
+  ['fragment', 'fade-up', 'visible', 'current-fragment'].forEach(c=>{ if (old.classList.contains(c)){ neu.classList.add(c); old.classList.remove(c); } });
+  if (old.dataset.fragmentIndex !== undefined){ neu.dataset.fragmentIndex = old.dataset.fragmentIndex; delete old.dataset.fragmentIndex; }
+  old.replaceWith(neu);
+  if (stepped) nodes.forEach(n=>n.frags && n.frags.forEach(g=>{ const i = g.indexOf(old); if (i >= 0) g[i] = neu; }));
+}
 function figureFor(img){
   const fig = document.createElement('figure');
   fig.className = 'media';
-  img.replaceWith(fig);
+  replaceBlock(img, fig);
   fig.appendChild(img);
   const alt = img.getAttribute('alt');
   if (alt) fig.insertAdjacentHTML('beforeend', '<figcaption>' + escapeHtml(alt) + '</figcaption>');
@@ -492,7 +500,7 @@ function applyMedia(el, body){
     img.alt = '';
     const p = document.createElement('p');
     p.appendChild(img);
-    code.parentElement.replaceWith(p);
+    replaceBlock(code.parentElement, p);
   });
   // YouTube: a link alone on its line, or written as an image ![caption](https://youtu.be/…)
   body.querySelectorAll(':scope > p').forEach(p=>{
@@ -501,7 +509,7 @@ function applyMedia(el, body){
     const href = only.tagName === 'A' && p.textContent.trim() === only.textContent.trim() ? only.getAttribute('href')
       : only.tagName === 'IMG' ? only.getAttribute('src') : null;
     const v = href && youtubeVideo(href);
-    if (v) p.replaceWith(youtubeFigure(v, only.tagName === 'IMG' ? only.getAttribute('alt') : ''));
+    if (v) replaceBlock(p, youtubeFigure(v, only.tagName === 'IMG' ? only.getAttribute('alt') : ''));
   });
   // lists whose items are each just an image: a gallery
   body.querySelectorAll(':scope > ul, :scope > ol').forEach(list=>{
@@ -524,10 +532,10 @@ function applyMedia(el, body){
   body.querySelectorAll(':scope > p').forEach(p=>{
     if (!onlyImages(p)) return;
     const imgs = [...p.querySelectorAll('img')];
-    if (imgs.length === 1){ p.replaceWith(imgs[0]); figureFor(imgs[0]); return; }
+    if (imgs.length === 1){ replaceBlock(p, imgs[0]); figureFor(imgs[0]); return; }
     const grid = document.createElement('div');
     grid.className = 'gallery grid';
-    p.replaceWith(grid);
+    replaceBlock(p, grid);
     imgs.forEach(img=>{ grid.appendChild(img); figureFor(img); });
     gridSize(grid, imgs.length);
   });
@@ -556,15 +564,19 @@ function youtubeCommand(fig, func){
   if (f && f.contentWindow) f.contentWindow.postMessage(JSON.stringify({event: 'command', func, args: []}), '*');
 }
 
-// <!-- steps --> before a list reveals its items one per press (plain markdown's only step syntax)
+// <!-- steps --> reveals what follows it one press at a time, to the end of the card or a <!-- steps: off -->:
+// a list one item per press, anything else (a paragraph, a quote, a table, a diagram) as one press
 function applyStepsComments(root){
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
   const found = [];
   while (walker.nextNode()) if (/^\s*steps\s*$/i.test(walker.currentNode.data)) found.push(walker.currentNode);
   found.forEach(c=>{
-    let next = c.nextSibling;
-    while (next && next.nodeType !== 1) next = next.nextSibling;
-    if (next && /^(UL|OL)$/.test(next.tagName)) next.querySelectorAll(':scope > li').forEach(li=>li.classList.add('fragment', 'fade-up'));
+    for (let next = c.nextSibling; next; next = next.nextSibling){
+      if (next.nodeType === 8 && /^\s*steps\s*:\s*off\s*$/i.test(next.data)) break;
+      if (next.nodeType !== 1 || next.classList.contains('fragment')) continue;
+      if (/^(UL|OL)$/.test(next.tagName)) next.querySelectorAll(':scope > li').forEach(li=>li.classList.add('fragment', 'fade-up'));
+      else next.classList.add('fragment', 'fade-up');
+    }
   });
 }
 function collectFragments(root){
@@ -757,7 +769,7 @@ async function renderRich(){
     const div = document.createElement('div');
     div.className = 'echarts-container';
     div.dataset.chart = code.textContent;
-    code.parentElement.replaceWith(div);
+    replaceBlock(code.parentElement, div);
   });
   const charts = [...world.querySelectorAll('.node .echarts-container[data-chart]')];
   const d2s = [...world.querySelectorAll('.node pre > code.language-d2')];
@@ -773,7 +785,7 @@ async function renderRich(){
         box.className = 'diagram';
         try { box.appendChild(viz.renderSVGElement(code.textContent)); }
         catch(e){ box.className = 'diagram err'; box.textContent = 'Diagram error: ' + e.message; }
-        code.parentElement.replaceWith(box);
+        replaceBlock(code.parentElement, box);
       });
     } catch(e){ problems.push('diagrams'); }
   }
@@ -790,7 +802,7 @@ async function renderRich(){
           box.innerHTML = await d2.render(result.diagram, {...(result.renderOptions || {}), themeOverrides: theme, darkThemeOverrides: theme});
         } catch(e){ box.className = 'diagram err'; box.textContent = 'Diagram error: ' + (e.message || e); }
         if (gen !== buildGen) return;
-        code.parentElement.replaceWith(box);
+        replaceBlock(code.parentElement, box);
       }
     } catch(e){ problems.push('D2 diagrams'); }
   }

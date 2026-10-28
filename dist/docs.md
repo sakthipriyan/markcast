@@ -99,7 +99,7 @@ Plain markdown, and the layout follows from what's on the card. [See every one i
 
 | Write | Get |
 |---|---|
-| `<!-- steps -->` before a list | one item per press |
+| `<!-- steps -->` | what follows, one press each (a list item by item), to the end of the card or a `<!-- steps: off -->` |
 | ` ```dot `, ` ```d2 ` | a Graphviz or D2 diagram |
 | ` ```echarts ` with JSON options | a chart, in the deck's colours for dark and light |
 | ` ```svg ` or `![](drawing.svg)` | an SVG drawing |

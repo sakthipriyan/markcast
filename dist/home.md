@@ -74,7 +74,7 @@ Markdown you already know: headings, lists, tables, code, steps, diagrams (Graph
 Markdown has no word for "reveal one at a time" or "move the camera", so a handful of HTML comments say it. They stay invisible anywhere else markdown is read:
 
 ```md
-<!-- steps -->             ← one item per press
+<!-- steps -->             ← the rest, one press each
 <!-- camera: full, on -->  ← move the camera
 <!-- view: overview -->    ← the map first
 <!-- view: full -->        ← a big-image card

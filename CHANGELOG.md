@@ -12,6 +12,14 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+### Changed
+
+- `<!-- steps -->` reveals everything after it on the card, not just the next
+  list: a list item by item, and a paragraph, quote, table or diagram as one
+  press each, so a closing line no longer shows before the points it sums up.
+  `<!-- steps: off -->` ends the steps early; what follows it shows from the
+  start.
+
 ### Fixed
 
 - On a site page, the header trail and the active layout button stay in the
