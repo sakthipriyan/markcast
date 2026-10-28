@@ -12,6 +12,8 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-10-28
+
 ### Fixed
 
 - On a site page in light mode, the "Made with Slidetake" credit's logo and
