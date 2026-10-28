@@ -12,6 +12,8 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-28
+
 ### Fixed
 
 - The header's layout switch and Editor are exactly as tall as its icon buttons
