@@ -99,13 +99,14 @@ Plain markdown, and the layout follows from what's on the card. [See every one i
 
 | Write | Get |
 |---|---|
-| `<!-- steps -->` before a list | one item per press |
+| `<!-- steps -->` | what follows, one press each (a list item by item), to the end of the card or a `<!-- steps: off -->` |
 | ` ```dot `, ` ```d2 ` | a Graphviz or D2 diagram |
 | ` ```echarts ` with JSON options | a chart, in the deck's colours for dark and light |
 | ` ```svg ` or `![](drawing.svg)` | an SVG drawing |
 | an image alone | an image card: a phone shot sits beside the heading and caption, a landscape one spans the card between them, a 16:9 one fills it |
 | an image and text | a split card: the image sits on the side written first |
-| a list of images | a gallery; with `<!-- steps -->` a carousel, one image per press |
+| a list of images, diagrams or charts | a gallery; with `<!-- steps -->` a carousel, one per press |
+| two or more images, diagrams or charts in a row after `<!-- steps -->` | a carousel, one per press |
 | images in one paragraph | a grid, up to four a row |
 | `<!-- view: full -->` in a card | a 16:9 card for a big image, without the camera unless the card asks for it |
 | a YouTube link alone on a line | the video: the next press plays it, leaving pauses it |
