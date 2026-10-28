@@ -12,6 +12,11 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+### Fixed
+
+- The header's layout switch and Editor are exactly as tall as its icon buttons
+  (32px) whatever the font, so they line up on every machine.
+
 ## [0.3.0] - 2026-10-27
 
 ### Added
