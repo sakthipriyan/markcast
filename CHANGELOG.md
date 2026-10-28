@@ -12,6 +12,12 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+### Fixed
+
+- On a site page, the header trail and the active layout button stay in the
+  header's text colour instead of the accent, which could vanish into a header
+  in the same colour (gold on gold). The current page is underlined instead.
+
 ## [0.3.1] - 2026-10-28
 
 ### Fixed

@@ -1415,8 +1415,11 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
   html.embed #btn-edit-toggle, html.embed #continue, html.embed #editor-pane, html.embed #editor-resizer{display:none !important;}
   html.embed .brand .trail{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:600;font-size:15px;min-width:0;}
   html.embed .brand .trail a{color:var(--text);text-decoration:none;white-space:nowrap;}
-  html.embed .brand .trail a:hover{color:var(--accent);}
-  html.embed .brand .trail a:last-child{color:var(--accent);}
+  /* the header wears the site's colours, so an accent-coloured link can vanish into it (gold on gold):
+     the trail stays in the text colour, as the site's own header does, and underlines mark where you are */
+  html.embed .brand .trail a:hover, html.embed .brand .trail a:last-child{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:5px;}
+  html.embed .brand .trail a:last-child{text-decoration-color:color-mix(in srgb, currentColor 45%, transparent);}
+  html.embed .hdr-actions .seg-btn.active{color:var(--text);}
   html.embed .brand .trail .sep{color:var(--text-muted);font-weight:400;}
   #credit{display:inline-flex;align-items:center;gap:6px;padding:4px 6px;text-decoration:none;
     font-family:var(--display);font-weight:700;font-size:14px;color:var(--text);}
