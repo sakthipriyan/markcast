@@ -69,11 +69,14 @@ write -> present -> record: one session
 
 ### SVG
 
+Drawn inline, so `currentColor` and `var(--accent)` follow the deck's colours. Press **L** and watch it switch.
+
 ```svg
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
-  <rect x="10" y="20" width="90" height="80" rx="10" fill="#10b981"/>
-  <rect x="115" y="20" width="90" height="80" rx="10" fill="#10b981" opacity=".7"/>
-  <rect x="220" y="20" width="90" height="80" rx="10" fill="#10b981" opacity=".4"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 130">
+  <rect x="10" y="10" width="90" height="80" rx="10" style="fill:var(--accent)"/>
+  <rect x="115" y="10" width="90" height="80" rx="10" style="fill:var(--accent);opacity:.6"/>
+  <rect x="220" y="10" width="90" height="80" rx="10" fill="none" stroke="currentColor" stroke-width="2"/>
+  <text x="160" y="120" text-anchor="middle" font-size="14" fill="currentColor">accent, faded, outlined</text>
 </svg>
 ```
 
