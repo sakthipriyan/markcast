@@ -752,7 +752,7 @@
       <tr><td><kbd>K</kbd> <kbd>?</kbd></td><td>this card; again or <kbd>Esc</kbd> closes it</td></tr>
     </table>
     <p>Drag to pan, scroll or pinch to zoom, click a card to fly to it.</p>
-    <p><a href="/docs" target="_blank" rel="noopener">The docs →</a> writing decks, sharing, recording, camera, review and cut.</p>
+    <p><a href="https://slidetake.com/docs" target="_blank" rel="noopener">The docs →</a> writing decks, sharing, recording, camera, review and cut.</p>
   </div>
 </div>
 
@@ -2180,7 +2180,7 @@
       const v = el.getAttribute(attr);
       if (!v || /^(#|[a-z][a-z0-9+.-]*:|\/\/)/i.test(v)) return;
       if (!base) {
-        if (attr === "src") unresolved++;
+        if (attr === "src" && !v.startsWith("/")) unresolved++;
         return;
       }
       let site = base;

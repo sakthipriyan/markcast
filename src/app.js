@@ -604,7 +604,8 @@ function resolveUrls(root){
     const attr = el.hasAttribute('src') ? 'src' : 'href';
     const v = el.getAttribute(attr);
     if (!v || /^(#|[a-z][a-z0-9+.-]*:|\/\/)/i.test(v)) return;
-    if (!base){ if (attr === 'src') unresolved++; return; }
+    // with no base, a path from the site's root (/favicon.svg) loads as it is; only a relative one can't
+    if (!base){ if (attr === 'src' && !v.startsWith('/')) unresolved++; return; }
     let site = base;
     try { if (deck.site) site = new URL(deck.site, base); } catch(e){}
     el.setAttribute(attr, new URL(v, v.startsWith('/') ? site : base).href);

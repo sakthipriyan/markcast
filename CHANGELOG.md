@@ -16,6 +16,10 @@ package can notice. Tests, CI and tooling do not belong here.
 
 - The header's layout switch and Editor are exactly as tall as its icon buttons
   (32px) whatever the font, so they line up on every machine.
+- No false "image(s) use relative paths" warning for images addressed from the
+  site's root, such as the logo in Slidetake's own decks.
+- The keys card's link to the docs works on embedded decks too: it points at
+  slidetake.com/docs rather than the host site's /docs.
 
 ## [0.3.0] - 2026-10-27
 
