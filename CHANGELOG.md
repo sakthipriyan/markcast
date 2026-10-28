@@ -12,6 +12,12 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+### Fixed
+
+- On a site page in light mode, the "Made with Slidetake" credit's logo and
+  "take" use the header's ink instead of the accent, which was the band's own
+  colour (navy on navy, gold on gold) and made them invisible.
+
 ## [0.3.3] - 2026-10-28
 
 ### Changed
