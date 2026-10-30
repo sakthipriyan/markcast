@@ -14,6 +14,7 @@ import {encodeDeck, decodeDeck, parseHash, deckHash} from './core/share.js';
 import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from './core/doc.js';
 import {youtubeVideo, embedUrl} from './core/media.js';
 import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious} from './core/record.js';
+import {loudnessMeter, gainToTarget, dbToGain} from './core/loudness.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
@@ -2158,8 +2159,14 @@ const finalChapters = sess=>finalChaptersCore(sess, sectionInfo);
 const ffmpegScript = (sess, mode)=>ffmpegScriptCore(sess, mode, {
   input: sess.outputPath || reviewFileName || 'recording.mov',
   outputName: sessionKey() + '-final.mp4',
-  sectionOf: sectionInfo
+  sectionOf: sectionInfo,
+  loudness: loudOn()
 });
+// bring the sound to YouTube's level when the video is made (on unless turned off)
+const loudBox = document.getElementById('rv-loud');
+const loudOn = ()=>load('slidetake:loudness') !== 'off';
+loudBox.checked = loudOn();
+loudBox.onchange = ()=>{ save('slidetake:loudness', loudBox.checked ? 'on' : 'off'); if (reviewing) renderReview(); };
 
 // ---------- YouTube publish pack ----------
 function deckTags(){
@@ -2331,6 +2338,14 @@ document.getElementById('rv-play-final').onclick = ()=>{
   else playRange(pickedRanges(reviewing).map(r=>({start:r.start, end:r.end, title:r.title})));
 };
 
+// a decoded audio sample as one float array per channel
+function planesOf(smp){
+  return Array.from({length:smp.numberOfChannels}, (_, c)=>{
+    const p = new Float32Array(smp.numberOfFrames);
+    smp.copyTo(p, {planeIndex:c, format:'f32-planar'});
+    return p;
+  });
+}
 // a browser session's takes are files of their own: play each from its start for as long as it is kept
 let clipList = null;
 async function clipFile(sess, name){ return (await (await takesDir(sess.takesId)).getFileHandle(name)).getFile(); }
@@ -2384,6 +2399,28 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
     const MB = await import(MEDIABUNNY_URL);
     const target = file ? new MB.StreamTarget(file) : new MB.BufferTarget();
     const out = new MB.Output({format:mp4 ? new MB.Mp4OutputFormat({fastStart:file ? false : 'in-memory'}) : new MB.WebMOutputFormat(), target});
+    // loudness: measure the sound of the final cut first, then every take's sound gets the same gain
+    let gain = 1, loudNote = '';
+    if (loudOn()){
+      let meter = null;
+      for (const [i, part] of plan.entries()){
+        renderStatus.textContent = 'Measuring the loudness ' + (i + 1) + ' of ' + plan.length + '…';
+        const input = new MB.Input({source:new MB.BlobSource(await clipFile(sess, part.clip)), formats:MB.ALL_FORMATS});
+        const at = await input.getPrimaryAudioTrack();
+        if (!at) continue;
+        for await (const smp of new MB.AudioSampleSink(at).samples(0, part.keep)){
+          meter = meter || loudnessMeter(smp.sampleRate, smp.numberOfChannels);
+          meter.add(planesOf(smp));
+          smp.close();
+        }
+      }
+      if (meter){
+        const m = meter.result(), db = gainToTarget(m);
+        gain = dbToGain(db);
+        loudNote = isFinite(m.integrated) ? ' · loudness ' + m.integrated.toFixed(1) + ' → ' + (m.integrated + db).toFixed(1) + ' LUFS' : '';
+      }
+    }
+    const reencode = gain !== 1;
     let vSrc = null, aSrc = null, offset = 0, lastV = -1, lastA = -1;
     for (const [i, part] of plan.entries()){
       renderStatus.textContent = 'Joining take ' + (i + 1) + ' of ' + plan.length + '…';
@@ -2393,7 +2430,10 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
       if (!vSrc){
         vSrc = new MB.EncodedVideoPacketSource(await vt.getCodec());
         out.addVideoTrack(vSrc, {frameRate:FPS});
-        if (at){ aSrc = new MB.EncodedAudioPacketSource(await at.getCodec()); out.addAudioTrack(aSrc); }
+        if (at){
+          aSrc = reencode ? new MB.AudioSampleSource({codec:mp4 ? 'aac' : 'opus', bitrate:AUDIO_BITRATE}) : new MB.EncodedAudioPacketSource(await at.getCodec());
+          out.addAudioTrack(aSrc);
+        }
         await out.start();
       }
       const vMeta = {decoderConfig:await vt.getDecoderConfig()};
@@ -2407,7 +2447,16 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
         end = Math.max(end, pk.timestamp + pk.duration);
       }
       // the sound stops with the picture, so the next take's sound starts where its picture does
-      if (at && aSrc){
+      if (at && aSrc && reencode){
+        for await (const smp of new MB.AudioSampleSink(at).samples(0, end)){
+          if (smp.timestamp + smp.duration > end + 1e-4){ smp.close(); continue; }
+          lastA = afterPrevious(lastA, offset + smp.timestamp);
+          const planes = planesOf(smp), n = smp.numberOfFrames, data = new Float32Array(n * planes.length);
+          planes.forEach((p, c)=>{ for (let k = 0; k < n; k++) data[c * n + k] = p[k] * gain; });
+          await aSrc.add(new MB.AudioSample({data, format:'f32-planar', numberOfChannels:planes.length, sampleRate:smp.sampleRate, timestamp:lastA}));
+          smp.close();
+        }
+      } else if (at && aSrc){
         const aMeta = {decoderConfig:await at.getDecoderConfig()};
         let aFirst = true;
         for await (const pk of new MB.EncodedPacketSink(at).packets()){
@@ -2428,7 +2477,7 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
       a.click();
       setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
     }
-    renderStatus.textContent = 'Saved ' + name + ' (' + fmtTime(offset * 1000) + ').';
+    renderStatus.textContent = 'Saved ' + name + ' (' + fmtTime(offset * 1000) + loudNote + ').';
   } catch(e){
     renderStatus.textContent = 'Could not render: ' + ((e && e.message) || e);
     if (file) file.abort().catch(()=>{});

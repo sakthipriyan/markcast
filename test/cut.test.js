@@ -86,3 +86,12 @@ test('file names with quotes are shell-safe', ()=>{
   const cmd = ffmpegScript(session(), 'x264', {input: "/m/it's.mov", outputName: 'o.mp4', sectionOf});
   assert.match(cmd, /-i '\/m\/it'\\''s\.mov'/);
 });
+
+test('loudness: re-encoding commands bring the sound to -14 LUFS at 48 kHz; the copy command cannot', ()=>{
+  const opts = {input: '/m/raw.mov', outputName: 'out.mp4', sectionOf, loudness: true};
+  const cmd = ffmpegScript(session(), 'x264', opts);
+  assert.match(cmd, /asetpts=N\/SR\/TB,loudnorm=I=-14:TP=-1:LRA=11"/);
+  assert.match(cmd, / -ar 48000 /);
+  assert.doesNotMatch(ffmpegScript(session(), 'x264', {...opts, loudness: false}), /loudnorm/);
+  assert.doesNotMatch(ffmpegScript(session(), 'copy', opts), /loudnorm/);
+});

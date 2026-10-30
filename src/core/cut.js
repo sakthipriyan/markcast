@@ -126,9 +126,10 @@ const secs = ms=>(ms / 1000).toFixed(3);
  * The shell commands that render the final cut.
  * @param {Session} sess
  * @param {'x264' | 'mac' | 'copy' | string} mode  frame-accurate x264, frame-accurate Mac hardware, or keyframe copy
- * @param {{input: string, outputName: string, sectionOf: SectionOf}} opts
+ * @param {{input: string, outputName: string, sectionOf: SectionOf, loudness?: boolean}} opts  loudness: bring the sound
+ *   to YouTube's level (-14 LUFS, peaks under -1 dB); only where the audio is re-encoded anyway
  */
-export function ffmpegScript(sess, mode, {input, outputName, sectionOf}){
+export function ffmpegScript(sess, mode, {input, outputName, sectionOf, loudness}){
   const ranges = mergedRanges(pickedRanges(sess));
   if (!sess.withObs) return '# This was a rehearsal: nothing was recorded.';
   if (!ranges.length) return '# Every slide is left out: nothing to render.';
@@ -165,6 +166,7 @@ export function ffmpegScript(sess, mode, {input, outputName, sectionOf}){
   const video = mode === 'mac' ? '-c:v h264_videotoolbox -b:v 12M' : '-c:v libx264 -crf 18 -preset medium';
   return chapters + 'ffmpeg -i ' + shq(input) + ' -i /tmp/slidetake-chapters.txt' + maps +
     ' -vf "select=\'' + vKeep + '\',setpts=N/FRAME_RATE/TB"' +
-    ' -af "asetnsamples=n=48:p=0,aselect=\'' + aKeep + '\',asetpts=N/SR/TB"' +
+    ' -af "asetnsamples=n=48:p=0,aselect=\'' + aKeep + '\',asetpts=N/SR/TB' + (loudness ? ',loudnorm=I=-14:TP=-1:LRA=11' : '') + '"' +
+    (loudness ? ' -ar 48000' : '') +    // loudnorm works at 192 kHz; the file goes back to 48 kHz
     ' ' + video + ' -c:a aac -b:a 192k -movflags +faststart ' + shq(output);
 }

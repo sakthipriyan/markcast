@@ -23,6 +23,11 @@ package can notice. Tests, CI and tooling do not belong here.
   and **Render the video** joins the picked takes into one MP4 without
   re-encoding; **Delete these takes** frees the space. OBS stays for any other
   browser or screen.
+- **Normalize loudness for YouTube** in the review, on by default: the final cut
+  is measured the way YouTube measures it (ITU-R BS.1770 integrated loudness)
+  and given one gain to reach -14 LUFS, never pushing peaks past -1.5 dB and
+  never making a quiet recording quieter. In the browser only the sound is
+  re-encoded; the ffmpeg command gets `loudnorm`.
 
 ### Changed
 

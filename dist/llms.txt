@@ -17,7 +17,7 @@ Slidetake runs in the browser at https://slidetake.com, on your own computer wit
 - Ordinary markdown: every heading is a card; a heading branches off the nearest shallower heading above it.
 - reveal.js decks (`---` between slides, `--` for vertical ones) open as they are.
 - `<!-- steps -->` reveals what follows it one press at a time (a list item by item; a paragraph, quote, table or diagram as one press) to the end of the card; `<!-- steps: off -->` ends it early, and anything after that shows from the start.
-- Recording: ● Record either records in the browser (Chromium: the deck in a 16:9 frame, one file per take, Render joins the picked takes into an MP4) or drives OBS (ffmpeg cuts the takes). Either way, every slide is a take and ← retakes it.
+- Recording: ● Record either records in the browser (Chromium: the deck in a 16:9 frame, one file per take, Render joins the picked takes into an MP4, its sound normalized to YouTube's -14 LUFS) or drives OBS (ffmpeg cuts the takes). Either way, every slide is a take and ← retakes it.
 - Fenced blocks ```dot, ```d2, ```echarts (JSON options) and ```svg render as diagrams, charts and drawings. A ```svg drawing is inline: use `currentColor` (the text colour) and `var(--text)`, `var(--text-muted)`, `var(--accent)` (in style attributes) so it follows dark and light. Scripts, <style>, links, foreignObject, images and external url() references are removed.
 - Images: alone fills the card; beside text makes a split card; a list of images, diagrams or charts is a gallery (a one-at-a-time carousel under <!-- steps -->, as are two or more of them in a row after <!-- steps -->); several in one paragraph a grid. Alt text is the caption.
 - A YouTube link alone on a line embeds the video; the next press plays it.

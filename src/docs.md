@@ -253,6 +253,7 @@ Then the review opens: every slide with its takes (the last one picked), click o
 
 - **Recorded in the browser:** **Render the video** joins the picked takes into one MP4, in a few seconds, without re-encoding. **Delete these takes** frees the space.
 - **Recorded with OBS:** previews come from the OBS file, and a ready-to-run **[ffmpeg](https://ffmpeg.org)** command cuts the picked takes (frame-exact).
+- **Normalize loudness for YouTube** (on by default): YouTube plays videos at about −14 LUFS and turns louder ones down, but not quieter ones up, so a voice recorded as it is sounds quiet next to other videos. The final cut is measured the way YouTube measures it and given one gain to reach −14 LUFS, stopping short where peaks would pass −1.5 dB. The video is still copied as it is; only the sound is re-encoded. In the ffmpeg command it adds `loudnorm` (not in the no-re-encode mode).
 
 The description comes from the deck's top block:
 
