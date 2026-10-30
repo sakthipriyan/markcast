@@ -2142,11 +2142,21 @@ function relatedLinks(){
 function deckLink(){
   if (deck.permalink || deck.url) return deck.permalink || deck.url;
   const site = deck.site || load('slidetake:site');
-  if (!site || !deckBase) return '';
+  if (!site || !deckBase) return pageLink();
   try {
     const path = new URL(deckBase).pathname.replace(/\/index\.md$/i, '/').replace(/\.md$/i, '/');
     return new URL(path, site).href;
-  } catch(e){ return ''; }
+  } catch(e){ return pageLink(); }
+}
+// otherwise the page the deck is open on, when others can open that address too: not this computer, not a
+// copy kept in this browser, and not a link with the whole deck inside it
+function pageLink(){
+  if (location.protocol === 'file:' || isLoopback(location.hostname)) return '';
+  if (/^\/(edit|new|share)\b/.test(location.pathname) || location.hash.includes('deflate:')) return '';
+  const u = new URL(location.href);
+  u.hash = '';
+  ['obs', 'edit', 'layout', 'mode'].forEach(k=>u.searchParams.delete(k));
+  return u.href;
 }
 function describe(sess){
   const ch = finalChapters(sess), link = document.getElementById('rv-link').value.trim(), related = relatedLinks(), tags = deckTags();
