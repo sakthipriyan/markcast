@@ -15,7 +15,7 @@ import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from
 import {youtubeVideo, embedUrl} from './core/media.js';
 import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious} from './core/record.js';
 import {loudnessMeter, gainToTarget, dbToGain} from './core/loudness.js';
-import {fingerprint, takesFromRun, boardRows, boardSession, selectionSpan, rangeOf} from './core/board.js';
+import {fingerprint, deckSlides, takesFromRun, boardRows, boardSession, selectionSpan, rangeOf} from './core/board.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
@@ -2293,8 +2293,7 @@ function renderReview(){
     const pick = sess.picks[slide.id] ?? slide.takes.length, sec = sectionOf(slide.id);
     const isSec = sec !== lastSec; lastSec = sec;
     const chips = slide.takes.map(t=>'<button class="rv-chip' + (pick === t.no ? ' on' : '') + '" data-id="' + escapeHtml(slide.id) + '" data-take="' + t.no + '">' +
-      'Take ' + t.no + ' · ' + fmtTime(t.end - t.start) + '</button>').join('') +
-      '<button class="rv-chip skip' + (pick === 0 ? ' on' : '') + '" data-id="' + escapeHtml(slide.id) + '" data-take="0">Leave out</button>';
+      'Take ' + t.no + ' · ' + fmtTime(t.end - t.start) + '</button>').join('');
     return '<div class="rv-row' + (isSec ? ' sec' : '') + '"><div class="t">' + escapeHtml(slide.title) +
       '<small>' + fmtTime(slide.takes[0].start) + '</small></div><div class="rv-chips">' + chips + '</div></div>';
   }).join('');
@@ -2411,11 +2410,32 @@ rvVideo.addEventListener('ended', ()=>{
 // Render: the picked takes joined into one file, packets copied as they are (no decoding or re-encoding).
 // Every take starts on a keyframe and shares the recorder's settings, so the joins need nothing else.
 const renderStatus = document.getElementById('rv-render-status');
-document.getElementById('rv-render-btn').onclick = async ()=>{
+document.getElementById('rv-render-btn').onclick = ()=>downloadVideo(false);
+// where a saved video is, in words: the folder's name and the file's (browsers don't tell pages the full path)
+const savedWhere = d=>d.where ? '“' + d.where + '” as ' + d.name : 'your downloads as ' + d.name;
+// the last video saved, if it is still in its folder (a plain download can't be checked: assume it is)
+async function stillSaved(d){
+  if (!d.where) return true;
+  try {
+    const dir = await kvGet('video-folder');
+    if (!dir || dir.name !== d.where || (await dir.queryPermission({mode:'readwrite'})) !== 'granted') return true;
+    await dir.getFileHandle(d.name);
+    return true;
+  } catch(e){ return false; }
+}
+async function downloadVideo(force){
   const sess = reviewing;
   if (!sess || !sess.inBrowser || sess.cleaned) return;
   const plan = clipPlan(sess);
-  if (!plan.length){ renderStatus.textContent = 'Every slide is left out: nothing to render.'; return; }
+  if (!plan.length){ renderStatus.textContent = 'No slide has a take yet: nothing to save.'; return; }
+  // the same final cut as last time: nothing to make again
+  const sig = JSON.stringify([plan.map(c=>[c.clip, Math.round(c.keep * 1000)]), loudOn(), sess.type]);
+  const last = sess.board && board.lastDownload;
+  if (!force && last && last.sig === sig && await stillSaved(last)){
+    renderStatus.innerHTML = 'Already saved in ' + escapeHtml(savedWhere(last)) + '. A new video is made only when a take or Auto volume changes. <button class="btn small" id="rv-save-again">Save another copy</button>';
+    document.getElementById('rv-save-again').onclick = ()=>downloadVideo(true);
+    return;
+  }
   const mp4 = clipExt(sess.type || '') === 'mp4';
   // like OBS: a new file each time, named by the date, in your videos folder (asked once, then remembered)
   const name = sessionKey() + ' ' + fileStamp(new Date()) + '.' + (mp4 ? 'mp4' : 'webm');
@@ -2510,12 +2530,14 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
       a.click();
       setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
     }
-    renderStatus.textContent = 'Saved ' + name + (where ? ' in ' + where : '') + ' (' + fmtTime(offset * 1000) + loudNote + ').';
+    const saved = {sig, name, where};
+    if (sess.board){ board.lastDownload = saved; saveBoard(); }
+    renderStatus.textContent = 'Saved in ' + savedWhere(saved) + ' (' + fmtTime(offset * 1000) + loudNote + ').';
   } catch(e){
     renderStatus.textContent = 'Could not render: ' + ((e && e.message) || e);
     if (file) file.abort().catch(()=>{});
   } finally { btn.disabled = !!sess.cleaned; }
-};
+}
 // 2026-10-30 20-04-49, as OBS names its recordings
 const fileStamp = d=>{ const p2 = n=>String(n).padStart(2, '0'); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' + p2(d.getHours()) + '-' + p2(d.getMinutes()) + '-' + p2(d.getSeconds()); };
 // where videos are saved: a folder picked once (starting in Movies / Videos) and remembered. null where the
@@ -2554,10 +2576,11 @@ function loadBoard(){
 const saveBoard = ()=>save(boardStoreKey(), JSON.stringify(board));
 // what a slide says now; a take recorded when it said something else is outdated
 const slideFp = id=>{ const n = nodes.get(id); return n ? fingerprint(n.title + '\n' + n.html) : ''; };
-const deckSlides = ()=>order.map(id=>({id, title:nodes.get(id).title, fp:slideFp(id)}));
+// the deck as the board compares it: each slide's fingerprint and the slide before it
+const boardDeck = ()=>deckSlides(order, id=>({title:nodes.get(id).title, fp:slideFp(id)}));
 function addToBoard(sess){
   loadBoard();
-  const takes = takesFromRun(sess, sess.takesId, slideFp);
+  const takes = takesFromRun(sess, sess.takesId, boardDeck());
   takes.forEach(t=>{ delete board.picks[t.id]; });   // a slide recorded again plays its newest take
   board.takes.push(...takes);
   Object.assign(board, {type:sess.type, quality:sess.quality});
@@ -2567,7 +2590,7 @@ function addToBoard(sess){
 }
 // the board as a recording: the picked takes back to back, for preview, chapters and Download
 function boardReview(){
-  const rows = boardRows(loadBoard(), deckSlides());
+  const rows = boardRows(loadBoard(), boardDeck());
   const sess = Object.assign(boardSession(rows), {board:true, inBrowser:true, withObs:false, type:board.type || 'video/mp4', quality:board.quality || '',
     deckTitle:deck.title || (order[0] ? nodes.get(order[0]).title : 'Deck'), date:new Date().toISOString()});
   return {rows, sess};
@@ -2611,9 +2634,11 @@ function renderBoard(){
   list.innerHTML = rows.map(r=>{
     const sec = sectionOf(r.id), isSec = sec !== lastSec; lastSec = sec;
     const id = escapeHtml(r.id);
-    const chips = r.takes.length ? r.takes.map(t=>'<button class="rv-chip' + (r.pick === t.uid ? ' on' : '') + (t.outdated ? ' outdated" title="Recorded before this slide changed' : '') +
+    const why = {slide:'Recorded before this slide changed', before:'Starts with the entry from the slide before, which has changed or is gone: record this slide again'};
+    const chips = r.takes.length ? r.takes.map(t=>'<button class="rv-chip' + (r.pick === t.uid ? ' on' : '') + (t.outdated ? ' outdated" title="' + why[t.outdated] : '') +
       '" data-id="' + id + '" data-uid="' + escapeHtml(t.uid) + '">Take ' + t.no + ' · ' + fmtTime(t.ms) + '</button>').join('') +
-      '<button class="rv-chip skip' + (r.pick === '' ? ' on' : '') + '" data-id="' + id + '" data-uid="">Leave out</button>' : '<span class="rv-none">No take yet</span>';
+      (r.pick ? '' : '<span class="rv-none">' + (r.takes.some(t=>t.outdated === 'before') && !r.takes.some(t=>t.outdated === 'slide') ? 'The slide before changed: record again' : 'Changed since: record again') + '</span>')
+      : '<span class="rv-none">No take yet</span>';
     return '<div class="rv-row with-sel' + (isSec ? ' sec' : '') + (selected.has(r.id) ? ' selected' : '') + '">' +
       '<input type="checkbox" class="rv-sel" data-id="' + id + '"' + (selected.has(r.id) ? ' checked' : '') + ' aria-label="Select ' + escapeHtml(r.title) + ' to record">' +
       '<div><div class="t">' + escapeHtml(r.title) + '</div><div class="rv-chips">' + chips + '</div></div></div>';
@@ -2632,21 +2657,24 @@ function renderBoard(){
     renderBoard();
   }));
   const span = selectionSpan(order, selected), ready = browserRecording().ok;
-  const recSel = document.getElementById('rv-rec-sel');
-  recSel.textContent = '● Record selected' + (span ? ' (' + (order.indexOf(span.to) - order.indexOf(span.from) + 1) + ')' : '');
-  recSel.disabled = !span || !ready;
-  document.getElementById('rv-rec-all').disabled = !ready;
+  document.getElementById('rv-rec').disabled = !ready;
+  const note = document.getElementById('rv-sel-note');
+  if (span){
+    const n = order.indexOf(span.to) - order.indexOf(span.from) + 1;
+    note.innerHTML = 'Only the selected ' + (n === 1 ? 'slide' : n + ' slides') + ' will be recorded' +
+      (n > 1 ? ' (' + escapeHtml(nodes.get(span.from).title) + ' → ' + escapeHtml(nodes.get(span.to).title) + ')' : '') + '. <button id="rv-sel-clear">Clear</button>';
+    document.getElementById('rv-sel-clear').onclick = ()=>{ selected.clear(); renderBoard(); };
+  } else note.textContent = '';
   document.getElementById('rv-render-btn').disabled = document.getElementById('rv-play-final').disabled = !sess.events.length;
-  const recorded = rows.filter(r=>r.takes.length).length, outdated = rows.filter(r=>r.takes.some(t=>t.outdated)).length;
+  const recorded = rows.filter(r=>r.pick).length, outdated = rows.filter(r=>r.takes.length && !r.pick).length;
   document.getElementById('rv-info').textContent = board.takes.length
-    ? [board.takes.length + ' take' + (board.takes.length === 1 ? '' : 's'), recorded + ' of ' + rows.length + ' slides recorded',
-       outdated ? outdated + ' slide' + (outdated === 1 ? '' : 's') + ' changed since' : '', board.quality ? board.quality + ', in this browser' : ''].filter(Boolean).join(' · ')
+    ? [board.takes.length + ' take' + (board.takes.length === 1 ? '' : 's'), recorded + ' of ' + rows.length + ' slides ready',
+       outdated ? outdated + ' to record again' : '', board.quality ? board.quality + ', in this browser' : ''].filter(Boolean).join(' · ')
     : order.length + ' slides, nothing recorded yet';
   describe(sess);
   showFinalSize(sess);
 }
-document.getElementById('rv-rec-all').onclick = ()=>startTake('browser');
-document.getElementById('rv-rec-sel').onclick = ()=>{ const span = selectionSpan(order, selected); if (span) startTake('browser', span); };
+document.getElementById('rv-rec').onclick = ()=>startTake('browser', selectionSpan(order, selected));
 document.getElementById('rv-rehearse').onclick = ()=>startTake('rehearse');
 document.getElementById('rv-use-obs').onclick = ()=>{ closeModals(); setRecMode('obs'); openRecordDialog(); };
 // deleting takes: the ones no slide plays, or all of them
@@ -2662,23 +2690,25 @@ async function deleteClips(takes){
   clipList = null;
   renderBoard();
 }
+// the purge menu closes once a choice is made
+document.querySelectorAll('.rv-purge .rv-menu button').forEach(b=>b.addEventListener('click', ()=>{ b.closest('details').open = false; }));
 document.getElementById('rv-clean-unused').onclick = async ()=>{
   const {rows} = boardReview(), used = new Set(rows.map(r=>r.pick).filter(Boolean));
   const unused = board.takes.filter(t=>!used.has(t.uid));
   if (!unused.length){ renderStatus.textContent = 'Every take is in use.'; return; }
-  if (!confirm('Delete ' + unused.length + ' take' + (unused.length === 1 ? '' : 's') + ' no slide plays?')) return;
+  if (!confirm('Purge ' + unused.length + ' take' + (unused.length === 1 ? '' : 's') + ' the video doesn’t use (earlier attempts and outdated takes)?')) return;
   await deleteClips(unused);
-  renderStatus.textContent = 'Deleted ' + unused.length + ' unused take' + (unused.length === 1 ? '' : 's') + '.';
+  renderStatus.textContent = 'Purged ' + unused.length + ' unused take' + (unused.length === 1 ? '' : 's') + '.';
 };
 document.getElementById('rv-clean').onclick = async ()=>{
-  if (!board.takes.length || !confirm('Delete all ' + board.takes.length + ' takes of this deck from this browser? Download the video first if you need it.')) return;
+  if (!board.takes.length || !confirm('Purge all ' + board.takes.length + ' takes of this deck from this browser? Download the video first if you need it.')) return;
   const runs = new Set(board.takes.map(t=>t.clip.split('/')[0]));
   board.takes = []; board.picks = {};
   saveBoard();
   for (const r of runs) await deleteTakes(r);
   if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
   clipList = null;
-  renderStatus.textContent = 'All takes deleted.';
+  renderStatus.textContent = 'All takes purged.';
   renderBoard();
 };
 

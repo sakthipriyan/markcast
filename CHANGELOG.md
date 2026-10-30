@@ -19,13 +19,18 @@ package can notice. Tests, CI and tooling do not belong here.
   computer, the deck records itself (only its 16:9 frame: slides and camera)
   with your microphone, each take its own file in the browser's private
   storage. ● Record opens the deck's **take board**: every slide with every take
-  from every recording, the newest picked. **Record all**, or tick slides
-  (shift-click for a range) and **Record selected** to redo just those; a slide
-  edited since has its takes marked outdated. Recording setup (browser and
-  screen check, camera, microphone, level, 1080p or 720p) folds into the board.
+  from every recording, the newest picked. **● Record** records the deck, or
+  only the ticked slides (shift-click for a range), and says so. A take starts
+  with the entry from the slide before it, so editing a slide, deleting it, or
+  editing the one before marks its takes outdated: every final cut stays
+  seamless. There is no Leave out; delete the slide from the deck instead.
+  Recording setup (browser and screen check, camera, microphone, level, 1080p
+  or 720p) folds into the board. **▶ Preview video** plays the final cut;
   **Download video** joins the picked takes into one MP4 without re-encoding and
-  saves it like OBS: a new date-stamped file in a folder picked once. OBS stays
-  for any other browser or screen, with its own review.
+  saves it like OBS, a new date-stamped file in a folder picked once, and says
+  where; pressed again with nothing changed it doesn't make it again.
+  **🗑 Purge takes** removes unused takes or all of them. OBS stays for any
+  other browser or screen, with its own review.
 - **🔊 Auto volume** in the review, selected by default: the final cut
   is measured the way YouTube measures it (ITU-R BS.1770 integrated loudness)
   and given one gain to reach -14 LUFS, never pushing peaks past -1.5 dB and

@@ -259,13 +259,17 @@
           </div>
         </div>
         <div class="rv-bar">
-          <button class="btn rec rv-board-only" id="rv-rec-all" title="Record the whole deck">● Record all</button>
-          <button class="btn rec rv-board-only" id="rv-rec-sel" disabled title="Tick slides (shift-click for a range): records from the first to the last">● Record selected</button>
+          <button class="btn rec rv-board-only" id="rv-rec" title="Records the whole deck, or only the ticked slides (shift-click ticks a range)">● Record</button>
+          <span class="rv-sel-note rv-board-only" id="rv-sel-note"></span>
           <span class="rv-sep rv-board-only"></span>
-          <button class="btn" id="rv-play-final">▶ Play the final cut</button>
+          <button class="btn" id="rv-play-final">▶ Preview video</button>
           <button class="btn primary" id="rv-render-btn">↓ Download video</button>
           <button class="btn toggle" id="rv-loud" aria-pressed="true" title="Brings the final video to YouTube's volume (-14 LUFS) with one gain, never past -1.5 dB peaks"><span class="ico" aria-hidden="true">🔊</span> Auto volume</button>
           <span class="rv-final" id="rv-final"></span>
+          <details class="rv-purge rv-board-only">
+            <summary class="btn" title="Delete takes from this browser">🗑 Purge takes</summary>
+            <div class="rv-menu"><button class="btn small" id="rv-clean-unused">Unused takes</button><button class="btn small" id="rv-clean">All takes</button></div>
+          </details>
         </div>
         <div id="rv-now"></div>
       </div>
@@ -277,8 +281,8 @@
     </details>
     <div class="rv-out">
       <div id="rv-render">
-        <p><span id="rv-render-status"></span> Download joins the picked takes into one video, without re-encoding, and saves it in your videos folder with the date in its name. Takes stay in this browser until you delete them.</p>
-        <div class="row"><button class="btn small" id="rv-folder-change">Change the folder…</button><button class="btn small" id="rv-clean-unused">Delete unused takes</button><button class="btn small" id="rv-clean">Delete all takes</button></div>
+        <p id="rv-render-status"></p>
+        <p class="rv-help">Download joins the picked takes into one video without re-encoding, and saves it in your videos folder with the date in its name; it only makes a new one when a take or Auto volume changes. Takes stay in this browser until you purge them. <button class="btn small" id="rv-folder-change">Change the folder…</button></p>
       </div>
       <div id="rv-ffmpeg-box">
       <h3>ffmpeg

@@ -1,6 +1,8 @@
 // @ts-check
 // A deck's take board: every take of every slide from every recording made in the browser, in one place.
-// Each take remembers what its slide said, so editing a slide marks its old takes outdated. Pure.
+// A take starts with the entry from the slide before it, so it remembers what its slide said and which slide
+// came before (and what that one said): change either, and its takes are outdated. That keeps every final
+// cut seamless; to drop a slide, delete it from the deck and record the one after it again. Pure.
 import {takesOf} from './cut.js';
 
 /**
@@ -13,11 +15,13 @@ import {takesOf} from './cut.js';
  * @property {string} run    the recording it came from
  * @property {string} date   when that recording was made
  * @property {string} fp     the slide's fingerprint when it was recorded
+ * @property {string} prev   the slide before it then ('' for the first), whose entry the take starts with
+ * @property {string} prevFp that slide's fingerprint then
  *
- * @typedef {{takes: BoardTake[], picks: Record<string, string>}} Board  picks: slide id → take uid ('' leaves it out)
- * @typedef {{id: string, title: string, fp: string}} DeckSlide
- * @typedef {BoardTake & {no: number, outdated: boolean}} RowTake
- * @typedef {{id: string, title: string, takes: RowTake[], pick: string | null}} Row  pick: a uid, '' left out, null no take
+ * @typedef {{takes: BoardTake[], picks: Record<string, string>}} Board  picks: slide id → take uid
+ * @typedef {{id: string, title: string, fp: string, prev: string, prevFp: string}} DeckSlide
+ * @typedef {BoardTake & {no: number, outdated: '' | 'slide' | 'before'}} RowTake  why it is outdated, if it is
+ * @typedef {{id: string, title: string, takes: RowTake[], pick: string | null}} Row  pick: a uid, or null: no take
  */
 
 /** A short hash of a slide's content (FNV-1a). @param {string} text */
@@ -27,14 +31,24 @@ export function fingerprint(text){
   return (h >>> 0).toString(36);
 }
 
+/** The deck as the board compares it: each slide's fingerprint, and the slide before it. @param {string[]} order
+ * @param {(id: string) => {title: string, fp: string}} info  @returns {DeckSlide[]} */
+export function deckSlides(order, info){
+  return order.map((id, i)=>{
+    const prev = order[i - 1] || '';
+    return {id, title: info(id).title, fp: info(id).fp, prev, prevFp: prev ? info(prev).fp : ''};
+  });
+}
+
 /**
  * The takes one recording made, in the order they were recorded.
  * @param {{events: {id: string, title: string, t: number, clip?: string, lead?: number}[], picks: Record<string, number>, total: number, date: string}} sess
  * @param {string} run
- * @param {(id: string) => string} fpOf  the fingerprint of a slide now
+ * @param {DeckSlide[]} slides  the deck as it was recorded
  * @returns {BoardTake[]}
  */
-export function takesFromRun(sess, run, fpOf){
+export function takesFromRun(sess, run, slides){
+  const byId = new Map(slides.map(s=>[s.id, s]));
   /** @type {Map<string, {clip?: string}[]>} */
   const evs = new Map();
   sess.events.forEach(e=>{ if (!evs.has(e.id)) evs.set(e.id, []); /** @type {any[]} */ (evs.get(e.id)).push(e); });
@@ -43,25 +57,29 @@ export function takesFromRun(sess, run, fpOf){
   takesOf(/** @type {any} */ (sess)).forEach(slide=>slide.takes.forEach((t, k)=>{
     const e = /** @type {any[]} */ (evs.get(slide.id))[k];
     if (!e || !e.clip || t.end <= t.start) return;
-    out.push({uid: e.clip, id: slide.id, title: slide.title, clip: e.clip, ms: t.end - t.start, run, date: sess.date, fp: fpOf(slide.id), at: t.start});
+    const s = byId.get(slide.id);
+    if (!s) return;
+    out.push({uid: e.clip, id: slide.id, title: slide.title, clip: e.clip, ms: t.end - t.start, run, date: sess.date,
+      fp: s.fp, prev: s.prev, prevFp: s.prevFp, at: t.start});
   }));
   return out.sort((a, b)=>a.at - b.at).map(({at, ...take})=>take);
 }
 
 /**
- * Every slide of the deck, in order, with its takes. A take of a slide that has changed since is outdated;
- * the pick is the one chosen, or else the newest take that is not outdated.
+ * Every slide of the deck, in order, with its takes. A take is outdated when its slide changed since, or the
+ * slide before it did (another slide, or the same one edited); the pick is the one chosen, or else the newest
+ * take that is not outdated.
  * @param {Board} board
  * @param {DeckSlide[]} slides
  * @returns {Row[]}
  */
 export function boardRows(board, slides){
   return slides.map(s=>{
-    const takes = board.takes.filter(t=>t.id === s.id).map((t, i)=>({...t, no: i + 1, outdated: t.fp !== s.fp}));
+    const takes = board.takes.filter(t=>t.id === s.id).map((t, i)=>({...t, no: i + 1,
+      outdated: /** @type {'' | 'slide' | 'before'} */ (t.fp !== s.fp ? 'slide' : (t.prev ?? null) !== s.prev || t.prevFp !== s.prevFp ? 'before' : '')}));
     const chosen = board.picks[s.id];
     let pick = null;
-    if (chosen === '') pick = '';
-    else if (chosen && takes.some(t=>t.uid === chosen)) pick = chosen;
+    if (chosen && takes.some(t=>t.uid === chosen)) pick = chosen;
     else {
       const fresh = takes.filter(t=>!t.outdated);
       pick = fresh.length ? fresh[fresh.length - 1].uid : null;
