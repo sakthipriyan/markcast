@@ -2708,8 +2708,8 @@ function renderBoard(){
   const note = document.getElementById('rv-sel-note');
   if (span){
     const n = order.indexOf(span.to) - order.indexOf(span.from) + 1;
-    note.innerHTML = 'Only the selected ' + (n === 1 ? 'slide' : n + ' slides') + ' will be recorded' +
-      (n > 1 ? ' (' + escapeHtml(nodes.get(span.from).title) + ' → ' + escapeHtml(nodes.get(span.to).title) + ')' : '') + '. <button id="rv-sel-clear">Clear</button>';
+    note.innerHTML = 'Only the ' + n + '/' + order.length + ' selected slide' + (n === 1 ? '' : 's') + ' will be recorded' +
+      (n > 1 ? ' (' + escapeHtml(nodes.get(span.from).title) + ' → ' + escapeHtml(nodes.get(span.to).title) + ')' : '') + ' · <button id="rv-sel-clear">Clear</button>';
     document.getElementById('rv-sel-clear').onclick = ()=>{ selected.clear(); renderBoard(); };
   } else note.textContent = '';
   document.getElementById('rv-render-btn').disabled = document.getElementById('rv-play-final').disabled = !sess.events.length;

@@ -363,7 +363,7 @@
   .modal .panel, .rv-list, .modal textarea{scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--accent) 45%, transparent) transparent;}
   /* the player and the take list side by side, the list exactly as tall as the player (it scrolls inside that);
      play and download under both */
-  .rv-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(280px,3fr);grid-template-areas:"video list" "bar list" "sel list" "now now";
+  .rv-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(280px,3fr);grid-template-areas:"video list" "bar list" "now now";
     column-gap:18px;margin-top:12px;}
   .rv-grid > div:first-child{display:contents;}
   .rv-video{grid-area:video;}
@@ -375,8 +375,7 @@
   /* the same as the deck's own ● Record: red, filling red on hover */
   .btn.rec{color:#f87171;}
   .btn.rec:hover:not(:disabled){color:#fff;background:#b91c1c;border-color:#b91c1c;}
-  .rv-sel-note{grid-area:sel;font-size:12px;color:var(--text-muted);text-align:right;}
-  .rv-sel-note:not(:empty){margin-top:6px;}
+  .rv-sel-note{font-size:12px;color:var(--text-muted);text-align:right;}
   .rv-sel-note button{background:none;border:none;padding:0;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;}
   .rv-purge{position:relative;}
   .rv-purge summary{list-style:none;font-family:var(--mono);}
@@ -400,11 +399,11 @@
   .btn.toggle{color:var(--text-muted);}
   .btn.toggle.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   .rv-final{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
-  .rv-actions{margin-left:auto;display:flex;gap:10px;}
+  .rv-actions{margin-left:auto;display:flex;align-items:center;gap:10px;}
   #rv-now{grid-area:now;}
   #review:not(.in-browser) #rv-render-btn{display:none;}
   @media (max-width:900px){
-    .rv-grid{grid-template-columns:1fr;grid-template-areas:"video" "bar" "sel" "now" "list";}
+    .rv-grid{grid-template-columns:1fr;grid-template-areas:"video" "bar" "now" "list";}
     .rv-list{contain:none;max-height:50vh;}
   }
   .rv-video{position:relative;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;}
