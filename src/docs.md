@@ -241,7 +241,7 @@ Words you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`,
 
 **● Record** (or **R**) counts down and starts recording. From then on the deck drives everything: camera layouts, reveals and slides follow → (a Bluetooth clicker works).
 
-- **←** takes the current slide again, keeping every attempt
+- **←** takes the current slide again, keeping every attempt. The deck goes back and plays the slide's entry again (the flight, the camera moving), so every take starts with it and whichever you pick joins smoothly
 - **B** pauses and resumes
 - one press past the last step ends the take (**Esc** ends it early)
 

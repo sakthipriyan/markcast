@@ -9,6 +9,8 @@ import {fmtTime} from './text.js';
  * @property {string} title
  * @property {number} t          ms on the browser clock since the take started
  * @property {number} [obsT]     ms on OBS's own recording clock, when OBS was connected
+ * @property {number} [lead]     for a retake: ms from the ← press to this take's start, while the deck went back
+ *                               to replay the slide's entry. Neither take keeps it: the one retaken ends at the press.
  *
  * @typedef {object} Session
  * @property {TakeEvent[]} events
@@ -33,7 +35,8 @@ export const sessionFps = sess=>sess.fps || 60;
 /** @param {number} ms @param {number} fps */
 const toFrame = (ms, fps)=>Math.round(ms * fps / 1000);
 
-/** Every slide attempt runs from its start to the next event (or the end of the recording). @param {Session} sess */
+/** Every slide attempt runs from its start to the next event (or the end of the recording); an attempt that was
+ * taken again ends where ← was pressed. @param {Session} sess */
 export function takesOf(sess){
   /** @type {Map<string, SlideTakes>} */
   const out = new Map();
@@ -42,7 +45,7 @@ export function takesOf(sess){
     if (!out.has(e.id)) out.set(e.id, {id: e.id, title: e.title, takes: []});
     const slide = /** @type {SlideTakes} */ (out.get(e.id));
     const next = sess.events[i + 1];
-    slide.takes.push({no: slide.takes.length + 1, start: evTime(e), end: next ? evTime(next) : end});
+    slide.takes.push({no: slide.takes.length + 1, start: evTime(e), end: next ? evTime(next) - (next.lead || 0) : end});
   });
   return out;   // in the order slides were first reached
 }

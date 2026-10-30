@@ -24,6 +24,15 @@ package can notice. Tests, CI and tooling do not belong here.
   re-encoding; **Delete these takes** frees the space. OBS stays for any other
   browser or screen.
 
+### Changed
+
+- A retake (←) replays the slide's entry: the deck goes back to where the slide
+  before ended and flies in again, camera moves included, so every take starts
+  with the entry and picking a retake no longer cuts straight to the slide
+  already in place. The take that was redone ends where ← was pressed.
+- In the review, the slides link fills in from the page the deck is on when the
+  deck names no permalink or site; the Record dialog is wider.
+
 ## [0.3.4] - 2026-10-28
 
 ### Fixed

@@ -1301,6 +1301,7 @@ function navigate(id, instant, atLastStep){
     leaveSlide();
   }
   const arriving = id !== currentId;
+  if (arriving) arrivedFrom = currentId;
   currentId = id;
   clearTimeout(mapTimer); mapTimer = null;
   if (arriving && layoutMode === 'focus' && !instant && !reduceMotion){
@@ -1309,7 +1310,7 @@ function navigate(id, instant, atLastStep){
     el.classList.add('entering'); void el.offsetWidth; el.classList.remove('entering');
   }
   applyStepState(arriving);
-  if (arriving) logTake('slide', id);
+  if (arriving && !quietArrival) logTake('slide', id);
   const n = nodes.get(id);
   if (arriving && n.mapFirst && !atLastStep && !instant && layoutMode !== 'focus'){
     // a map moment: show the whole deck for a beat, then fly in
@@ -1321,6 +1322,8 @@ function navigate(id, instant, atLastStep){
   setHash(id);
 }
 let mapTimer = null;
+// the slide the current one was reached from, and a move that is not a new take (a retake replaying its entry)
+let arrivedFrom = null, quietArrival = false;
 // the slide being left goes back to its finished state
 function leaveSlide(){
   const prev = nodes.get(currentId);
@@ -1915,6 +1918,7 @@ function startClip(ev){
     clip.done = new Promise(res=>{ r.onstop = async ()=>{ await writes; await file.close().catch(()=>{}); res(); }; });
     await new Promise(res=>{ r.onstart = res; r.start(1000); });
     ev.t = Math.round(recNow());
+    if (ev.cutAt != null) ev.lead = Math.max(0, Math.round(ev.t - ev.cutAt));
     const prev = b.cur;
     b.cur = clip; clip.rec = r;
     if (prev && prev.rec.state !== 'inactive') prev.rec.stop();
@@ -1984,10 +1988,12 @@ function abortTake(message){
   showPipMsg(message);
 }
 
-function logTake(kind, id){
+// cutAt: for a retake, when ← was pressed; the take being redone ends there
+function logTake(kind, id, cutAt){
   if (!rec.active || !rec.t0 || rec.finishing) return;
   const n = nodes.get(id);
   const ev = {id, title:n ? n.title : id, retake:kind === 'retake', t:Math.round(recNow()), obsT:null};
+  if (cutAt != null){ ev.cutAt = cutAt; ev.lead = Math.max(0, Math.round(ev.t - cutAt)); }
   rec.events.push(ev);
   if (rec.browser) startClip(ev);
   if (rec.withObs && obsConnected){
@@ -2002,7 +2008,7 @@ function takeKey(e){
   const handled = NEXT_KEYS.includes(k) || BACK_KEYS.includes(k) || PAUSE_KEYS.includes(k) || k === 'Escape';
   if (handled) e.preventDefault();
   if (k === 'Escape'){ if (rec.counting) abortTake('Take cancelled'); else finishTake('Stopped early'); return; }
-  if (rec.counting || rec.finishing) return;
+  if (rec.counting || rec.finishing || retaking) return;
   if (PAUSE_KEYS.includes(k)){ togglePause(); return; }
   if (rec.paused) return;
   if (NEXT_KEYS.includes(k)) takeForward();
@@ -2014,10 +2020,33 @@ function takeForward(){
   if (lastStep && order.indexOf(currentId) === order.length - 1) finishTake();
   else step(1);
 }
-// ← during a take: the slide starts over as a new take; the earlier attempt is kept to choose from
-function retake(){
+// ← during a take: the slide starts over as a new take, its entry included. The deck goes back to where the
+// slide before it ended, instantly and outside any take; then the new take starts and the entry (the flight,
+// the camera moving) plays as it did the first time. Whichever take is picked, the join into it flows. The
+// earlier attempt is kept to choose from, cut where ← was pressed.
+let retaking = false;
+async function retake(){
   const n = nodes.get(currentId);
-  if (!n) return;
+  if (!n || retaking) return;
+  const target = currentId, from = arrivedFrom;
+  if (!from || from === target || !nodes.has(from)){ restartSlide(n); return; }   // the first slide has no entry
+  retaking = true;
+  const cutAt = recNow();
+  quietArrival = true;
+  navigate(from, true, true);
+  pipEl.getAnimations().forEach(a=>a.finish());
+  quietArrival = false;
+  await nextFrame();
+  logTake('retake', target, cutAt);
+  if (rec.browser) await rec.browser.chain;      // its recorder is running before the entry plays
+  resetEntrances(n);
+  quietArrival = true;
+  navigate(target);
+  quietArrival = false;
+  if (!cameraStream && !pipEl.hidden && pipState.used) startWebcam();
+  retaking = false;
+}
+function restartSlide(n){
   logTake('retake', currentId);
   stepPos = 0; camManual = null; camCycle = -1;
   resetEntrances(n);
@@ -2075,7 +2104,7 @@ async function finishTake(reason){
     key:sessionKey(), deckTitle:deck.title || nodes.get(order[0]).title, date:new Date().toISOString(),
     withObs:rec.withObs, outputPath:rec.outputPath, reason:reason || '', total, totalObs, fps:b ? FPS : obsFps,
     ...(b ? {inBrowser:true, takesId:b.id, quality:b.quality.name, type:b.type} : {}),
-    events:rec.events.map(e=>({id:e.id, title:e.title, retake:e.retake, t:e.t, obsT:e.obsT, ...(e.clip ? {clip:e.clip} : {})})), picks:{}
+    events:rec.events.map(e=>({id:e.id, title:e.title, retake:e.retake, t:e.t, obsT:e.obsT, ...(e.lead ? {lead:e.lead} : {}), ...(e.clip ? {clip:e.clip} : {})})), picks:{}
   };
   saveSession(session);
   openReview(session);
