@@ -15,6 +15,7 @@ import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from
 import {youtubeVideo, embedUrl} from './core/media.js';
 import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious} from './core/record.js';
 import {loudnessMeter, gainToTarget, dbToGain} from './core/loudness.js';
+import {fingerprint, takesFromRun, boardRows, boardSession, selectionSpan, rangeOf} from './core/board.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
@@ -1774,7 +1775,9 @@ function browserRecording(){
   if (!quality) return {why:'This screen gives a ' + device[0] + '×' + device[1] + ' frame, less than 720p. Use OBS, or a larger screen.'};
   return {ok:true, type, quality};
 }
+let meterToken = 0;   // only the latest start keeps its microphone
 async function stopMeter(){
+  meterToken++;
   if (!meter) return;
   cancelAnimationFrame(meter.raf);
   meter.stream.getTracks().forEach(t=>t.stop());
@@ -1784,19 +1787,22 @@ async function stopMeter(){
 }
 async function startMeter(){
   await stopMeter();
+  const token = meterToken;
   try {
     const id = recMic.value;
     const stream = await navigator.mediaDevices.getUserMedia({audio:id ? {deviceId:{exact:id}} : true});
+    if (token !== meterToken){ stream.getTracks().forEach(t=>t.stop()); return; }
     const ctx = new AudioContext(), an = ctx.createAnalyser();
     an.fftSize = 512;
     ctx.createMediaStreamSource(stream).connect(an);
     const buf = new Float32Array(an.fftSize);
-    meter = {stream, ctx, raf:0};
+    const m = meter = {stream, ctx, raf:0};
     const loop = ()=>{
+      if (meter !== m) return;             // stopped, or a newer meter took over
       an.getFloatTimeDomainData(buf);
       let peak = 0; for (const v of buf) peak = Math.max(peak, Math.abs(v));
       recMeter.value = Math.max(peak, recMeter.value * 0.85);
-      meter.raf = requestAnimationFrame(loop);
+      m.raf = requestAnimationFrame(loop);
     };
     loop();
   } catch(e){ recCheck.innerHTML = '<span class="warn">The microphone isn’t available: ' + escapeHtml(e.message || e.name) + '. Allow it in the site settings.</span>'; }
@@ -1832,13 +1838,13 @@ async function showBrowserCheck(){
   if (!recCheck.querySelector('.warn')) recCheck.innerHTML = '<span class="ok">Ready: this screen records up to ' + b.quality.name + ' in fullscreen.' + escapeHtml(room) + '</span>';
   return b;
 }
+// recording in the browser happens from the take board; the Record dialog is for OBS
 function setRecMode(mode){
   recMode = mode;
   save('slidetake:rec-mode', mode);
   document.querySelectorAll('input[name="rec-mode"]').forEach(r=>{ r.checked = r.value === mode; });
-  document.getElementById('rec-browser').hidden = mode !== 'browser';
   document.getElementById('rec-obs').hidden = mode !== 'obs';
-  if (mode === 'browser'){ recCheck.innerHTML = ''; showBrowserCheck().then(b=>{ recStartBtn.disabled = !b.ok; if (b.ok) fillDevices(); }); }
+  if (mode === 'browser'){ if (recDialog.classList.contains('open')){ closeModals(); openBoard(); } }
   else { stopMeter(); recStartBtn.disabled = !obsConnected; }
 }
 document.querySelectorAll('input[name="rec-mode"]').forEach(r=>r.onchange = ()=>setRecMode(r.value));
@@ -1851,13 +1857,14 @@ function openRecordDialog(){
   document.getElementById('rec-deck-info').innerHTML =
     escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : 'This deck')) + ' · ' + order.length + ' slides · ' + total + ' presses' +
     (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C first if this take should include your webcam.</span>' : '');
+  if ((recMode || (browserRecording().ok ? 'browser' : 'obs')) === 'browser'){ openBoard(); return; }
   renderSessionList();
   showScreenAdvice();
-  setRecMode(recMode || (browserRecording().ok ? 'browser' : 'obs'));
   openModal(recDialog);
+  setRecMode('obs');
 }
 document.getElementById('btn-record').onclick = openRecordDialog;
-recStartBtn.onclick = ()=>{ stopMeter(); startTake(recMode === 'browser' ? 'browser' : 'obs'); };
+recStartBtn.onclick = ()=>startTake('obs');
 document.getElementById('rec-rehearse').onclick = ()=>{ stopMeter(); startTake('rehearse'); };
 
 // the takes of each session live in the browser's private storage, in a folder named after the session
@@ -1910,7 +1917,7 @@ function startClip(ev){
   const name = 'take-' + b.clips.length + '.' + clipExt(b.type);
   const clip = {name, rec:null, done:null};
   b.clips.push(clip);
-  ev.clip = name;
+  ev.clip = b.id + '/' + name;   // the recording's folder and the file: takes from many recordings sit side by side
   b.chain = b.chain.then(async ()=>{
     const file = await (await b.dir.getFileHandle(name, {create:true})).createWritable();
     const r = new MediaRecorder(b.stream, {mimeType:b.type, videoBitsPerSecond:b.quality.bitrate, audioBitsPerSecond:AUDIO_BITRATE});
@@ -1927,9 +1934,11 @@ function startClip(ev){
 }
 
 // kind: 'obs' (OBS records), 'browser' (this tab records itself) or 'rehearse' (nothing is recorded)
-async function startTake(kind){
+// span: {from, to} records just those slides (the board's Record selected); without it, the whole deck
+async function startTake(kind, span){
   if (rec.active || !order.length) return;
   const withObs = kind === 'obs';
+  stopMeter();
   if (kind === 'browser'){
     if (!presenting) setPresent(true);        // fullscreen first, while the click still counts
     try { await beginBrowserCapture(); }
@@ -1937,20 +1946,33 @@ async function startTake(kind){
       document.body.classList.remove('rec-frame');
       if (presenting) setPresent(false);
       recNote = e.name === 'NotAllowedError' ? 'Recording needs this tab shared. Start again and choose Share.' : e.message;
-      openRecordDialog();
+      openBoard({setup:true});
       return;
     }
   }
   closeModals();
-  Object.assign(rec, {active:true, withObs, counting:true, paused:false, finishing:false, t0:0, pausedMs:0, events:[], outputPath:null});
+  const firstId = span && order.includes(span.from) ? span.from : order[0];
+  const beforeId = order[order.indexOf(firstId) - 1] || null;   // a span starts with its entry from the slide before
+  Object.assign(rec, {active:true, withObs, counting:true, paused:false, finishing:false, t0:0, pausedMs:0, events:[], outputPath:null,
+    until:span ? span.to : null});
   if (kind !== 'browser') rec.browser = null;
   document.body.classList.add('recording');
   hidePipMsg();
   const lay = document.getElementById('rec-layout').value;
   if (lay !== 'current' && lay !== layoutMode) setMode(lay, true);
   if (!presenting) setPresent(true);          // this click allows fullscreen
-  if (currentId === order[0]){ stepPos = 0; camManual = null; camCycle = -1; }
-  navigate(order[0], true);                   // step 0 of the first slide, its camera layout included
+  if (beforeId){
+    // the slide before, finished, for the countdown; the take then starts with the flight in
+    document.body.classList.add('no-anim');
+    nodes.get(beforeId)._played = true;
+    quietArrival = true; navigate(beforeId, true, true); quietArrival = false;
+    pipEl.getAnimations().forEach(a=>a.finish());
+    await nextFrame();
+    document.body.classList.remove('no-anim');
+  } else {
+    if (currentId === firstId){ stepPos = 0; camManual = null; camCycle = -1; }
+    navigate(firstId, true);                  // step 0 of the first slide, its camera layout included
+  }
   // 3-2-1 on screen; OBS only starts after it, so the countdown is never in the footage
   for (let i = 3; i > 0; i--){
     countdownEl.querySelector('.num').textContent = i;
@@ -1969,8 +1991,15 @@ async function startTake(kind){
   }
   rec.counting = false;
   rec.t0 = performance.now();
+  const first = nodes.get(firstId);
+  if (beforeId){
+    logTake('slide', firstId);
+    if (rec.browser) await rec.browser.chain;  // its recorder is running before the flight starts
+    resetEntrances(first);
+    quietArrival = true; navigate(firstId); quietArrival = false;
+    return;
+  }
   // the first slide starts now: replay its entrances on camera and log chapter 0:00
-  const first = nodes.get(currentId);
   resetEntrances(first);
   applyStepState(true);
   logTake('slide', currentId);
@@ -2021,7 +2050,7 @@ function takeKey(e){
 function takeForward(){
   const steps = slideSteps(nodes.get(currentId));
   const lastStep = Math.min(stepPos, steps.length - 1) >= steps.length - 1;
-  if (lastStep && order.indexOf(currentId) === order.length - 1) finishTake();
+  if (lastStep && (order.indexOf(currentId) === order.length - 1 || currentId === rec.until)) finishTake();
   else step(1);
 }
 // ← during a take: the slide starts over as a new take, its entry included. The deck goes back to where the
@@ -2115,6 +2144,7 @@ async function finishTake(reason){
     ...(b ? {inBrowser:true, takesId:b.id, quality:b.quality.name, type:b.type} : {}),
     events:rec.events.map(e=>({id:e.id, title:e.title, retake:e.retake, t:e.t, obsT:e.obsT, ...(e.lead ? {lead:e.lead} : {}), ...(e.clip ? {clip:e.clip} : {})})), picks:{}
   };
+  if (session.inBrowser){ addToBoard(session); return; }
   saveSession(session);
   openReview(session);
 }
@@ -2131,7 +2161,7 @@ function saveSession(sess){
 }
 function renderSessionList(){
   const box = document.getElementById('rec-sessions');
-  const mine = loadSessions().filter(x=>x.key === sessionKey());
+  const mine = loadSessions().filter(x=>x.key === sessionKey() && !x.inBrowser);
   box.innerHTML = mine.length ? '<h3>Earlier takes of this deck</h3>' + mine.map((x, i)=>
     '<div class="row"><button class="btn small" data-session="' + i + '">Review</button><span>' +
     escapeHtml(new Date(x.date).toLocaleString()) + ' · ' + fmtTime(x.totalObs ?? x.total) + (x.inBrowser ? ' · in this browser' + (x.cleaned ? ' (takes deleted)' : '') : x.withObs ? '' : ' · rehearsal') +
@@ -2227,6 +2257,7 @@ function openReview(sess){
   const slides = takesOf(sess), retakes = sess.events.filter(e=>e.retake).length;
   const recorded = sess.withObs || sess.inBrowser;
   reviewDialog.classList.toggle('in-browser', !!sess.inBrowser);
+  reviewDialog.classList.remove('board');
   document.getElementById('rv-title').textContent = (recorded ? 'Review the take · ' : 'Rehearsal · ') + sess.deckTitle;
   document.getElementById('rv-render-status').textContent = sess.cleaned ? 'These takes were deleted.' : '';
   document.getElementById('rv-render-btn').disabled = document.getElementById('rv-clean').disabled = !!sess.cleaned;
@@ -2255,6 +2286,7 @@ function openReview(sess){
   else rvNow.textContent = sess.cleaned ? '' : 'Click a take to preview it.';
 }
 function renderReview(){
+  if (reviewing && reviewing.board){ renderBoard(); return; }
   const sess = reviewing, list = document.getElementById('rv-list');
   let lastSec = null;
   list.innerHTML = [...takesOf(sess).values()].map(slide=>{
@@ -2291,7 +2323,7 @@ async function showFinalSize(sess){
   try {
     let bytes = 0;
     for (const part of clipPlan(sess)){
-      bytes += (await clipFile(sess, part.clip)).size;
+      bytes += (await clipFile(part.clip)).size;
     }
     if (reviewing === sess) el.textContent = 'Final cut ' + fmtTime(ms) + ' · about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB');
   } catch(e){}
@@ -2349,13 +2381,14 @@ function planesOf(smp){
 }
 // a browser session's takes are files of their own: play each from its start for as long as it is kept
 let clipList = null;
-async function clipFile(sess, name){ return (await (await takesDir(sess.takesId)).getFileHandle(name)).getFile(); }
+// a take's clip, by its path: '<recording>/<file>'
+async function clipFile(path){ const [run, name] = path.split('/'); return (await (await takesDir(run)).getFileHandle(name)).getFile(); }
 async function playClips(parts, i = 0){
   if (!reviewing || reviewing.cleaned || !parts.length) return;
   playlist = null;
   clipList = {parts, i};
   try {
-    const file = await clipFile(reviewing, parts[i].clip);
+    const file = await clipFile(parts[i].clip);
     if (rvVideo.src) URL.revokeObjectURL(rvVideo.src);
     rvVideo.src = URL.createObjectURL(file);
     rvNow.textContent = '▶ ' + parts[i].title;
@@ -2384,15 +2417,13 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
   const plan = clipPlan(sess);
   if (!plan.length){ renderStatus.textContent = 'Every slide is left out: nothing to render.'; return; }
   const mp4 = clipExt(sess.type || '') === 'mp4';
-  const name = sessionKey() + '.' + (mp4 ? 'mp4' : 'webm');
-  let file = null;
-  // where the browser allows it, the video is written straight to the file you choose
-  if (window.showSaveFilePicker){
-    try {
-      const handle = await window.showSaveFilePicker({suggestedName:name, types:[{description:'Video', accept:mp4 ? {'video/mp4':['.mp4']} : {'video/webm':['.webm']}}]});
-      file = await handle.createWritable();
-    } catch(e){ if (e && e.name === 'AbortError') return; }
-  }
+  // like OBS: a new file each time, named by the date, in your videos folder (asked once, then remembered)
+  const name = sessionKey() + ' ' + fileStamp(new Date()) + '.' + (mp4 ? 'mp4' : 'webm');
+  let file = null, where = '';
+  try {
+    const dir = await videoFolder(false);
+    if (dir){ file = await (await dir.getFileHandle(name, {create:true})).createWritable(); where = dir.name; }
+  } catch(e){ if (e && e.name === 'AbortError') return; }
   const btn = document.getElementById('rv-render-btn');
   btn.disabled = true;
   renderStatus.textContent = 'Preparing the download…';
@@ -2406,7 +2437,7 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
       let meter = null;
       for (const [i, part] of plan.entries()){
         renderStatus.textContent = 'Measuring the loudness ' + (i + 1) + ' of ' + plan.length + '…';
-        const input = new MB.Input({source:new MB.BlobSource(await clipFile(sess, part.clip)), formats:MB.ALL_FORMATS});
+        const input = new MB.Input({source:new MB.BlobSource(await clipFile(part.clip)), formats:MB.ALL_FORMATS});
         const at = await input.getPrimaryAudioTrack();
         if (!at) continue;
         for await (const smp of new MB.AudioSampleSink(at).samples(0, part.keep)){
@@ -2418,14 +2449,15 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
       if (meter){
         const m = meter.result(), db = gainToTarget(m);
         gain = dbToGain(db);
-        loudNote = isFinite(m.integrated) ? ' · loudness ' + m.integrated.toFixed(1) + ' → ' + (m.integrated + db).toFixed(1) + ' LUFS' : '';
+        loudNote = !isFinite(m.integrated) ? '' : Math.abs(db) < 0.05 ? ' · loudness ' + m.integrated.toFixed(1) + ' LUFS, left as is'
+          : ' · loudness ' + m.integrated.toFixed(1) + ' → ' + (m.integrated + db).toFixed(1) + ' LUFS';
       }
     }
     const reencode = gain !== 1;
     let vSrc = null, aSrc = null, offset = 0, lastV = -1, lastA = -1;
     for (const [i, part] of plan.entries()){
       renderStatus.textContent = 'Joining take ' + (i + 1) + ' of ' + plan.length + '…';
-      const input = new MB.Input({source:new MB.BlobSource(await clipFile(sess, part.clip)), formats:MB.ALL_FORMATS});
+      const input = new MB.Input({source:new MB.BlobSource(await clipFile(part.clip)), formats:MB.ALL_FORMATS});
       const vt = await input.getPrimaryVideoTrack(), at = await input.getPrimaryAudioTrack();
       if (!vt) throw new Error(part.title + ' has no video');
       if (!vSrc){
@@ -2478,22 +2510,176 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
       a.click();
       setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
     }
-    renderStatus.textContent = 'Saved ' + name + ' (' + fmtTime(offset * 1000) + loudNote + ').';
+    renderStatus.textContent = 'Saved ' + name + (where ? ' in ' + where : '') + ' (' + fmtTime(offset * 1000) + loudNote + ').';
   } catch(e){
     renderStatus.textContent = 'Could not render: ' + ((e && e.message) || e);
     if (file) file.abort().catch(()=>{});
   } finally { btn.disabled = !!sess.cleaned; }
 };
-document.getElementById('rv-clean').onclick = async ()=>{
-  const sess = reviewing;
-  if (!sess || !sess.inBrowser || sess.cleaned) return;
-  if (!confirm('Delete the recorded takes of this session from this browser? Render the video first if you need it.')) return;
-  await deleteTakes(sess.takesId);
-  sess.cleaned = true;
-  saveSession(sess);
+// 2026-10-30 20-04-49, as OBS names its recordings
+const fileStamp = d=>{ const p2 = n=>String(n).padStart(2, '0'); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' + p2(d.getHours()) + '-' + p2(d.getMinutes()) + '-' + p2(d.getSeconds()); };
+// where videos are saved: a folder picked once (starting in Movies / Videos) and remembered. null where the
+// browser can't keep a folder: the video is downloaded instead. ask: pick again.
+async function videoFolder(ask){
+  if (!window.showDirectoryPicker) return null;
+  let dir = ask ? null : await kvGet('video-folder');
+  if (dir){
+    let perm = await dir.queryPermission({mode:'readwrite'});
+    if (perm === 'prompt') perm = await dir.requestPermission({mode:'readwrite'});
+    if (perm === 'granted') return dir;
+  }
+  dir = await window.showDirectoryPicker({id:'slidetake-videos', mode:'readwrite', startIn:'videos'});
+  kvSet('video-folder', dir);
+  return dir;
+}
+document.getElementById('rv-folder-change').onclick = async ()=>{
+  try { const dir = await videoFolder(true); if (dir) renderStatus.textContent = 'Videos now go to ' + dir.name + '.'; }
+  catch(e){}
+};
+
+// ---------- the take board: every take of every slide, from every recording made in this browser ----------
+// One per deck. Takes from a later recording join their slide's row; a slide edited since has its old takes
+// marked outdated. Record all, or tick slides (shift-click for a range) and record just those.
+let board = null, boardKey = '', selAnchor = null;
+const selected = new Set();
+const boardStoreKey = ()=>'slidetake:board:' + sessionKey();
+function loadBoard(){
+  const key = boardStoreKey();
+  if (board && boardKey === key) return board;
+  boardKey = key;
+  try { board = JSON.parse(load(key) || 'null'); } catch(e){ board = null; }
+  if (!board || !Array.isArray(board.takes)) board = {takes:[], picks:{}, type:'', quality:''};
+  return board;
+}
+const saveBoard = ()=>save(boardStoreKey(), JSON.stringify(board));
+// what a slide says now; a take recorded when it said something else is outdated
+const slideFp = id=>{ const n = nodes.get(id); return n ? fingerprint(n.title + '\n' + n.html) : ''; };
+const deckSlides = ()=>order.map(id=>({id, title:nodes.get(id).title, fp:slideFp(id)}));
+function addToBoard(sess){
+  loadBoard();
+  const takes = takesFromRun(sess, sess.takesId, slideFp);
+  takes.forEach(t=>{ delete board.picks[t.id]; });   // a slide recorded again plays its newest take
+  board.takes.push(...takes);
+  Object.assign(board, {type:sess.type, quality:sess.quality});
+  saveBoard();
+  selected.clear();
+  openBoard({note:(sess.reason ? sess.reason + '. ' : '') + takes.length + ' new take' + (takes.length === 1 ? '' : 's') + ' on the board.'});
+}
+// the board as a recording: the picked takes back to back, for preview, chapters and Download
+function boardReview(){
+  const rows = boardRows(loadBoard(), deckSlides());
+  const sess = Object.assign(boardSession(rows), {board:true, inBrowser:true, withObs:false, type:board.type || 'video/mp4', quality:board.quality || '',
+    deckTitle:deck.title || (order[0] ? nodes.get(order[0]).title : 'Deck'), date:new Date().toISOString()});
+  return {rows, sess};
+}
+const setupEl = document.getElementById('rv-setup');
+setupEl.insertBefore(document.getElementById('rec-browser'), setupEl.querySelector('.rv-setup-more'));
+setupEl.addEventListener('toggle', ()=>{ if (setupEl.open) refreshSetup(); else stopMeter(); });
+reviewDialog.addEventListener('click', e=>{ if (e.target === reviewDialog || e.target.closest('[data-close]')) stopMeter(); });
+function refreshSetup(){
+  recCheck.innerHTML = '';
+  showBrowserCheck().then(b=>{ if (b.ok) fillDevices().then(setupSummary); else setupSummary(); });
+}
+function setupSummary(){
+  const mic = recMic.selectedOptions[0], b = browserRecording();
+  document.getElementById('rv-setup-sum').textContent = b.ok ? [recQuality.value, mic && mic.textContent].filter(Boolean).join(' · ') : 'not ready';
+}
+function openBoard(opts = {}){
+  if (!RECORDING_UI) return;
+  closeModals();
+  loadBoard();
+  reviewDialog.classList.add('in-browser', 'board');
+  document.getElementById('rv-title').textContent = 'Takes · ' + (deck.title || (order[0] ? nodes.get(order[0]).title : 'Deck'));
+  document.getElementById('rv-yt-title').value = deck.title || (order[0] ? nodes.get(order[0]).title : '');
+  document.getElementById('rv-yt-tags').value = deckTags().join(', ');
+  document.getElementById('rv-link').value = deckLink();
+  if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
+  playlist = null; clipList = null;
+  renderStatus.textContent = '';
+  renderBoard();
+  openModal(reviewDialog);
+  const ready = browserRecording().ok;
+  setupEl.open = !!opts.setup || !ready || !board.takes.length;
+  if (setupEl.open) refreshSetup(); else setupSummary();
+  rvNow.textContent = opts.note || (board.takes.length ? 'Click a take to preview it.' : 'Nothing recorded yet: press ● Record all.');
+}
+function renderBoard(){
+  const {rows, sess} = boardReview();
+  reviewing = sess;
+  const list = document.getElementById('rv-list');
+  let lastSec = null;
+  list.innerHTML = rows.map(r=>{
+    const sec = sectionOf(r.id), isSec = sec !== lastSec; lastSec = sec;
+    const id = escapeHtml(r.id);
+    const chips = r.takes.length ? r.takes.map(t=>'<button class="rv-chip' + (r.pick === t.uid ? ' on' : '') + (t.outdated ? ' outdated" title="Recorded before this slide changed' : '') +
+      '" data-id="' + id + '" data-uid="' + escapeHtml(t.uid) + '">Take ' + t.no + ' · ' + fmtTime(t.ms) + '</button>').join('') +
+      '<button class="rv-chip skip' + (r.pick === '' ? ' on' : '') + '" data-id="' + id + '" data-uid="">Leave out</button>' : '<span class="rv-none">No take yet</span>';
+    return '<div class="rv-row with-sel' + (isSec ? ' sec' : '') + (selected.has(r.id) ? ' selected' : '') + '">' +
+      '<input type="checkbox" class="rv-sel" data-id="' + id + '"' + (selected.has(r.id) ? ' checked' : '') + ' aria-label="Select ' + escapeHtml(r.title) + ' to record">' +
+      '<div><div class="t">' + escapeHtml(r.title) + '</div><div class="rv-chips">' + chips + '</div></div></div>';
+  }).join('');
+  list.querySelectorAll('.rv-chip').forEach(b=>b.onclick = ()=>{
+    board.picks[b.dataset.id] = b.dataset.uid;
+    saveBoard();
+    renderBoard();
+    const row = rows.find(r=>r.id === b.dataset.id), t = row && row.takes.find(x=>x.uid === b.dataset.uid);
+    if (t) playClips([{clip:t.clip, keep:t.ms / 1000, title:row.title + ' · take ' + t.no}]);
+  });
+  list.querySelectorAll('.rv-sel').forEach(c=>c.addEventListener('click', e=>{
+    const ids = e.shiftKey ? rangeOf(order, selAnchor, c.dataset.id) : [c.dataset.id];
+    ids.forEach(i=>{ if (c.checked) selected.add(i); else selected.delete(i); });
+    selAnchor = c.dataset.id;
+    renderBoard();
+  }));
+  const span = selectionSpan(order, selected), ready = browserRecording().ok;
+  const recSel = document.getElementById('rv-rec-sel');
+  recSel.textContent = '● Record selected' + (span ? ' (' + (order.indexOf(span.to) - order.indexOf(span.from) + 1) + ')' : '');
+  recSel.disabled = !span || !ready;
+  document.getElementById('rv-rec-all').disabled = !ready;
+  document.getElementById('rv-render-btn').disabled = document.getElementById('rv-play-final').disabled = !sess.events.length;
+  const recorded = rows.filter(r=>r.takes.length).length, outdated = rows.filter(r=>r.takes.some(t=>t.outdated)).length;
+  document.getElementById('rv-info').textContent = board.takes.length
+    ? [board.takes.length + ' take' + (board.takes.length === 1 ? '' : 's'), recorded + ' of ' + rows.length + ' slides recorded',
+       outdated ? outdated + ' slide' + (outdated === 1 ? '' : 's') + ' changed since' : '', board.quality ? board.quality + ', in this browser' : ''].filter(Boolean).join(' · ')
+    : order.length + ' slides, nothing recorded yet';
+  describe(sess);
+  showFinalSize(sess);
+}
+document.getElementById('rv-rec-all').onclick = ()=>startTake('browser');
+document.getElementById('rv-rec-sel').onclick = ()=>{ const span = selectionSpan(order, selected); if (span) startTake('browser', span); };
+document.getElementById('rv-rehearse').onclick = ()=>startTake('rehearse');
+document.getElementById('rv-use-obs').onclick = ()=>{ closeModals(); setRecMode('obs'); openRecordDialog(); };
+// deleting takes: the ones no slide plays, or all of them
+async function deleteClips(takes){
+  for (const t of takes){
+    try { const [run, file] = t.clip.split('/'); await (await takesDir(run)).removeEntry(file); } catch(e){}
+  }
+  const gone = new Set(takes.map(t=>t.uid));
+  board.takes = board.takes.filter(t=>!gone.has(t.uid));
+  Object.keys(board.picks).forEach(id=>{ if (gone.has(board.picks[id])) delete board.picks[id]; });
+  saveBoard();
   if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
   clipList = null;
-  openReview(sess);
+  renderBoard();
+}
+document.getElementById('rv-clean-unused').onclick = async ()=>{
+  const {rows} = boardReview(), used = new Set(rows.map(r=>r.pick).filter(Boolean));
+  const unused = board.takes.filter(t=>!used.has(t.uid));
+  if (!unused.length){ renderStatus.textContent = 'Every take is in use.'; return; }
+  if (!confirm('Delete ' + unused.length + ' take' + (unused.length === 1 ? '' : 's') + ' no slide plays?')) return;
+  await deleteClips(unused);
+  renderStatus.textContent = 'Deleted ' + unused.length + ' unused take' + (unused.length === 1 ? '' : 's') + '.';
+};
+document.getElementById('rv-clean').onclick = async ()=>{
+  if (!board.takes.length || !confirm('Delete all ' + board.takes.length + ' takes of this deck from this browser? Download the video first if you need it.')) return;
+  const runs = new Set(board.takes.map(t=>t.clip.split('/')[0]));
+  board.takes = []; board.picks = {};
+  saveBoard();
+  for (const r of runs) await deleteTakes(r);
+  if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
+  clipList = null;
+  renderStatus.textContent = 'All takes deleted.';
+  renderBoard();
 };
 
 // the recording: from the remembered OBS folder when the browser allows it, otherwise picked by hand

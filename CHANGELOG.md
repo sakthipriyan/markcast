@@ -18,11 +18,14 @@ package can notice. Tests, CI and tooling do not belong here.
   browser** next to OBS: in Chrome, Edge and other Chromium browsers on a
   computer, the deck records itself (only its 16:9 frame: slides and camera)
   with your microphone, each take its own file in the browser's private
-  storage. The dialog checks the browser and screen (1080p, or 720p), picks the
-  camera and microphone, and shows a mic level. The review previews each take
-  and **Render the video** joins the picked takes into one MP4 without
-  re-encoding; **Delete these takes** frees the space. OBS stays for any other
-  browser or screen.
+  storage. ● Record opens the deck's **take board**: every slide with every take
+  from every recording, the newest picked. **Record all**, or tick slides
+  (shift-click for a range) and **Record selected** to redo just those; a slide
+  edited since has its takes marked outdated. Recording setup (browser and
+  screen check, camera, microphone, level, 1080p or 720p) folds into the board.
+  **Download video** joins the picked takes into one MP4 without re-encoding and
+  saves it like OBS: a new date-stamped file in a folder picked once. OBS stays
+  for any other browser or screen, with its own review.
 - **🔊 Auto volume** in the review, selected by default: the final cut
   is measured the way YouTube measures it (ITU-R BS.1770 integrated loudness)
   and given one gain to reach -14 LUFS, never pushing peaks past -1.5 dB and

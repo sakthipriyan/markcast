@@ -189,9 +189,14 @@ Two ways to record, both slide by slide, so there's no timeline to edit afterwar
 
 ### Record in the browser
 
-1. Press **● Record** and choose **In this browser**. The dialog checks the browser and screen, and lists your cameras and microphones with a level meter.
-2. Press **Start recording** and, when Chrome asks, share **this tab**. The deck goes fullscreen in a 16:9 frame; only the frame (slides and camera) is recorded, never the rest of the screen.
-3. Every take is its own file, kept in this browser's private storage until you render or delete it.
+**● Record** opens the deck's **take board**: every slide, in order, with every take recorded of it, from every recording.
+
+1. The first time, **⚙ Recording setup** checks the browser and screen and lists your cameras and microphones with a level meter.
+2. **● Record all**, and when Chrome asks, share **this tab**. The deck goes fullscreen in a 16:9 frame; only the frame (slides and camera) is recorded, never the rest of the screen.
+3. To redo part of it later, tick slides (shift-click ticks a range) and press **● Record selected**: it records from the first ticked slide to the last, entry included, and stops by itself. The new takes join their slides; the rest stay as they are.
+4. A slide you edit after recording it has its takes marked *outdated*: they're kept, but no longer picked, until you record it again or pick one yourself.
+
+Every take is its own file, kept in this browser's private storage until you delete it (**Delete unused takes** keeps only the ones the video uses).
 
 In fullscreen, the frame must be at least 1280×720 real pixels for 720p, 1920×1080 for 1080p: a Retina laptop makes 1080p, a 1366×768 screen 720p. Below that, use OBS.
 
@@ -251,7 +256,7 @@ Clicks, dragging and the map are locked so the take only moves forward.
 
 Then the review opens: every slide with its takes (the last one picked), click one to preview it, and the YouTube title, description with **chapters** and links, and tags. Sessions are kept in this browser, so a take can be reviewed again later from ● Record.
 
-- **Recorded in the browser:** **Render the video** joins the picked takes into one MP4, in a few seconds, without re-encoding. **Delete these takes** frees the space.
+- **Recorded in the browser:** the board is the review. **↓ Download video** joins the picked takes into one MP4, in a few seconds, without re-encoding, and saves it like OBS does: a new file named by the date (`deck 2026-10-30 20-04-49.mp4`) in a folder you pick once, starting in your videos folder.
 - **Recorded with OBS:** previews come from the OBS file, and a ready-to-run **[ffmpeg](https://ffmpeg.org)** command cuts the picked takes (frame-exact).
 - **🔊 Auto volume** (selected by default): YouTube plays videos at about −14 LUFS and turns louder ones down, but not quieter ones up, so a voice recorded as it is sounds quiet next to other videos. The final cut is measured the way YouTube measures it and given one gain to reach −14 LUFS, stopping short where peaks would pass −1.5 dB. The video is still copied as it is; only the sound is re-encoded. In the ffmpeg command it adds `loudnorm` (not in the no-re-encode mode).
 

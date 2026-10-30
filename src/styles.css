@@ -369,6 +369,23 @@
   .rv-video{grid-area:video;}
   .rv-list{grid-area:list;contain:size;}
   .rv-bar{grid-area:bar;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;}
+  /* the bar under the player: buttons of one height, whatever is in them (an emoji is taller than text) */
+  .rv-bar .btn{height:36px;display:inline-flex;align-items:center;gap:6px;}
+  .rv-bar .btn .ico{font-size:13px;line-height:1;}
+  .rv-sep{width:1px;align-self:stretch;background:var(--panel-line);margin:0 2px;}
+  .btn.rec{color:var(--danger);}
+  .btn.rec:disabled{color:var(--text-muted);}
+  /* the take board: every slide, a box to select it for recording, its takes */
+  #review:not(.board) .rv-board-only{display:none !important;}
+  .rv-row.with-sel{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:start;}
+  .rv-row .rv-sel{margin:3px 0 0;accent-color:var(--accent);}
+  .rv-row.selected{background:color-mix(in srgb, var(--accent) 7%, transparent);}
+  .rv-chip.outdated{opacity:.6;text-decoration:line-through;}
+  .rv-none{font-size:12px;color:var(--text-muted);font-style:italic;}
+  #rv-setup{margin-top:14px;border:1px solid var(--panel-line);border-radius:8px;padding:10px 14px;}
+  #rv-setup summary{cursor:pointer;font-family:var(--display);font-size:13px;}
+  #rv-setup-sum{color:var(--text-muted);font-size:12px;margin-left:8px;font-family:var(--body);}
+  #rv-setup[open] summary{margin-bottom:8px;}
   .btn.toggle{color:var(--text-muted);}
   .btn.toggle.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   .rv-final{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--text-muted);}
