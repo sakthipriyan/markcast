@@ -31,6 +31,12 @@ package can notice. Tests, CI and tooling do not belong here.
   where; pressed again with nothing changed it doesn't make it again.
   **🗑 Purge takes** removes unused takes or all of them. OBS stays for any
   other browser or screen, with its own review.
+- Recording turns the camera on by itself: the camera chosen for the deck in
+  the setup (or **No camera**), on before the countdown and back to how it was
+  afterwards, so a forgotten **C** no longer costs a take. It defaults to your
+  camera when the deck has a camera box or camera moves; the OBS dialog has the
+  same choice as a checkbox. If fullscreen doesn't stick (a share prompt can
+  take it away), the countdown asks for **F**.
 - **🔊 Auto volume** in the review, selected by default: the final cut
   is measured the way YouTube measures it (ITU-R BS.1770 integrated loudness)
   and given one gain to reach -14 LUFS, never pushing peaks past -1.5 dB and

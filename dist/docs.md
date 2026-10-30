@@ -191,7 +191,7 @@ Two ways to record, both slide by slide, so there's no timeline to edit afterwar
 
 **● Record** opens the deck's **take board**: every slide, in order, with every take recorded of it, from every recording.
 
-1. The first time, **⚙ Recording setup** checks the browser and screen and lists your cameras and microphones with a level meter.
+1. The first time, **⚙ Recording setup** checks the browser and screen and lists your cameras and microphones with a level meter. The camera you pick there (or **No camera**) is remembered for the deck, and **● Record turns it on by itself**, before the countdown so you can check your framing, then back off afterwards. It defaults to your camera when the deck has a camera box or camera moves. **C** is for presenting live.
 2. **● Record**, and when Chrome asks, share **this tab**. The deck goes fullscreen in a 16:9 frame; only the frame (slides and camera) is recorded, never the rest of the screen.
 3. To redo part of it later, tick slides (shift-click ticks a range): **● Record** then records only those, from the first ticked slide to the last, entry included, and stops by itself. The new takes join their slides; the rest stay as they are.
 4. Every take starts with the move in from the slide before it, so it depends on both. Edit a slide and its takes and the next slide's are marked *outdated*: kept, but no longer picked, until you record them again (or pick one yourself). To drop a slide, delete it from the deck, then record the slide that followed it again.
@@ -212,7 +212,7 @@ From https://slidetake.com, OBS must be on the same computer: browsers block sec
 
 ### Add your camera
 
-**C** (or **Camera**) turns your webcam on in its box, and the recording has you and the slides together. The camera is off every time the page opens; until it's on, the deck's camera settings are ignored, so readers get slides using the whole screen.
+**C** (or **Camera**) turns your webcam on in its box while presenting. A recording doesn't depend on it: it turns on the camera chosen for the deck (or none) by itself. The camera is off every time the page opens; until it's on, the deck's camera settings are ignored, so readers get slides using the whole screen.
 
 ```yaml
 ---

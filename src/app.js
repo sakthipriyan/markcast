@@ -1814,14 +1814,46 @@ async function fillDevices(){
     const devs = await navigator.mediaDevices.enumerateDevices();
     const opts = (kind, saved)=>devs.filter(d=>d.kind === kind).map((d, i)=>'<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === saved ? ' selected' : '') + '>' +
       escapeHtml(d.label || (kind === 'audioinput' ? 'Microphone ' : 'Camera ') + (i + 1)) + '</option>').join('');
-    recCam.innerHTML = opts('videoinput', load('slidetake:cam') || '');
+    const cam = camChoice();
+    recCam.innerHTML = '<option value="none"' + (cam === 'none' ? ' selected' : '') + '>No camera</option>' + opts('videoinput', cam);
+    if (cam !== 'none' && recCam.value === 'none' && recCam.options.length > 1) recCam.selectedIndex = 1;   // 'default': the first camera
     const mic = load('slidetake:mic') || '';
     recMic.innerHTML = opts('audioinput', mic);
     if (mic && recMic.value === mic && meter && meter.stream.getAudioTracks()[0].getSettings().deviceId !== mic) startMeter();
   } catch(e){}
 }
 recMic.onchange = ()=>{ save('slidetake:mic', recMic.value); startMeter(); };
-recCam.onchange = ()=>{ save('slidetake:cam', recCam.value); if (cameraStream){ stopWebcam(); startWebcam(); } };
+recCam.onchange = ()=>{
+  setCamChoice(recCam.value);
+  if (recCam.value !== 'none' && cameraStream){ stopWebcam(); startWebcam(); }
+  setupSummary();
+};
+// ---------- the camera in a recording: chosen once per deck, turned on by Record ----------
+// The C button is for presenting; a recording uses the setup's choice, so a forgotten C never costs a take.
+// The default: your camera when the deck has a camera box or camera moves, otherwise none.
+const deckUsesCamera = ()=>(deck.pip || 'none').toLowerCase() !== 'none' || !!deck.camera || [...nodes.values()].some(n=>n.camera);
+const camChoiceKey = ()=>'slidetake:rec-cam:' + sessionKey();
+/** 'none', 'default' (the browser's camera) or a device id */
+function camChoice(){
+  const c = load(camChoiceKey());
+  return c ? c : deckUsesCamera() ? (load('slidetake:cam') || 'default') : 'none';
+}
+function setCamChoice(c){
+  save(camChoiceKey(), c);
+  if (c !== 'none' && c !== 'default') save('slidetake:cam', c);   // the device the webcam opens
+}
+// before a recording's countdown: the camera as chosen, so you see your framing during 3-2-1
+function cameraForRecording(){
+  rec.camWas = !cameraOff;
+  const want = camChoice() !== 'none';
+  if (want !== !cameraOff) setCameraEnabled(want, true);
+}
+// after it: back to how it was (a camera that was off goes off again)
+function restoreCamera(){
+  if (rec.camWas == null) return;
+  if (rec.camWas !== !cameraOff) setCameraEnabled(rec.camWas, true);
+  rec.camWas = null;
+}
 recQuality.onchange = ()=>save('slidetake:quality', recQuality.value);
 async function showBrowserCheck(){
   const b = browserRecording();
@@ -1853,10 +1885,10 @@ recDialog.addEventListener('click', e=>{ if (e.target === recDialog || e.target.
 function openRecordDialog(){
   if (!RECORDING_UI) return;
   const total = order.reduce((a, id)=>a + slideSteps(nodes.get(id)).length, 0);
-  const usesCamera = deck.camera || [...nodes.values()].some(n=>n.camera);
   document.getElementById('rec-deck-info').innerHTML =
     escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : 'This deck')) + ' · ' + order.length + ' slides · ' + total + ' presses' +
-    (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C first if this take should include your webcam.</span>' : '');
+    '<br><label class="check"><input type="checkbox" id="rec-cam-on"' + (camChoice() !== 'none' ? ' checked' : '') + '> Include my camera (it turns on when the take starts)</label>';
+  document.getElementById('rec-cam-on').onchange = e=>setCamChoice(e.target.checked ? (load('slidetake:cam') || 'default') : 'none');
   if ((recMode || (browserRecording().ok ? 'browser' : 'obs')) === 'browser'){ openBoard(); return; }
   renderSessionList();
   showScreenAdvice();
@@ -1961,6 +1993,7 @@ async function startTake(kind, span){
   const lay = document.getElementById('rec-layout').value;
   if (lay !== 'current' && lay !== layoutMode) setMode(lay, true);
   if (!presenting) setPresent(true);          // this click allows fullscreen
+  cameraForRecording();
   if (beforeId){
     // the slide before, finished, for the countdown; the take then starts with the flight in
     document.body.classList.add('no-anim');
@@ -1974,7 +2007,12 @@ async function startTake(kind, span){
     navigate(firstId, true);                  // step 0 of the first slide, its camera layout included
   }
   // 3-2-1 on screen; OBS only starts after it, so the countdown is never in the footage
+  // fullscreen: asked for with the click, but a browser's share prompt can take it away; one more try, and
+  // if that is refused, F during the countdown (a key press is allowed to ask)
+  if (!document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen().catch(()=>{});
+  const hint = countdownEl.querySelector('.hint');
   for (let i = 3; i > 0; i--){
+    hint.textContent = (document.fullscreenElement ? '' : 'Press F for fullscreen · ') + 'recording starts after the countdown · Esc to cancel';
     countdownEl.querySelector('.num').textContent = i;
     countdownEl.classList.add('show');
     await wait(1000);
@@ -2015,6 +2053,7 @@ function abortTake(message){
   countdownEl.classList.remove('show');
   document.body.classList.remove('recording');
   if (presenting) setPresent(false);
+  restoreCamera();
   showPipMsg(message);
 }
 
@@ -2041,6 +2080,11 @@ function takeKey(e){
   const handled = NEXT_KEYS.includes(k) || BACK_KEYS.includes(k) || PAUSE_KEYS.includes(k) || k === 'Escape';
   if (handled) e.preventDefault();
   if (k === 'Escape'){ if (rec.counting) abortTake('Take cancelled'); else finishTake('Stopped early'); return; }
+  if ((k === 'f' || k === 'F') && !document.fullscreenElement && document.documentElement.requestFullscreen){
+    e.preventDefault();
+    document.documentElement.requestFullscreen().catch(()=>{});
+    return;
+  }
   if (rec.counting || rec.finishing || retaking) return;
   if (PAUSE_KEYS.includes(k)){ togglePause(); return; }
   if (rec.paused) return;
@@ -2138,6 +2182,7 @@ async function finishTake(reason){
   rec.active = false; rec.finishing = false;
   document.body.classList.remove('recording');
   if (presenting) setPresent(false);
+  restoreCamera();
   const session = {
     key:sessionKey(), deckTitle:deck.title || nodes.get(order[0]).title, date:new Date().toISOString(),
     withObs:rec.withObs, outputPath:rec.outputPath, reason:reason || '', total, totalObs, fps:b ? FPS : obsFps,
@@ -2605,7 +2650,9 @@ function refreshSetup(){
 }
 function setupSummary(){
   const mic = recMic.selectedOptions[0], b = browserRecording();
-  document.getElementById('rv-setup-sum').textContent = b.ok ? [recQuality.value, mic && mic.textContent].filter(Boolean).join(' · ') : 'not ready';
+  const cam = recCam.selectedOptions[0];
+  document.getElementById('rv-setup-sum').textContent = b.ok
+    ? [recQuality.value, cam ? cam.textContent : camChoice() === 'none' ? 'No camera' : 'Camera', mic && mic.textContent].filter(Boolean).join(' · ') : 'not ready';
 }
 function openBoard(opts = {}){
   if (!RECORDING_UI) return;
@@ -2912,7 +2959,7 @@ function updateCamBtn(){
   camBtn.setAttribute('aria-pressed', String(!cameraOff));
   camBtn.title = cameraOff ? 'Camera is off for every slide (C)' : 'Camera is on and follows the deck (C)';
 }
-function setCameraEnabled(on){
+function setCameraEnabled(on, quiet){
   if (on && !RECORDING_UI) return;
   cameraOff = !on;
   if (cameraOff){ stopWebcam(); hidePipMsg(); }
@@ -2923,7 +2970,7 @@ function setCameraEnabled(on){
   applyStepState();
   updateActivePath();
   refocus();
-  if (!presenting) showPipMsg(on ? 'Camera on — slides follow their camera settings.' : 'Camera off — camera settings are ignored and slides use the whole screen.');
+  if (!presenting && !quiet) showPipMsg(on ? 'Camera on — slides follow their camera settings.' : 'Camera off — camera settings are ignored and slides use the whole screen.');
   if (on) startWebcam();
 }
 camBtn.onclick = ()=>setCameraEnabled(cameraOff);
