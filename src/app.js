@@ -2359,18 +2359,23 @@ function renderReview(){
   showFinalSize(sess);
 }
 // the final cut's length, and for takes kept in this browser about how big the downloaded file will be
+// a take's file never changes, so its size is read once
+const clipSizes = new Map();
+let finalSizeToken = 0;
 async function showFinalSize(sess){
-  const el = document.getElementById('rv-final');
+  const el = document.getElementById('rv-final'), token = ++finalSizeToken;
   const ms = pickedRanges(sess).reduce((a, r)=>a + r.end - r.start, 0);
-  el.textContent = 'Final cut ' + fmtTime(ms);
-  if (!sess.inBrowser || sess.cleaned) return;
+  const line = bytes=>'Final cut ' + fmtTime(ms) + (bytes == null ? '' : ' · about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB'));
+  if (!sess.inBrowser || sess.cleaned){ el.textContent = line(null); return; }
   try {
     let bytes = 0;
     for (const part of clipPlan(sess)){
-      bytes += (await clipFile(part.clip)).size;
+      if (!clipSizes.has(part.clip)) clipSizes.set(part.clip, (await clipFile(part.clip)).size);
+      bytes += clipSizes.get(part.clip);
     }
-    if (reviewing === sess) el.textContent = 'Final cut ' + fmtTime(ms) + ' · about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB');
-  } catch(e){}
+    // written once, whole: the line never shows without its size in between
+    if (token === finalSizeToken) el.textContent = line(bytes);
+  } catch(e){ if (token === finalSizeToken) el.textContent = line(null); }
 }
 document.getElementById('rv-mode').onchange = ()=>renderReview();
 const fpsSel = document.getElementById('rv-fps');
