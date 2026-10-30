@@ -374,6 +374,8 @@
   /* while a take runs nothing but the slides and the camera is on screen */
   body.recording #breadcrumbs, body.recording #navbar, body.recording #minimap, body.recording #pip-msg{display:none !important;}
   body.recording, body.recording *{cursor:none !important;}
+  /* a retake's jump back to the slide before: no transition may ease it into place */
+  body.no-anim *, body.no-anim *::before, body.no-anim *::after{transition:none !important;animation:none !important;}
   /* recording in the browser: the deck in a 16:9 frame, the only part captured. Chrome captures an element
      only while it is its own stacking context, hence the isolation (without it the capture is silently empty). */
   body.rec-frame main{background:#000;}
@@ -3927,6 +3929,7 @@
     if (!rec.active || !rec.t0 || rec.finishing) return;
     const n = nodes.get(id);
     const ev = { id, title: n ? n.title : id, retake: kind === "retake", t: Math.round(recNow()), obsT: null };
+    if (cutAt == null && rec.browser) cutAt = ev.t;
     if (cutAt != null) {
       ev.cutAt = cutAt;
       ev.lead = Math.max(0, Math.round(ev.t - cutAt));
@@ -3977,11 +3980,15 @@
     }
     retaking = true;
     const cutAt = recNow();
+    document.body.classList.add("no-anim");
+    const prev = nodes.get(from);
     quietArrival = true;
+    prev._played = true;
     navigate(from, true, true);
     pipEl.getAnimations().forEach((a) => a.finish());
     quietArrival = false;
     await nextFrame();
+    document.body.classList.remove("no-anim");
     logTake("retake", target, cutAt);
     if (rec.browser) await rec.browser.chain;
     resetEntrances(n);

@@ -1993,6 +1993,9 @@ function logTake(kind, id, cutAt){
   if (!rec.active || !rec.t0 || rec.finishing) return;
   const n = nodes.get(id);
   const ev = {id, title:n ? n.title : id, retake:kind === 'retake', t:Math.round(recNow()), obsT:null};
+  // in the browser a take's recorder starts a moment after the press, while the deck is already moving:
+  // the take before ends at the press, so it never shows the start of the next move
+  if (cutAt == null && rec.browser) cutAt = ev.t;
   if (cutAt != null){ ev.cutAt = cutAt; ev.lead = Math.max(0, Math.round(ev.t - cutAt)); }
   rec.events.push(ev);
   if (rec.browser) startClip(ev);
@@ -2032,11 +2035,16 @@ async function retake(){
   if (!from || from === target || !nodes.has(from)){ restartSlide(n); return; }   // the first slide has no entry
   retaking = true;
   const cutAt = recNow();
+  // the slide before, exactly as it ended: finished, its entrance not played again, nothing easing into place
+  document.body.classList.add('no-anim');
+  const prev = nodes.get(from);
   quietArrival = true;
+  prev._played = true;
   navigate(from, true, true);
   pipEl.getAnimations().forEach(a=>a.finish());
   quietArrival = false;
   await nextFrame();
+  document.body.classList.remove('no-anim');
   logTake('retake', target, cutAt);
   if (rec.browser) await rec.browser.chain;      // its recorder is running before the entry plays
   resetEntrances(n);
