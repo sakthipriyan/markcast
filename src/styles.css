@@ -356,15 +356,30 @@
     background:rgba(4,7,13,.94);font-family:var(--mono);font-size:15px;color:var(--text-muted);letter-spacing:.06em;
   }
   #rec-paused.show{display:flex;}
-  .modal .panel.xwide{width:min(1220px,100%);max-height:94vh;}
-  .rv-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px;margin-top:12px;}
-  @media (max-width:900px){ .rv-grid{grid-template-columns:1fr;} }
+  .modal .panel.xwide{width:min(1480px,100%);max-height:94vh;}
+  /* scrollbars: thin, in the accent */
+  .modal .panel, .rv-list, .modal textarea{scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--accent) 45%, transparent) transparent;}
+  /* the player and the take list side by side, the list exactly as tall as the player (it scrolls inside that);
+     play and download under both */
+  .rv-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(280px,3fr);grid-template-areas:"video list" "bar bar" "now now";
+    column-gap:18px;margin-top:12px;}
+  .rv-grid > div:first-child{display:contents;}
+  .rv-video{grid-area:video;}
+  .rv-list{grid-area:list;contain:size;}
+  .rv-bar{grid-area:bar;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;}
+  .rv-final{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+  #rv-now{grid-area:now;}
+  #review:not(.in-browser) #rv-render-btn{display:none;}
+  @media (max-width:900px){
+    .rv-grid{grid-template-columns:1fr;grid-template-areas:"video" "bar" "now" "list";}
+    .rv-list{contain:none;max-height:50vh;}
+  }
   .rv-video{position:relative;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;}
   .rv-video video{width:100%;height:100%;display:block;}
   #rv-novideo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;}
   #rv-novideo[hidden]{display:none;}
   #rv-now{font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:8px;min-height:1.4em;}
-  .rv-list{max-height:52vh;overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
+  .rv-list{overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
   .rv-row{padding:9px 12px;border-bottom:1px solid var(--panel-line);}
   .rv-row:last-child{border-bottom:none;}
   .rv-row .t{font-size:12.5px;color:var(--text);margin-bottom:6px;display:flex;justify-content:space-between;gap:8px;}

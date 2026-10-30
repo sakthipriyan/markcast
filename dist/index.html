@@ -397,15 +397,30 @@
     background:rgba(4,7,13,.94);font-family:var(--mono);font-size:15px;color:var(--text-muted);letter-spacing:.06em;
   }
   #rec-paused.show{display:flex;}
-  .modal .panel.xwide{width:min(1220px,100%);max-height:94vh;}
-  .rv-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px;margin-top:12px;}
-  @media (max-width:900px){ .rv-grid{grid-template-columns:1fr;} }
+  .modal .panel.xwide{width:min(1480px,100%);max-height:94vh;}
+  /* scrollbars: thin, in the accent */
+  .modal .panel, .rv-list, .modal textarea{scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--accent) 45%, transparent) transparent;}
+  /* the player and the take list side by side, the list exactly as tall as the player (it scrolls inside that);
+     play and download under both */
+  .rv-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(280px,3fr);grid-template-areas:"video list" "bar bar" "now now";
+    column-gap:18px;margin-top:12px;}
+  .rv-grid > div:first-child{display:contents;}
+  .rv-video{grid-area:video;}
+  .rv-list{grid-area:list;contain:size;}
+  .rv-bar{grid-area:bar;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;}
+  .rv-final{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+  #rv-now{grid-area:now;}
+  #review:not(.in-browser) #rv-render-btn{display:none;}
+  @media (max-width:900px){
+    .rv-grid{grid-template-columns:1fr;grid-template-areas:"video" "bar" "now" "list";}
+    .rv-list{contain:none;max-height:50vh;}
+  }
   .rv-video{position:relative;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;}
   .rv-video video{width:100%;height:100%;display:block;}
   #rv-novideo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;}
   #rv-novideo[hidden]{display:none;}
   #rv-now{font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:8px;min-height:1.4em;}
-  .rv-list{max-height:52vh;overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
+  .rv-list{overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
   .rv-row{padding:9px 12px;border-bottom:1px solid var(--panel-line);}
   .rv-row:last-child{border-bottom:none;}
   .rv-row .t{font-size:12.5px;color:var(--text);margin-bottom:6px;display:flex;justify-content:space-between;gap:8px;}
@@ -900,15 +915,18 @@
             <p>Pick the file OBS saved<span id="rv-file"></span> (.mov, .mp4 or .mkv) to preview takes. Or choose your OBS recordings folder once, and later takes load by themselves.</p>
           </div>
         </div>
-        <div class="row"><button class="btn small" id="rv-play-final">▶ Play the final cut</button><span id="rv-now"></span></div>
+        <div class="rv-bar">
+          <button class="btn" id="rv-play-final">▶ Play the final cut</button>
+          <button class="btn primary" id="rv-render-btn">↓ Download video</button>
+          <span class="rv-final" id="rv-final"></span>
+        </div>
+        <div id="rv-now"></div>
       </div>
       <div class="rv-list" id="rv-list"></div>
     </div>
     <div class="rv-out">
       <div id="rv-render">
-        <h3>Video</h3>
-        <div class="row"><button class="btn primary" id="rv-render-btn">↓ Render the video</button><span id="rv-render-status"></span></div>
-        <p>Joins the picked takes into one file here in this browser, without re-encoding. The takes stay in this browser until you delete them. <button class="btn small" id="rv-clean">Delete these takes</button></p>
+        <p><span id="rv-render-status"></span> Download joins the picked takes into one file here in this browser, without re-encoding. The takes stay in this browser until you delete them. <button class="btn small" id="rv-clean">Delete these takes</button></p>
       </div>
       <div id="rv-ffmpeg-box">
       <h3>ffmpeg
@@ -4205,7 +4223,7 @@
       const pick = sess.picks[slide.id] ?? slide.takes.length, sec = sectionOf(slide.id);
       const isSec = sec !== lastSec;
       lastSec = sec;
-      const chips = slide.takes.map((t) => '<button class="rv-chip' + (pick === t.no ? " on" : "") + '" data-id="' + escapeHtml(slide.id) + '" data-take="' + t.no + '">' + (slide.takes.length > 1 ? "Take " + t.no + " \xB7 " : "") + fmtTime(t.end - t.start) + "</button>").join("") + '<button class="rv-chip skip' + (pick === 0 ? " on" : "") + '" data-id="' + escapeHtml(slide.id) + '" data-take="0">Leave out</button>';
+      const chips = slide.takes.map((t) => '<button class="rv-chip' + (pick === t.no ? " on" : "") + '" data-id="' + escapeHtml(slide.id) + '" data-take="' + t.no + '">Take ' + t.no + " \xB7 " + fmtTime(t.end - t.start) + "</button>").join("") + '<button class="rv-chip skip' + (pick === 0 ? " on" : "") + '" data-id="' + escapeHtml(slide.id) + '" data-take="0">Leave out</button>';
       return '<div class="rv-row' + (isSec ? " sec" : "") + '"><div class="t">' + escapeHtml(slide.title) + "<small>" + fmtTime(slide.takes[0].start) + '</small></div><div class="rv-chips">' + chips + "</div></div>";
     }).join("");
     list.querySelectorAll(".rv-chip").forEach((b) => b.onclick = () => {
@@ -4222,6 +4240,21 @@
     });
     document.getElementById("rv-ffmpeg").value = ffmpegScript2(sess, document.getElementById("rv-mode").value);
     describe(sess);
+    showFinalSize(sess);
+  }
+  async function showFinalSize(sess) {
+    const el = document.getElementById("rv-final");
+    const ms = pickedRanges(sess).reduce((a, r) => a + r.end - r.start, 0);
+    el.textContent = "Final cut " + fmtTime(ms);
+    if (!sess.inBrowser || sess.cleaned) return;
+    try {
+      let bytes = 0;
+      for (const part of clipPlan(sess)) {
+        bytes += (await clipFile(sess, part.clip)).size;
+      }
+      if (reviewing === sess) el.textContent = "Final cut " + fmtTime(ms) + " \xB7 about " + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + " GB" : Math.max(1, Math.round(bytes / 1e6)) + " MB");
+    } catch (e) {
+    }
   }
   document.getElementById("rv-mode").onchange = () => renderReview();
   var fpsSel = document.getElementById("rv-fps");
@@ -4331,7 +4364,7 @@
     }
     const btn = document.getElementById("rv-render-btn");
     btn.disabled = true;
-    renderStatus.textContent = "Loading the video tools\u2026";
+    renderStatus.textContent = "Preparing the download\u2026";
     try {
       const MB = await import(MEDIABUNNY_URL);
       const target = file ? new MB.StreamTarget(file) : new MB.BufferTarget();
@@ -4381,7 +4414,7 @@
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 1e4);
       }
-      renderStatus.textContent = "Rendered " + fmtTime(offset * 1e3) + " to " + name + ".";
+      renderStatus.textContent = "Saved " + name + " (" + fmtTime(offset * 1e3) + ").";
     } catch (e) {
       renderStatus.textContent = "Could not render: " + (e && e.message || e);
       if (file) file.abort().catch(() => {

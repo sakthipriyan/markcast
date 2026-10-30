@@ -2245,7 +2245,7 @@ function renderReview(){
     const pick = sess.picks[slide.id] ?? slide.takes.length, sec = sectionOf(slide.id);
     const isSec = sec !== lastSec; lastSec = sec;
     const chips = slide.takes.map(t=>'<button class="rv-chip' + (pick === t.no ? ' on' : '') + '" data-id="' + escapeHtml(slide.id) + '" data-take="' + t.no + '">' +
-      (slide.takes.length > 1 ? 'Take ' + t.no + ' · ' : '') + fmtTime(t.end - t.start) + '</button>').join('') +
+      'Take ' + t.no + ' · ' + fmtTime(t.end - t.start) + '</button>').join('') +
       '<button class="rv-chip skip' + (pick === 0 ? ' on' : '') + '" data-id="' + escapeHtml(slide.id) + '" data-take="0">Leave out</button>';
     return '<div class="rv-row' + (isSec ? ' sec' : '') + '"><div class="t">' + escapeHtml(slide.title) +
       '<small>' + fmtTime(slide.takes[0].start) + '</small></div><div class="rv-chips">' + chips + '</div></div>';
@@ -2264,6 +2264,21 @@ function renderReview(){
   });
   document.getElementById('rv-ffmpeg').value = ffmpegScript(sess, document.getElementById('rv-mode').value);
   describe(sess);
+  showFinalSize(sess);
+}
+// the final cut's length, and for takes kept in this browser about how big the downloaded file will be
+async function showFinalSize(sess){
+  const el = document.getElementById('rv-final');
+  const ms = pickedRanges(sess).reduce((a, r)=>a + r.end - r.start, 0);
+  el.textContent = 'Final cut ' + fmtTime(ms);
+  if (!sess.inBrowser || sess.cleaned) return;
+  try {
+    let bytes = 0;
+    for (const part of clipPlan(sess)){
+      bytes += (await clipFile(sess, part.clip)).size;
+    }
+    if (reviewing === sess) el.textContent = 'Final cut ' + fmtTime(ms) + ' · about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB');
+  } catch(e){}
 }
 document.getElementById('rv-mode').onchange = ()=>renderReview();
 const fpsSel = document.getElementById('rv-fps');
@@ -2356,7 +2371,7 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
   }
   const btn = document.getElementById('rv-render-btn');
   btn.disabled = true;
-  renderStatus.textContent = 'Loading the video tools…';
+  renderStatus.textContent = 'Preparing the download…';
   try {
     const MB = await import(MEDIABUNNY_URL);
     const target = file ? new MB.StreamTarget(file) : new MB.BufferTarget();
@@ -2405,7 +2420,7 @@ document.getElementById('rv-render-btn').onclick = async ()=>{
       a.click();
       setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
     }
-    renderStatus.textContent = 'Rendered ' + fmtTime(offset * 1000) + ' to ' + name + '.';
+    renderStatus.textContent = 'Saved ' + name + ' (' + fmtTime(offset * 1000) + ').';
   } catch(e){
     renderStatus.textContent = 'Could not render: ' + ((e && e.message) || e);
     if (file) file.abort().catch(()=>{});

@@ -258,15 +258,18 @@
             <p>Pick the file OBS saved<span id="rv-file"></span> (.mov, .mp4 or .mkv) to preview takes. Or choose your OBS recordings folder once, and later takes load by themselves.</p>
           </div>
         </div>
-        <div class="row"><button class="btn small" id="rv-play-final">▶ Play the final cut</button><span id="rv-now"></span></div>
+        <div class="rv-bar">
+          <button class="btn" id="rv-play-final">▶ Play the final cut</button>
+          <button class="btn primary" id="rv-render-btn">↓ Download video</button>
+          <span class="rv-final" id="rv-final"></span>
+        </div>
+        <div id="rv-now"></div>
       </div>
       <div class="rv-list" id="rv-list"></div>
     </div>
     <div class="rv-out">
       <div id="rv-render">
-        <h3>Video</h3>
-        <div class="row"><button class="btn primary" id="rv-render-btn">↓ Render the video</button><span id="rv-render-status"></span></div>
-        <p>Joins the picked takes into one file here in this browser, without re-encoding. The takes stay in this browser until you delete them. <button class="btn small" id="rv-clean">Delete these takes</button></p>
+        <p><span id="rv-render-status"></span> Download joins the picked takes into one file here in this browser, without re-encoding. The takes stay in this browser until you delete them. <button class="btn small" id="rv-clean">Delete these takes</button></p>
       </div>
       <div id="rv-ffmpeg-box">
       <h3>ffmpeg
