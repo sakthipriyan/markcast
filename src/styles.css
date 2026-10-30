@@ -363,7 +363,7 @@
   .modal .panel, .rv-list, .modal textarea{scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--accent) 45%, transparent) transparent;}
   /* the player and the take list side by side, the list exactly as tall as the player (it scrolls inside that);
      play and download under both */
-  .rv-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(280px,3fr);grid-template-areas:"video list" "bar bar" "now now";
+  .rv-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(280px,3fr);grid-template-areas:"video list" "bar list" "sel list" "now now";
     column-gap:18px;margin-top:12px;}
   .rv-grid > div:first-child{display:contents;}
   .rv-video{grid-area:video;}
@@ -372,14 +372,16 @@
   /* the bar under the player: buttons of one height, whatever is in them (an emoji is taller than text) */
   .rv-bar .btn{height:36px;display:inline-flex;align-items:center;gap:6px;}
   .rv-bar .btn .ico{font-size:13px;line-height:1;}
-  .rv-sep{width:1px;align-self:stretch;background:var(--panel-line);margin:0 2px;}
-  .btn.rec{color:var(--danger);}
-  .rv-sel-note{font-size:12px;color:var(--text-muted);}
+  /* the same as the deck's own ● Record: red, filling red on hover */
+  .btn.rec{color:#f87171;}
+  .btn.rec:hover:not(:disabled){color:#fff;background:#b91c1c;border-color:#b91c1c;}
+  .rv-sel-note{grid-area:sel;font-size:12px;color:var(--text-muted);text-align:right;}
+  .rv-sel-note:not(:empty){margin-top:6px;}
   .rv-sel-note button{background:none;border:none;padding:0;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;}
   .rv-purge{position:relative;}
   .rv-purge summary{list-style:none;font-family:var(--mono);}
   .rv-purge summary::-webkit-details-marker{display:none;}
-  .rv-purge .rv-menu{position:absolute;right:0;bottom:calc(100% + 6px);display:flex;flex-direction:column;gap:6px;padding:8px;z-index:3;
+  .rv-purge .rv-menu{position:absolute;left:0;top:calc(100% + 6px);display:flex;flex-direction:column;gap:6px;padding:8px;z-index:3;
     background:var(--panel);border:1px solid var(--panel-line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:nowrap;}
   .rv-help{font-size:12.5px;color:var(--text-muted);}
   #rv-render-status:empty{display:none;}
@@ -392,16 +394,17 @@
   .rv-chip.outdated{opacity:.6;text-decoration:line-through;}
   .rv-none{font-size:12px;color:var(--text-muted);font-style:italic;}
   #rv-setup{margin-top:14px;border:1px solid var(--panel-line);border-radius:8px;padding:10px 14px;}
-  #rv-setup summary{cursor:pointer;font-family:var(--display);font-size:13px;}
+  #rv-setup > summary{cursor:pointer;font-family:var(--display);font-size:13px;}
   #rv-setup-sum{color:var(--text-muted);font-size:12px;margin-left:8px;font-family:var(--body);}
-  #rv-setup[open] summary{margin-bottom:8px;}
+  #rv-setup[open] > summary{margin-bottom:8px;}
   .btn.toggle{color:var(--text-muted);}
   .btn.toggle.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
-  .rv-final{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+  .rv-final{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+  .rv-actions{margin-left:auto;display:flex;gap:10px;}
   #rv-now{grid-area:now;}
   #review:not(.in-browser) #rv-render-btn{display:none;}
   @media (max-width:900px){
-    .rv-grid{grid-template-columns:1fr;grid-template-areas:"video" "bar" "now" "list";}
+    .rv-grid{grid-template-columns:1fr;grid-template-areas:"video" "bar" "sel" "now" "list";}
     .rv-list{contain:none;max-height:50vh;}
   }
   .rv-video{position:relative;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;}

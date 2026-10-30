@@ -1966,7 +1966,7 @@ function startClip(ev){
 }
 
 // kind: 'obs' (OBS records), 'browser' (this tab records itself) or 'rehearse' (nothing is recorded)
-// span: {from, to} records just those slides (the board's Record selected); without it, the whole deck
+// span: {from, to} records just those slides (the slides ticked on the board); without it, the whole deck
 async function startTake(kind, span){
   if (rec.active || !order.length) return;
   const withObs = kind === 'obs';
@@ -1977,7 +1977,7 @@ async function startTake(kind, span){
     catch(e){
       document.body.classList.remove('rec-frame');
       if (presenting) setPresent(false);
-      recNote = e.name === 'NotAllowedError' ? 'Recording needs this tab shared. Start again and choose Share.' : e.message;
+      recNote = e.name === 'NotAllowedError' ? 'Recording needs this tab shared: press ● Record again and choose Share.' : e.message;
       openBoard({setup:true});
       return;
     }
@@ -2238,11 +2238,11 @@ const ffmpegScript = (sess, mode)=>ffmpegScriptCore(sess, mode, {
   loudness: loudOn()
 });
 // bring the sound to YouTube's level when the video is made (on unless turned off)
-const loudBtn = document.getElementById('rv-loud');
+const loudBtns = document.querySelectorAll('.rv-loud');   // in the board's setup, and by the ffmpeg command
 const loudOn = ()=>load('slidetake:loudness') !== 'off';
-const showLoud = ()=>{ loudBtn.setAttribute('aria-pressed', String(loudOn())); loudBtn.classList.toggle('on', loudOn()); };
+const showLoud = ()=>loudBtns.forEach(b=>{ b.setAttribute('aria-pressed', String(loudOn())); b.classList.toggle('on', loudOn()); });
 showLoud();
-loudBtn.onclick = ()=>{ save('slidetake:loudness', loudOn() ? 'off' : 'on'); showLoud(); if (reviewing) renderReview(); };
+loudBtns.forEach(b=>b.onclick = ()=>{ save('slidetake:loudness', loudOn() ? 'off' : 'on'); showLoud(); if (reviewing) renderReview(); });
 
 // ---------- YouTube publish pack ----------
 function deckTags(){
@@ -2501,7 +2501,7 @@ async function downloadVideo(force){
     if (loudOn()){
       let meter = null;
       for (const [i, part] of plan.entries()){
-        renderStatus.textContent = 'Measuring the loudness ' + (i + 1) + ' of ' + plan.length + '…';
+        renderStatus.textContent = 'Measuring the volume ' + (i + 1) + ' of ' + plan.length + '…';
         const input = new MB.Input({source:new MB.BlobSource(await clipFile(part.clip)), formats:MB.ALL_FORMATS});
         const at = await input.getPrimaryAudioTrack();
         if (!at) continue;
@@ -2579,7 +2579,7 @@ async function downloadVideo(force){
     if (sess.board){ board.lastDownload = saved; saveBoard(); }
     renderStatus.textContent = 'Saved in ' + savedWhere(saved) + ' (' + fmtTime(offset * 1000) + loudNote + ').';
   } catch(e){
-    renderStatus.textContent = 'Could not render: ' + ((e && e.message) || e);
+    renderStatus.textContent = 'Could not save the video: ' + ((e && e.message) || e);
     if (file) file.abort().catch(()=>{});
   } finally { btn.disabled = !!sess.cleaned; }
 }
@@ -2606,7 +2606,7 @@ document.getElementById('rv-folder-change').onclick = async ()=>{
 
 // ---------- the take board: every take of every slide, from every recording made in this browser ----------
 // One per deck. Takes from a later recording join their slide's row; a slide edited since has its old takes
-// marked outdated. Record all, or tick slides (shift-click for a range) and record just those.
+// marked outdated. ● Record records the deck, or only the ticked slides (shift-click ticks a range).
 let board = null, boardKey = '', selAnchor = null;
 const selected = new Set();
 const boardStoreKey = ()=>'slidetake:board:' + sessionKey();
@@ -2671,7 +2671,7 @@ function openBoard(opts = {}){
   const ready = browserRecording().ok;
   setupEl.open = !!opts.setup || !ready || !board.takes.length;
   if (setupEl.open) refreshSetup(); else setupSummary();
-  rvNow.textContent = opts.note || (board.takes.length ? 'Click a take to preview it.' : 'Nothing recorded yet: press ● Record all.');
+  rvNow.textContent = opts.note || (board.takes.length ? 'Click a take to preview it.' : 'Nothing recorded yet. Press ● Record to record the deck.');
 }
 function renderBoard(){
   const {rows, sess} = boardReview();

@@ -185,7 +185,7 @@ Two ways to record, both slide by slide, so there's no timeline to edit afterwar
 | Browser | Chrome, Edge or another Chromium browser, on a computer | any |
 | Screen | any shape: the deck is recorded in a 16:9 frame | a 16:9 screen, physical or virtual |
 | Quality | 1080p, or 720p on a smaller screen | whatever OBS records |
-| Final video | **Render** joins the picked takes, in the browser | an ffmpeg command |
+| Final video | **Download** joins the picked takes, in the browser | an ffmpeg command |
 
 ### Record in the browser
 
@@ -256,7 +256,7 @@ Clicks, dragging and the map are locked so the take only moves forward.
 
 Then the review opens: every slide with its takes (the last one picked), click one to preview it, and the YouTube title, description with **chapters** and links, and tags. Sessions are kept in this browser, so a take can be reviewed again later from ● Record.
 
-- **Recorded in the browser:** the board is the review. **▶ Preview video** plays the picked takes back to back. **↓ Download video** joins them into one MP4, in a few seconds, without re-encoding, and saves it like OBS does: a new file named by the date (`deck 2026-10-30 20-04-49.mp4`) in a folder you pick once, starting in your videos folder. Pressing it again without changing a take or Auto volume says where the video already is, rather than making it again.
+- **Recorded in the browser:** the board is the review. **▶ Preview** plays the picked takes back to back. **↓ Download** joins them into one MP4, in a few seconds, without re-encoding, and saves it like OBS does: a new file named by the date (`deck 2026-10-30 20-04-49.mp4`) in a folder you pick once, starting in your videos folder. Pressing it again without changing a take or Auto volume says where the video already is, rather than making it again.
 - **Recorded with OBS:** previews come from the OBS file, and a ready-to-run **[ffmpeg](https://ffmpeg.org)** command cuts the picked takes (frame-exact).
 - **🔊 Auto volume** (selected by default): YouTube plays videos at about −14 LUFS and turns louder ones down, but not quieter ones up, so a voice recorded as it is sounds quiet next to other videos. The final cut is measured the way YouTube measures it and given one gain to reach −14 LUFS, stopping short where peaks would pass −1.5 dB. The video is still copied as it is; only the sound is re-encoded. In the ffmpeg command it adds `loudnorm` (not in the no-re-encode mode).
 

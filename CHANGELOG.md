@@ -25,12 +25,13 @@ package can notice. Tests, CI and tooling do not belong here.
   editing the one before marks its takes outdated: every final cut stays
   seamless. There is no Leave out; delete the slide from the deck instead.
   Recording setup (browser and screen check, camera, microphone, level, 1080p
-  or 720p) folds into the board. **▶ Preview video** plays the final cut;
-  **Download video** joins the picked takes into one MP4 without re-encoding and
-  saves it like OBS, a new date-stamped file in a folder picked once, and says
-  where; pressed again with nothing changed it doesn't make it again.
-  **🗑 Purge takes** removes unused takes or all of them. OBS stays for any
-  other browser or screen, with its own review.
+  or 720p) folds into the board, with **🔊 Auto volume** and **🗑 Purge takes**.
+  Under the player, **▶ Preview** plays the final cut and **↓ Download** joins
+  the picked takes into one MP4 without re-encoding, saving it like OBS (a new
+  date-stamped file in a folder picked once) and saying where; pressed again
+  with nothing changed, it doesn't make it again. **🗑 Purge takes** removes
+  unused takes or all of them. OBS stays for any other browser or screen, with
+  its own review.
 - Recording turns the camera on by itself: the camera chosen for the deck in
   the setup (or **No camera**), on before the countdown and back to how it was
   afterwards, so a forgotten **C** no longer costs a take. It defaults to your
@@ -52,8 +53,8 @@ package can notice. Tests, CI and tooling do not belong here.
   jump back shows that slide exactly as it ended (no entrance replayed, nothing
   easing into place), so a retake joins without a flicker.
 - The review: a larger player with the takes beside it at the same height,
-  every take labelled (Take 1 included), Play the final cut and Download video
-  under the player with the final length and expected size, and thin scrollbars
+  every take labelled (Take 1 included); ▶ Preview, ↓ Download and ● Record
+  under the player, with the final length and expected size; thin scrollbars
   in the accent. The slides link fills in from the page the deck is on when the
   deck names no permalink or site; the Record dialog is wider.
 
