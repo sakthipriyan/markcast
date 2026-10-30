@@ -177,7 +177,23 @@ With `duration: 10m` (or `90s`, `1h`, `12:30`), a lighter layer of the same colo
 
 ## 4️⃣ Record a video
 
-Recording takes **[OBS Studio](https://obsproject.com)** (free and open source). OBS records at full quality; Slidetake drives it, slide by slide, so there's no timeline to edit afterwards.
+Two ways to record, both slide by slide, so there's no timeline to edit afterwards. Press **● Record** and pick one:
+
+| | In this browser | OBS |
+|---|---|---|
+| Install | nothing | [OBS Studio](https://obsproject.com) (free) |
+| Browser | Chrome, Edge or another Chromium browser, on a computer | any |
+| Screen | any shape: the deck is recorded in a 16:9 frame | a 16:9 screen, physical or virtual |
+| Quality | 1080p, or 720p on a smaller screen | whatever OBS records |
+| Final video | **Render** joins the picked takes, in the browser | an ffmpeg command |
+
+### Record in the browser
+
+1. Press **● Record** and choose **In this browser**. The dialog checks the browser and screen, and lists your cameras and microphones with a level meter.
+2. Press **Start recording** and, when Chrome asks, share **this tab**. The deck goes fullscreen in a 16:9 frame; only the frame (slides and camera) is recorded, never the rest of the screen.
+3. Every take is its own file, kept in this browser's private storage until you render or delete it.
+
+In fullscreen, the frame must be at least 1280×720 real pixels for 720p, 1920×1080 for 1080p: a Retina laptop makes 1080p, a 1366×768 screen 720p. Below that, use OBS.
 
 ### Set up OBS
 
@@ -191,7 +207,7 @@ From https://slidetake.com, OBS must be on the same computer: browsers block sec
 
 ### Add your camera
 
-**C** (or **Camera**) turns your webcam on in its box, and OBS records you and the slides together. The camera is off every time the page opens; until it's on, the deck's camera settings are ignored, so readers get slides using the whole screen.
+**C** (or **Camera**) turns your webcam on in its box, and the recording has you and the slides together. The camera is off every time the page opens; until it's on, the deck's camera settings are ignored, so readers get slides using the whole screen.
 
 ```yaml
 ---
@@ -223,17 +239,20 @@ Words you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`,
 
 ### Take by take
 
-**● Record** (or **R**) connects to OBS, counts down and starts recording. From then on the deck drives everything: camera layouts, reveals and slides follow → (a Bluetooth clicker works).
+**● Record** (or **R**) counts down and starts recording. From then on the deck drives everything: camera layouts, reveals and slides follow → (a Bluetooth clicker works).
 
 - **←** takes the current slide again, keeping every attempt
 - **B** pauses and resumes
-- one press past the last step stops OBS
+- one press past the last step ends the take (**Esc** ends it early)
 
 Clicks, dragging and the map are locked so the take only moves forward.
 
 ### Review, cut and publish
 
-Then the review opens: every slide with its takes (the last one picked), previews from the OBS file, a ready-to-run **[ffmpeg](https://ffmpeg.org)** command for the picked takes (frame-exact), and the YouTube title, description with **chapters** and links, and tags. Sessions are kept in this browser, so a take can be reviewed again later from ● Record.
+Then the review opens: every slide with its takes (the last one picked), click one to preview it, and the YouTube title, description with **chapters** and links, and tags. Sessions are kept in this browser, so a take can be reviewed again later from ● Record.
+
+- **Recorded in the browser:** **Render the video** joins the picked takes into one MP4, in a few seconds, without re-encoding. **Delete these takes** frees the space.
+- **Recorded with OBS:** previews come from the OBS file, and a ready-to-run **[ffmpeg](https://ffmpeg.org)** command cuts the picked takes (frame-exact).
 
 The description comes from the deck's top block:
 

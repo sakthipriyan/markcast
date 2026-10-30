@@ -12,6 +12,18 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+### Added
+
+- Record in the browser, with nothing to install. ● Record offers **In this
+  browser** next to OBS: in Chrome, Edge and other Chromium browsers on a
+  computer, the deck records itself (only its 16:9 frame: slides and camera)
+  with your microphone, each take its own file in the browser's private
+  storage. The dialog checks the browser and screen (1080p, or 720p), picks the
+  camera and microphone, and shows a mic level. The review previews each take
+  and **Render the video** joins the picked takes into one MP4 without
+  re-encoding; **Delete these takes** frees the space. OBS stays for any other
+  browser or screen.
+
 ## [0.3.4] - 2026-10-28
 
 ### Fixed

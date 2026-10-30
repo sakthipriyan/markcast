@@ -13,12 +13,14 @@ The complete list, one line each. Press → to walk it, **O** for the map.
 | Feature | Advantage |
 |---|---|
 | **Takes per slide** (←) | every attempt kept; recording never stops |
-| **OBS, driven by the deck** | it starts and stops for you; you only talk |
+| **Record in the browser** | nothing to install: the deck records itself in a 16:9 frame, at 1080p |
+| **Or OBS, driven by the deck** | it starts and stops for you; you only talk |
 | **Pause and resume** (B) | step away without a gap to cut |
 | **Clicker support** | any Bluetooth presenter remote moves the deck |
 | **16:9 check** | the Record dialog warns before a video with bars |
 | **Review** | every slide's takes, previewed from the OBS file |
-| **Frame-exact [ffmpeg](https://ffmpeg.org) cut** | one command, no video editor |
+| **Render in the browser** | the picked takes joined into one MP4 in seconds |
+| **Frame-exact [ffmpeg](https://ffmpeg.org) cut** | with OBS: one command, no video editor |
 | **Publish pack** | YouTube title, description, chapters, links and tags from the deck |
 | **Saved sessions** | review a recording again later |
 

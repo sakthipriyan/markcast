@@ -13,6 +13,7 @@ import {normalizeSource, shortLink} from './core/source.js';
 import {encodeDeck, decodeDeck, parseHash, deckHash} from './core/share.js';
 import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from './core/doc.js';
 import {youtubeVideo, embedUrl} from './core/media.js';
+import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious} from './core/record.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
@@ -1627,7 +1628,7 @@ let obs = null, obsConnected = false, recStartResolve = null, obsFps = null;
 // t0/pausedMs give "time into the recording"; log holds slide arrivals and retakes; cuts are the bad parts
 // t0/pausedMs give "time into the recording"; every slide start (first attempt or retake) is an event,
 // stamped with OBS's own recording time when OBS is connected so cut points match the file exactly
-const rec = {active:false, withObs:false, counting:false, paused:false, finishing:false, t0:0, pauseAt:0, pausedMs:0, events:[], outputPath:null};
+const rec = {active:false, withObs:false, counting:false, paused:false, finishing:false, t0:0, pauseAt:0, pausedMs:0, events:[], outputPath:null, browser:null};
 const wait = ms=>new Promise(r=>setTimeout(r, ms));
 // two painted frames (so an overlay is really gone), but never hang if the tab isn't painting
 const nextFrame = ()=>Promise.race([new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))), wait(100)]);
@@ -1749,6 +1750,96 @@ function showScreenAdvice(){
   el.innerHTML = '<span class="warn">This screen is ' + shape + ' (' + w + '×' + h + '), not 16:9, so the video will have bars or be cropped. ' +
     'Move this window to a 16:9 screen, physical or virtual (say 1920×1080), then press F there.</span>';
 }
+// ---------- recording in the browser: this tab's 16:9 frame plus the mic, a recorder per take ----------
+// Chromium only for now: it captures one element of the current tab (Element Capture, or Region Capture
+// before Chrome 132) and records MP4. Takes go to the browser's private storage, one file each.
+const MEDIABUNNY_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.64.0/+esm';
+const recCam = document.getElementById('rec-cam'), recMic = document.getElementById('rec-mic'), recQuality = document.getElementById('rec-quality');
+const recMeter = document.getElementById('rec-meter'), recCheck = document.getElementById('rec-browser-check');
+let recMode = load('slidetake:rec-mode') || '';
+let recNote = '';   // why the last start failed, shown in place of the check once
+let meter = null;   // the mic preview while the dialog is open: {stream, ctx, raf}
+function browserRecording(){
+  const md = navigator.mediaDevices;
+  if (!window.isSecureContext || !md || !md.getDisplayMedia) return {why:'This page can’t capture itself here. Open Slidetake in Chrome or Edge on a computer.'};
+  if (!window.RestrictionTarget && !window.CropTarget) return {why:'Recording in the browser needs Chrome or Edge (or another Chromium browser) on a computer.'};
+  const type = window.MediaRecorder ? recordingType(t=>MediaRecorder.isTypeSupported(t)) : '';
+  if (!type || !navigator.storage || !navigator.storage.getDirectory) return {why:'This browser can’t record video here. Use a recent Chrome or Edge.'};
+  // in fullscreen the frame is the largest 16:9 area of the screen
+  const {quality, device} = bestQuality(screen.width, screen.height, devicePixelRatio || 1);
+  if (!quality) return {why:'This screen gives a ' + device[0] + '×' + device[1] + ' frame, less than 720p. Use OBS, or a larger screen.'};
+  return {ok:true, type, quality};
+}
+async function stopMeter(){
+  if (!meter) return;
+  cancelAnimationFrame(meter.raf);
+  meter.stream.getTracks().forEach(t=>t.stop());
+  meter.ctx.close().catch(()=>{});
+  meter = null;
+  recMeter.value = 0;
+}
+async function startMeter(){
+  await stopMeter();
+  try {
+    const id = recMic.value;
+    const stream = await navigator.mediaDevices.getUserMedia({audio:id ? {deviceId:{exact:id}} : true});
+    const ctx = new AudioContext(), an = ctx.createAnalyser();
+    an.fftSize = 512;
+    ctx.createMediaStreamSource(stream).connect(an);
+    const buf = new Float32Array(an.fftSize);
+    meter = {stream, ctx, raf:0};
+    const loop = ()=>{
+      an.getFloatTimeDomainData(buf);
+      let peak = 0; for (const v of buf) peak = Math.max(peak, Math.abs(v));
+      recMeter.value = Math.max(peak, recMeter.value * 0.85);
+      meter.raf = requestAnimationFrame(loop);
+    };
+    loop();
+  } catch(e){ recCheck.innerHTML = '<span class="warn">The microphone isn’t available: ' + escapeHtml(e.message || e.name) + '. Allow it in the site settings.</span>'; }
+}
+async function fillDevices(){
+  try {
+    // labels are only listed once the page may use a device, so ask for the mic first
+    if (!meter) await startMeter();
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    const opts = (kind, saved)=>devs.filter(d=>d.kind === kind).map((d, i)=>'<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === saved ? ' selected' : '') + '>' +
+      escapeHtml(d.label || (kind === 'audioinput' ? 'Microphone ' : 'Camera ') + (i + 1)) + '</option>').join('');
+    recCam.innerHTML = opts('videoinput', load('slidetake:cam') || '');
+    const mic = load('slidetake:mic') || '';
+    recMic.innerHTML = opts('audioinput', mic);
+    if (mic && recMic.value === mic && meter && meter.stream.getAudioTracks()[0].getSettings().deviceId !== mic) startMeter();
+  } catch(e){}
+}
+recMic.onchange = ()=>{ save('slidetake:mic', recMic.value); startMeter(); };
+recCam.onchange = ()=>{ save('slidetake:cam', recCam.value); if (cameraStream){ stopWebcam(); startWebcam(); } };
+recQuality.onchange = ()=>save('slidetake:quality', recQuality.value);
+async function showBrowserCheck(){
+  const b = browserRecording();
+  if (!b.ok){ recCheck.innerHTML = '<span class="warn">' + escapeHtml(b.why) + '</span>'; return b; }
+  if (recNote){ recCheck.innerHTML = '<span class="warn">' + escapeHtml(recNote) + '</span>'; recNote = ''; }
+  const best = QUALITIES.indexOf(b.quality), saved = load('slidetake:quality');
+  recQuality.innerHTML = QUALITIES.slice(best).map(q=>'<option' + (q.name === saved ? ' selected' : '') + '>' + q.name + '</option>').join('');
+  let room = '';
+  try {
+    const {quota, usage} = await navigator.storage.estimate();
+    const q = QUALITIES.find(x=>x.name === recQuality.value) || b.quality;
+    room = ' Room for about ' + Math.floor((quota - usage) / bytesPerMinute(q)) + ' minutes of takes.';
+  } catch(e){}
+  if (!recCheck.querySelector('.warn')) recCheck.innerHTML = '<span class="ok">Ready: this screen records up to ' + b.quality.name + ' in fullscreen.' + escapeHtml(room) + '</span>';
+  return b;
+}
+function setRecMode(mode){
+  recMode = mode;
+  save('slidetake:rec-mode', mode);
+  document.querySelectorAll('input[name="rec-mode"]').forEach(r=>{ r.checked = r.value === mode; });
+  document.getElementById('rec-browser').hidden = mode !== 'browser';
+  document.getElementById('rec-obs').hidden = mode !== 'obs';
+  if (mode === 'browser'){ recCheck.innerHTML = ''; showBrowserCheck().then(b=>{ recStartBtn.disabled = !b.ok; if (b.ok) fillDevices(); }); }
+  else { stopMeter(); recStartBtn.disabled = !obsConnected; }
+}
+document.querySelectorAll('input[name="rec-mode"]').forEach(r=>r.onchange = ()=>setRecMode(r.value));
+recDialog.addEventListener('click', e=>{ if (e.target === recDialog || e.target.closest('[data-close]')) stopMeter(); });
+
 function openRecordDialog(){
   if (!RECORDING_UI) return;
   const total = order.reduce((a, id)=>a + slideSteps(nodes.get(id)).length, 0);
@@ -1756,19 +1847,98 @@ function openRecordDialog(){
   document.getElementById('rec-deck-info').innerHTML =
     escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : 'This deck')) + ' · ' + order.length + ' slides · ' + total + ' presses' +
     (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C first if this take should include your webcam.</span>' : '');
-  recStartBtn.disabled = !obsConnected;
   renderSessionList();
   showScreenAdvice();
+  setRecMode(recMode || (browserRecording().ok ? 'browser' : 'obs'));
   openModal(recDialog);
 }
 document.getElementById('btn-record').onclick = openRecordDialog;
-recStartBtn.onclick = ()=>startTake(true);
-document.getElementById('rec-rehearse').onclick = ()=>startTake(false);
+recStartBtn.onclick = ()=>{ stopMeter(); startTake(recMode === 'browser' ? 'browser' : 'obs'); };
+document.getElementById('rec-rehearse').onclick = ()=>{ stopMeter(); startTake('rehearse'); };
 
-async function startTake(withObs){
+// the takes of each session live in the browser's private storage, in a folder named after the session
+async function takesDir(id, create){
+  const root = await navigator.storage.getDirectory();
+  const all = await root.getDirectoryHandle('slidetake-takes', {create:true});
+  return all.getDirectoryHandle(id, {create:!!create});
+}
+async function deleteTakes(id){
+  try { const root = await navigator.storage.getDirectory(); await (await root.getDirectoryHandle('slidetake-takes')).removeEntry(id, {recursive:true}); } catch(e){}
+}
+// called from the Start click, before anything else: sharing the tab needs that click
+async function beginBrowserCapture(){
+  const b = browserRecording();
+  if (!b.ok) throw new Error(b.why);
+  const quality = QUALITIES.find(q=>q.name === recQuality.value) || b.quality;
+  document.body.classList.add('rec-frame');   // the frame must exist (and be capturable) before the capture is cut to it
+  const display = await navigator.mediaDevices.getDisplayMedia({video:{frameRate:FPS}, audio:false,
+    preferCurrentTab:true, selfBrowserSurface:'include', surfaceSwitching:'exclude', monitorTypeSurfaces:'exclude'});
+  const track = display.getVideoTracks()[0];
+  const stopAll = ()=>display.getTracks().forEach(t=>t.stop());
+  if (!track.restrictTo && !track.cropTo){ stopAll(); throw new Error('Share “this tab” to record the slides.'); }
+  try {
+    if (window.RestrictionTarget && track.restrictTo) await track.restrictTo(await RestrictionTarget.fromElement(stageWrap));
+    else await track.cropTo(await CropTarget.fromElement(stageWrap));
+  } catch(e){ stopAll(); throw new Error('Chrome could not record just the slides (' + (e.message || e.name) + ').'); }
+  await track.applyConstraints({width:quality.w, height:quality.h, frameRate:FPS, resizeMode:'crop-and-scale'}).catch(()=>{});
+  let mic;
+  try {
+    const id = load('slidetake:mic');
+    mic = await navigator.mediaDevices.getUserMedia({audio:{...(id ? {deviceId:{ideal:id}} : {}), echoCancellation:false, autoGainControl:false, noiseSuppression:false}});
+  } catch(e){ stopAll(); throw new Error('The microphone isn’t available (' + (e.message || e.name) + ').'); }
+  const id = new Date().toISOString().replace(/[:.]/g, '-');
+  rec.browser = {id, display, mic, track, quality, type:b.type, stream:new MediaStream([track, ...mic.getAudioTracks()]),
+    dir:await takesDir(id, true), clips:[], cur:null, chain:Promise.resolve(), error:null};
+  // stopping the share from Chrome's bar ends the take like Esc
+  track.addEventListener('ended', ()=>{ if (rec.active && !rec.finishing) finishTake('Sharing stopped'); });
+}
+function endBrowserCapture(){
+  const b = rec.browser;
+  if (!b) return;
+  b.display.getTracks().forEach(t=>t.stop());
+  b.mic.getTracks().forEach(t=>t.stop());
+  document.body.classList.remove('rec-frame');
+}
+// a new take: its own recorder and file. The new one starts first and the one before stops once it is
+// running, so no moment is missed; the take's start is stamped when its recorder actually starts.
+function startClip(ev){
+  const b = rec.browser;
+  const name = 'take-' + b.clips.length + '.' + clipExt(b.type);
+  const clip = {name, rec:null, done:null};
+  b.clips.push(clip);
+  ev.clip = name;
+  b.chain = b.chain.then(async ()=>{
+    const file = await (await b.dir.getFileHandle(name, {create:true})).createWritable();
+    const r = new MediaRecorder(b.stream, {mimeType:b.type, videoBitsPerSecond:b.quality.bitrate, audioBitsPerSecond:AUDIO_BITRATE});
+    let writes = Promise.resolve();
+    r.ondataavailable = e=>{ if (e.data.size) writes = writes.then(()=>file.write(e.data)).catch(err=>{ b.error = err; }); };
+    clip.done = new Promise(res=>{ r.onstop = async ()=>{ await writes; await file.close().catch(()=>{}); res(); }; });
+    await new Promise(res=>{ r.onstart = res; r.start(1000); });
+    ev.t = Math.round(recNow());
+    const prev = b.cur;
+    b.cur = clip; clip.rec = r;
+    if (prev && prev.rec.state !== 'inactive') prev.rec.stop();
+  }).catch(err=>{ b.error = err; });
+}
+
+// kind: 'obs' (OBS records), 'browser' (this tab records itself) or 'rehearse' (nothing is recorded)
+async function startTake(kind){
   if (rec.active || !order.length) return;
+  const withObs = kind === 'obs';
+  if (kind === 'browser'){
+    if (!presenting) setPresent(true);        // fullscreen first, while the click still counts
+    try { await beginBrowserCapture(); }
+    catch(e){
+      document.body.classList.remove('rec-frame');
+      if (presenting) setPresent(false);
+      recNote = e.name === 'NotAllowedError' ? 'Recording needs this tab shared. Start again and choose Share.' : e.message;
+      openRecordDialog();
+      return;
+    }
+  }
   closeModals();
   Object.assign(rec, {active:true, withObs, counting:true, paused:false, finishing:false, t0:0, pausedMs:0, events:[], outputPath:null});
+  if (kind !== 'browser') rec.browser = null;
   document.body.classList.add('recording');
   hidePipMsg();
   const lay = document.getElementById('rec-layout').value;
@@ -1802,6 +1972,12 @@ async function startTake(withObs){
 }
 function abortTake(message){
   rec.active = false; rec.counting = false;
+  if (rec.browser){
+    const b = rec.browser;
+    b.chain.then(()=>{ if (b.cur && b.cur.rec.state !== 'inactive') b.cur.rec.stop(); }).then(()=>deleteTakes(b.id));
+    endBrowserCapture();
+    rec.browser = null;
+  }
   countdownEl.classList.remove('show');
   document.body.classList.remove('recording');
   if (presenting) setPresent(false);
@@ -1813,6 +1989,7 @@ function logTake(kind, id){
   const n = nodes.get(id);
   const ev = {id, title:n ? n.title : id, retake:kind === 'retake', t:Math.round(recNow()), obsT:null};
   rec.events.push(ev);
+  if (rec.browser) startClip(ev);
   if (rec.withObs && obsConnected){
     obs.call('GetRecordStatus').then(r=>{ if (r && typeof r.outputDuration === 'number') ev.obsT = r.outputDuration; }).catch(()=>{});
     // OBS 30.2+ also writes these into Hybrid MP4 recordings; other setups ignore them
@@ -1854,11 +2031,13 @@ async function togglePause(){
     rec.paused = true; rec.pauseAt = performance.now();
     clearTimeout(autoTimer);
     if (rec.withObs) await obs.call('PauseRecord').catch(()=>{});
+    if (rec.browser){ const b = rec.browser; b.chain = b.chain.then(()=>{ if (b.cur && b.cur.rec.state === 'recording') b.cur.rec.pause(); }); }
     pausedEl.classList.add('show');
   } else {
     pausedEl.classList.remove('show');
     await nextFrame();                      // the pause screen must be gone before OBS resumes
     if (rec.withObs) await obs.call('ResumeRecord').catch(()=>{});
+    if (rec.browser){ const b = rec.browser; b.chain = b.chain.then(()=>{ if (b.cur && b.cur.rec.state === 'paused') b.cur.rec.resume(); }); }
     rec.pausedMs += performance.now() - rec.pauseAt;
     rec.paused = false;
     scheduleAutoslide(nodes.get(currentId));
@@ -1878,13 +2057,25 @@ async function finishTake(reason){
     try { const r = await obs.call('StopRecord'); rec.outputPath = r && r.outputPath; }
     catch(e){ reason = (reason ? reason + '. ' : '') + 'OBS did not confirm the stop (' + ((e && e.message) || e) + ')'; }
   }
+  const b = rec.browser;
+  if (b){
+    await wait(600);                        // hold the last frame a moment
+    await b.chain;
+    total = Math.round(recNow());
+    if (b.cur && b.cur.rec && b.cur.rec.state !== 'inactive') b.cur.rec.stop();
+    await Promise.all(b.clips.map(c=>c.done));
+    endBrowserCapture();
+    rec.browser = null;
+    if (b.error) reason = (reason ? reason + '. ' : '') + 'Some of the take could not be saved (' + (b.error.message || b.error.name) + ')';
+  }
   rec.active = false; rec.finishing = false;
   document.body.classList.remove('recording');
   if (presenting) setPresent(false);
   const session = {
     key:sessionKey(), deckTitle:deck.title || nodes.get(order[0]).title, date:new Date().toISOString(),
-    withObs:rec.withObs, outputPath:rec.outputPath, reason:reason || '', total, totalObs, fps:obsFps,
-    events:rec.events.map(e=>({id:e.id, title:e.title, retake:e.retake, t:e.t, obsT:e.obsT})), picks:{}
+    withObs:rec.withObs, outputPath:rec.outputPath, reason:reason || '', total, totalObs, fps:b ? FPS : obsFps,
+    ...(b ? {inBrowser:true, takesId:b.id, quality:b.quality.name, type:b.type} : {}),
+    events:rec.events.map(e=>({id:e.id, title:e.title, retake:e.retake, t:e.t, obsT:e.obsT, ...(e.clip ? {clip:e.clip} : {})})), picks:{}
   };
   saveSession(session);
   openReview(session);
@@ -1896,6 +2087,8 @@ function loadSessions(){ try { return JSON.parse(load('slidetake:sessions') || '
 function saveSession(sess){
   const all = loadSessions().filter(x=>x.date !== sess.date);
   all.unshift(sess);
+  // a session that drops off the list takes its recorded takes with it
+  all.slice(12).forEach(x=>{ if (x.takesId) deleteTakes(x.takesId); });
   save('slidetake:sessions', JSON.stringify(all.slice(0, 12)));
 }
 function renderSessionList(){
@@ -1903,7 +2096,7 @@ function renderSessionList(){
   const mine = loadSessions().filter(x=>x.key === sessionKey());
   box.innerHTML = mine.length ? '<h3>Earlier takes of this deck</h3>' + mine.map((x, i)=>
     '<div class="row"><button class="btn small" data-session="' + i + '">Review</button><span>' +
-    escapeHtml(new Date(x.date).toLocaleString()) + ' · ' + fmtTime(x.totalObs ?? x.total) + (x.withObs ? '' : ' · rehearsal') +
+    escapeHtml(new Date(x.date).toLocaleString()) + ' · ' + fmtTime(x.totalObs ?? x.total) + (x.inBrowser ? ' · in this browser' + (x.cleaned ? ' (takes deleted)' : '') : x.withObs ? '' : ' · rehearsal') +
     (x.outputPath ? ' · ' + escapeHtml(baseName(x.outputPath)) : '') + '</span></div>').join('') : '';
   box.querySelectorAll('[data-session]').forEach(b=>b.onclick = ()=>{ closeModals(); openReview(mine[+b.dataset.session]); });
 }
@@ -1977,14 +2170,18 @@ function openReview(sess){
   reviewing = sess;
   playlist = null;
   const slides = takesOf(sess), retakes = sess.events.filter(e=>e.retake).length;
-  document.getElementById('rv-title').textContent = (sess.withObs ? 'Review the take · ' : 'Rehearsal · ') + sess.deckTitle;
+  const recorded = sess.withObs || sess.inBrowser;
+  reviewDialog.classList.toggle('in-browser', !!sess.inBrowser);
+  document.getElementById('rv-title').textContent = (recorded ? 'Review the take · ' : 'Rehearsal · ') + sess.deckTitle;
+  document.getElementById('rv-render-status').textContent = sess.cleaned ? 'These takes were deleted.' : '';
+  document.getElementById('rv-render-btn').disabled = document.getElementById('rv-clean').disabled = !!sess.cleaned;
   document.getElementById('rv-info').textContent = [
     sess.reason,
     new Date(sess.date).toLocaleString(),
-    (sess.withObs ? 'recorded ' : 'ran ') + fmtTime(sess.totalObs ?? sess.total),
+    (recorded ? 'recorded ' : 'ran ') + fmtTime(sess.totalObs ?? sess.total),
     slides.size + ' slides',
     retakes ? retakes + ' retake' + (retakes > 1 ? 's' : '') : 'no retakes',
-    sess.outputPath ? 'saved to ' + sess.outputPath : (sess.withObs ? '' : 'nothing was recorded')
+    sess.inBrowser ? sess.quality + ', in this browser' : sess.outputPath ? 'saved to ' + sess.outputPath : (sess.withObs ? '' : 'nothing was recorded')
   ].filter(Boolean).join(' · ');
   document.getElementById('rv-file').textContent = sess.outputPath ? ' (' + baseName(sess.outputPath) + ')' : '';
   document.getElementById('rv-yt-title').value = sess.deckTitle;
@@ -1993,13 +2190,14 @@ function openReview(sess){
   fpsSel.value = [...fpsSel.options].reduce((a, o)=>Math.abs(o.value - fps) < Math.abs(a.value - fps) ? o : a).value;
   document.getElementById('rv-yt-tags').value = deckTags().join(', ');
   document.getElementById('rv-link').value = deckLink();
-  if (rvVideo.src && reviewFileName !== baseName(sess.outputPath) && sess.outputPath){
+  if (rvVideo.src && (sess.inBrowser || reviewFileName !== baseName(sess.outputPath) && sess.outputPath)){
     rvVideo.removeAttribute('src'); rvVideo.load(); reviewFileName = '';
   }
   document.getElementById('rv-novideo').hidden = !!rvVideo.src;
   renderReview();
   openModal(reviewDialog);
-  autoLoadRecording(sess);
+  if (!sess.inBrowser) autoLoadRecording(sess);
+  else rvNow.textContent = sess.cleaned ? '' : 'Click a take to preview it.';
 }
 function renderReview(){
   const sess = reviewing, list = document.getElementById('rv-list');
@@ -2018,7 +2216,12 @@ function renderReview(){
     saveSession(sess);
     renderReview();
     const slide = takesOf(sess).get(b.dataset.id), t = slide && slide.takes[+b.dataset.take - 1];
-    if (t) playRange([{start:t.start, end:t.end, title:slide.title + (slide.takes.length > 1 ? ' · take ' + t.no : '')}]);
+    if (!t) return;
+    const title = slide.title + (slide.takes.length > 1 ? ' · take ' + t.no : '');
+    if (sess.inBrowser){
+      const ev = sess.events.filter(e=>e.id === b.dataset.id)[t.no - 1];
+      if (ev && ev.clip) playClips([{clip:ev.clip, keep:(t.end - t.start) / 1000, title}]);
+    } else playRange([{start:t.start, end:t.end, title}]);
   });
   document.getElementById('rv-ffmpeg').value = ffmpegScript(sess, document.getElementById('rv-mode').value);
   describe(sess);
@@ -2061,7 +2264,124 @@ rvVideo.addEventListener('timeupdate', ()=>{
   rvNow.textContent = '▶ ' + next.title;
 });
 document.getElementById('rv-play-final').onclick = ()=>{
-  if (reviewing) playRange(pickedRanges(reviewing).map(r=>({start:r.start, end:r.end, title:r.title})));
+  if (!reviewing) return;
+  if (reviewing.inBrowser) playClips(clipPlan(reviewing));
+  else playRange(pickedRanges(reviewing).map(r=>({start:r.start, end:r.end, title:r.title})));
+};
+
+// a browser session's takes are files of their own: play each from its start for as long as it is kept
+let clipList = null;
+async function clipFile(sess, name){ return (await (await takesDir(sess.takesId)).getFileHandle(name)).getFile(); }
+async function playClips(parts, i = 0){
+  if (!reviewing || reviewing.cleaned || !parts.length) return;
+  playlist = null;
+  clipList = {parts, i};
+  try {
+    const file = await clipFile(reviewing, parts[i].clip);
+    if (rvVideo.src) URL.revokeObjectURL(rvVideo.src);
+    rvVideo.src = URL.createObjectURL(file);
+    rvNow.textContent = '▶ ' + parts[i].title;
+    await rvVideo.play();
+  } catch(e){
+    if (e && e.name === 'AbortError') return;
+    clipList = null;
+    rvNow.textContent = e && e.name === 'NotFoundError' ? 'This take is no longer in the browser.' : 'Could not play this take: ' + ((e && e.message) || e);
+  }
+}
+rvVideo.addEventListener('timeupdate', ()=>{
+  if (!clipList || rvVideo.currentTime < clipList.parts[clipList.i].keep) return;
+  if (clipList.i + 1 < clipList.parts.length) playClips(clipList.parts, clipList.i + 1);
+  else { rvVideo.pause(); clipList = null; rvNow.textContent = ''; }
+});
+rvVideo.addEventListener('ended', ()=>{
+  if (clipList && clipList.i + 1 < clipList.parts.length) playClips(clipList.parts, clipList.i + 1);
+});
+
+// Render: the picked takes joined into one file, packets copied as they are (no decoding or re-encoding).
+// Every take starts on a keyframe and shares the recorder's settings, so the joins need nothing else.
+const renderStatus = document.getElementById('rv-render-status');
+document.getElementById('rv-render-btn').onclick = async ()=>{
+  const sess = reviewing;
+  if (!sess || !sess.inBrowser || sess.cleaned) return;
+  const plan = clipPlan(sess);
+  if (!plan.length){ renderStatus.textContent = 'Every slide is left out: nothing to render.'; return; }
+  const mp4 = clipExt(sess.type || '') === 'mp4';
+  const name = sessionKey() + '.' + (mp4 ? 'mp4' : 'webm');
+  let file = null;
+  // where the browser allows it, the video is written straight to the file you choose
+  if (window.showSaveFilePicker){
+    try {
+      const handle = await window.showSaveFilePicker({suggestedName:name, types:[{description:'Video', accept:mp4 ? {'video/mp4':['.mp4']} : {'video/webm':['.webm']}}]});
+      file = await handle.createWritable();
+    } catch(e){ if (e && e.name === 'AbortError') return; }
+  }
+  const btn = document.getElementById('rv-render-btn');
+  btn.disabled = true;
+  renderStatus.textContent = 'Loading the video tools…';
+  try {
+    const MB = await import(MEDIABUNNY_URL);
+    const target = file ? new MB.StreamTarget(file) : new MB.BufferTarget();
+    const out = new MB.Output({format:mp4 ? new MB.Mp4OutputFormat({fastStart:file ? false : 'in-memory'}) : new MB.WebMOutputFormat(), target});
+    let vSrc = null, aSrc = null, offset = 0, lastV = -1, lastA = -1;
+    for (const [i, part] of plan.entries()){
+      renderStatus.textContent = 'Joining take ' + (i + 1) + ' of ' + plan.length + '…';
+      const input = new MB.Input({source:new MB.BlobSource(await clipFile(sess, part.clip)), formats:MB.ALL_FORMATS});
+      const vt = await input.getPrimaryVideoTrack(), at = await input.getPrimaryAudioTrack();
+      if (!vt) throw new Error(part.title + ' has no video');
+      if (!vSrc){
+        vSrc = new MB.EncodedVideoPacketSource(await vt.getCodec());
+        out.addVideoTrack(vSrc, {frameRate:FPS});
+        if (at){ aSrc = new MB.EncodedAudioPacketSource(await at.getCodec()); out.addAudioTrack(aSrc); }
+        await out.start();
+      }
+      const vMeta = {decoderConfig:await vt.getDecoderConfig()};
+      // the take ends where the next one began; frames after that belong to the next take
+      let end = 0, first = true;
+      for await (const pk of new MB.EncodedPacketSink(vt).packets()){
+        if (pk.timestamp >= part.keep) continue;
+        lastV = afterPrevious(lastV, offset + pk.timestamp);
+        await vSrc.add(pk.clone({timestamp:lastV}), first && i === 0 ? vMeta : undefined);
+        first = false;
+        end = Math.max(end, pk.timestamp + pk.duration);
+      }
+      // the sound stops with the picture, so the next take's sound starts where its picture does
+      if (at && aSrc){
+        const aMeta = {decoderConfig:await at.getDecoderConfig()};
+        let aFirst = true;
+        for await (const pk of new MB.EncodedPacketSink(at).packets()){
+          if (pk.timestamp + pk.duration > end + 1e-4) continue;
+          lastA = afterPrevious(lastA, offset + pk.timestamp);
+          await aSrc.add(pk.clone({timestamp:lastA}), aFirst && i === 0 ? aMeta : undefined);
+          aFirst = false;
+        }
+      }
+      offset += end;
+    }
+    renderStatus.textContent = 'Finishing…';
+    await out.finalize();
+    if (!file){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([target.buffer], {type:mp4 ? 'video/mp4' : 'video/webm'}));
+      a.download = name;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
+    }
+    renderStatus.textContent = 'Rendered ' + fmtTime(offset * 1000) + ' to ' + name + '.';
+  } catch(e){
+    renderStatus.textContent = 'Could not render: ' + ((e && e.message) || e);
+    if (file) file.abort().catch(()=>{});
+  } finally { btn.disabled = !!sess.cleaned; }
+};
+document.getElementById('rv-clean').onclick = async ()=>{
+  const sess = reviewing;
+  if (!sess || !sess.inBrowser || sess.cleaned) return;
+  if (!confirm('Delete the recorded takes of this session from this browser? Render the video first if you need it.')) return;
+  await deleteTakes(sess.takesId);
+  sess.cleaned = true;
+  saveSession(sess);
+  if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
+  clipList = null;
+  openReview(sess);
 };
 
 // the recording: from the remembered OBS folder when the browser allows it, otherwise picked by hand
@@ -2232,7 +2552,8 @@ async function startWebcam(){
     camBtn.disabled = true;
     showPipMsg('Waiting for camera permission — check the browser prompt near the address bar.', true);
     try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30}}, audio:false});
+      const camId = load('slidetake:cam');
+      cameraStream = await navigator.mediaDevices.getUserMedia({video:{...(camId ? {deviceId:{ideal:camId}} : {}), width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30}}, audio:false});
       hidePipMsg();
     } catch(e){
       const name = e && e.name;

@@ -194,8 +194,22 @@
     <button class="close" data-close aria-label="Close">✕</button>
     <h2 id="rec-title">Record a take</h2>
     <p id="rec-deck-info"></p>
+    <div class="rec-modes" role="radiogroup" aria-label="Record with">
+      <label class="rec-mode"><input type="radio" name="rec-mode" value="browser"><span><strong>In this browser</strong><small>Nothing to install. Takes stay in this browser until you render the video.</small></span></label>
+      <label class="rec-mode"><input type="radio" name="rec-mode" value="obs"><span><strong>OBS</strong><small>For any screen, or when this browser can't record at 720p or more.</small></span></label>
+    </div>
+    <div id="rec-browser">
+      <p id="rec-browser-check"></p>
+      <div class="fields">
+        <label>Camera<select id="rec-cam"></select></label>
+        <label>Microphone<select id="rec-mic"></select></label>
+        <label>Quality<select id="rec-quality"></select></label>
+      </div>
+      <div class="row rec-level"><span>Mic level</span><meter id="rec-meter" min="0" max="1" low="0.1" high="0.8" optimum="0.5" value="0"></meter></div>
+      <p>When Chrome asks, share <strong>this tab</strong>. Only the slides and your camera are recorded, in a 16:9 frame; nothing else on the screen is.</p>
+    </div>
+    <div id="rec-obs">
     <p id="rec-screen"></p>
-    <h3>OBS</h3>
     <div class="fields">
       <label>Host<input type="text" id="obs-host" value="localhost" spellcheck="false"></label>
       <label>Port<input type="text" id="obs-port" value="4455" inputmode="numeric"></label>
@@ -204,9 +218,10 @@
     <label class="check"><input type="checkbox" id="obs-remember"> Remember these on this computer</label>
     <div class="row"><button class="btn" id="obs-connect">Connect</button><span id="obs-status">Not connected</span></div>
     <p>In OBS: Tools → WebSocket Server Settings → enable it; the port and password are shown there. Point OBS at this browser window plus your microphone. No scenes are needed: the deck switches the camera itself.</p>
+    </div>
     <h3>During the take</h3>
     <ul>
-      <li><kbd>→</kbd> / clicker next: the next step. One more press after the last step ends the take and stops OBS.</li>
+      <li><kbd>→</kbd> / clicker next: the next step. One more press after the last step ends the take.</li>
       <li><kbd>←</kbd> / clicker back: <strong>take this slide again</strong>. Every attempt is kept; you pick the best one afterwards.</li>
       <li><kbd>B</kbd> / clicker blank: pause and resume the recording.</li>
       <li><kbd>Esc</kbd>: stop the take early.</li>
@@ -248,6 +263,12 @@
       <div class="rv-list" id="rv-list"></div>
     </div>
     <div class="rv-out">
+      <div id="rv-render">
+        <h3>Video</h3>
+        <div class="row"><button class="btn primary" id="rv-render-btn">↓ Render the video</button><span id="rv-render-status"></span></div>
+        <p>Joins the picked takes into one file here in this browser, without re-encoding. The takes stay in this browser until you delete them. <button class="btn small" id="rv-clean">Delete these takes</button></p>
+      </div>
+      <div id="rv-ffmpeg-box">
       <h3>ffmpeg
         <select id="rv-mode">
           <option value="accurate">Frame-accurate (x264)</option>
@@ -262,6 +283,7 @@
         <button class="btn small" data-copy="rv-ffmpeg">Copy</button>
       </h3>
       <textarea id="rv-ffmpeg" rows="4" readonly spellcheck="false"></textarea>
+      </div>
       <h3>YouTube</h3>
       <div class="two">
         <label>Title<input type="text" id="rv-yt-title"></label>

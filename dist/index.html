@@ -374,6 +374,17 @@
   /* while a take runs nothing but the slides and the camera is on screen */
   body.recording #breadcrumbs, body.recording #navbar, body.recording #minimap, body.recording #pip-msg{display:none !important;}
   body.recording, body.recording *{cursor:none !important;}
+  /* recording in the browser: the deck in a 16:9 frame, the only part captured. Chrome captures an element
+     only while it is its own stacking context, hence the isolation (without it the capture is silently empty). */
+  body.rec-frame main{background:#000;}
+  body.rec-frame #stage-wrap{flex:none;margin:auto;width:min(100%, calc(100vh * 16 / 9));aspect-ratio:16/9;isolation:isolate;}
+  .rec-modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px;}
+  .rec-mode{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--panel-line);border-radius:10px;padding:10px 12px;cursor:pointer;}
+  .rec-mode:has(input:checked){border-color:var(--accent);}
+  .rec-mode input{margin-top:3px;}
+  .rec-mode small{display:block;color:var(--text-muted);font-size:12px;margin-top:2px;}
+  .rec-level meter{flex:1;height:10px;}
+  #review.in-browser #rv-novideo, #review.in-browser #rv-ffmpeg-box, #review:not(.in-browser) #rv-render{display:none !important;}
   #rec-countdown{
     position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
     background:rgba(4,7,13,.9);font-family:var(--display);color:var(--accent);
@@ -825,8 +836,22 @@
     <button class="close" data-close aria-label="Close">✕</button>
     <h2 id="rec-title">Record a take</h2>
     <p id="rec-deck-info"></p>
+    <div class="rec-modes" role="radiogroup" aria-label="Record with">
+      <label class="rec-mode"><input type="radio" name="rec-mode" value="browser"><span><strong>In this browser</strong><small>Nothing to install. Takes stay in this browser until you render the video.</small></span></label>
+      <label class="rec-mode"><input type="radio" name="rec-mode" value="obs"><span><strong>OBS</strong><small>For any screen, or when this browser can't record at 720p or more.</small></span></label>
+    </div>
+    <div id="rec-browser">
+      <p id="rec-browser-check"></p>
+      <div class="fields">
+        <label>Camera<select id="rec-cam"></select></label>
+        <label>Microphone<select id="rec-mic"></select></label>
+        <label>Quality<select id="rec-quality"></select></label>
+      </div>
+      <div class="row rec-level"><span>Mic level</span><meter id="rec-meter" min="0" max="1" low="0.1" high="0.8" optimum="0.5" value="0"></meter></div>
+      <p>When Chrome asks, share <strong>this tab</strong>. Only the slides and your camera are recorded, in a 16:9 frame; nothing else on the screen is.</p>
+    </div>
+    <div id="rec-obs">
     <p id="rec-screen"></p>
-    <h3>OBS</h3>
     <div class="fields">
       <label>Host<input type="text" id="obs-host" value="localhost" spellcheck="false"></label>
       <label>Port<input type="text" id="obs-port" value="4455" inputmode="numeric"></label>
@@ -835,9 +860,10 @@
     <label class="check"><input type="checkbox" id="obs-remember"> Remember these on this computer</label>
     <div class="row"><button class="btn" id="obs-connect">Connect</button><span id="obs-status">Not connected</span></div>
     <p>In OBS: Tools → WebSocket Server Settings → enable it; the port and password are shown there. Point OBS at this browser window plus your microphone. No scenes are needed: the deck switches the camera itself.</p>
+    </div>
     <h3>During the take</h3>
     <ul>
-      <li><kbd>→</kbd> / clicker next: the next step. One more press after the last step ends the take and stops OBS.</li>
+      <li><kbd>→</kbd> / clicker next: the next step. One more press after the last step ends the take.</li>
       <li><kbd>←</kbd> / clicker back: <strong>take this slide again</strong>. Every attempt is kept; you pick the best one afterwards.</li>
       <li><kbd>B</kbd> / clicker blank: pause and resume the recording.</li>
       <li><kbd>Esc</kbd>: stop the take early.</li>
@@ -879,6 +905,12 @@
       <div class="rv-list" id="rv-list"></div>
     </div>
     <div class="rv-out">
+      <div id="rv-render">
+        <h3>Video</h3>
+        <div class="row"><button class="btn primary" id="rv-render-btn">↓ Render the video</button><span id="rv-render-status"></span></div>
+        <p>Joins the picked takes into one file here in this browser, without re-encoding. The takes stay in this browser until you delete them. <button class="btn small" id="rv-clean">Delete these takes</button></p>
+      </div>
+      <div id="rv-ffmpeg-box">
       <h3>ffmpeg
         <select id="rv-mode">
           <option value="accurate">Frame-accurate (x264)</option>
@@ -893,6 +925,7 @@
         <button class="btn small" data-copy="rv-ffmpeg">Copy</button>
       </h3>
       <textarea id="rv-ffmpeg" rows="4" readonly spellcheck="false"></textarea>
+      </div>
       <h3>YouTube</h3>
       <div class="two">
         <label>Title<input type="text" id="rv-yt-title"></label>
@@ -920,13 +953,13 @@
 "use strict";
 (() => {
   // src/sample.md
-  var sample_default = '---\ntitle: Slidetake \u2014 write in markdown, record without timeline editing\nbrand: slidetake\npip: bottom-right\n---\n\n<!-- camera: on, full, on -->\n\n# ![](/favicon.svg) Slide<span class="st-take">take</span>\n\n**Write in markdown. Present on a spatial canvas. Record without timeline editing.**\n\nFor developers and technical educators who explain things on video. You\'re inside a Slidetake deck right now. Press \u2192 to walk it, **O** for the map.\n\n## \u2702\uFE0F Record without timeline editing\n\n**Retake by slide.** The slide is the timeline marker, so a fumbled line costs one press, not an editing session.\n\n### OBS records, the deck drives it\n\n**[OBS Studio](https://obsproject.com)** records at full quality. Press **<span class="st-rec">\u25CF Record</span>** and Slidetake starts it, moves through your slides and stops it at the end. No scenes to switch, no recording to watch.\n\n### Every slide is a take\n\nStumbled on a slide? Press \u2190 and say it again. Every attempt is kept, and recording carries on.\n\n### Pick, don\'t scrub\n\nChoose the best take of each slide. Slidetake writes the frame-exact **[ffmpeg](https://ffmpeg.org)** cut, the YouTube **chapters** and the description.\n\n### One session, one finished video\n\nWrite, present and record in one sitting. What comes out is ready to upload.\n\n## \u{1F5FA}\uFE0F A map, not a stack\n\n<!-- view: overview -->\n\nYour headings are the hierarchy: zoom out for the whole system, zoom in for one part. This slide just showed you the map.\n\n### Headings become cards\n\n`#` is the first card, `##` branches from it, `###` goes a level deeper. No layout to draw.\n\n### A path your viewer can follow\n\n\u2192 always walks the same order, and **path** lays it out as a staircase, so the audience never loses its place.\n\n## \u{1F3A5} The camera is part of the deck\n\n<!-- camera: on, full, on -->\n\nA comment in a slide moves you: corner, full screen, or off. Turn on **Camera** and watch this slide do it.\n\n### Camera moves, step by step\n\n<!-- camera: 40%, full, on -->\n\nWith **Camera** on, press \u2192: this slide puts you large in the corner, then full screen, then back to the corner. One comment, one press per move:\n\n```md\n### Camera moves, step by step\n<!-- camera: 40%, full, on -->\n```\n\nCombine `on`, `off`, `full`, a size like `40%`, a corner, `flip` or `circle`.\n\n## \u270D\uFE0F Plain markdown in\n\nMarkdown you already know: headings, lists, tables, code, steps, diagrams (Graphviz, D2, SVG), charts, images and YouTube links. [See them all in the showcase \u2192](/showcase)\n\n### A few comments do the rest\n\nMarkdown has no word for "reveal one at a time" or "move the camera", so a handful of HTML comments say it. They stay invisible anywhere else markdown is read:\n\n```md\n<!-- steps -->             \u2190 the rest, one press each\n<!-- camera: full, on -->  \u2190 move the camera\n<!-- view: overview -->    \u2190 the map first\n<!-- view: full -->        \u2190 a big-image card\n```\n\n## \u{1F3A8} Your colours\n\nOne line, `accent: "#3b82f6"`, gives a deck its own colour, shaded for dark and light. On your website, decks wear your site\'s palette.\n\n`brand:` and `logo:` put your name and logo in the corner of every slide, so every frame of the video carries them.\n\n## \u{1F310} Run it anywhere\n\nThree places, one deck format: a markdown file.\n\n### slidetake.com: write, view, share\n\nWrite a deck in the **\u270E Editor**, or view one straight from a link: a GitHub file, a gist or any markdown URL. **Share** a link with the deck inside it. Nothing to install.\n\n### Your computer: all that, plus AI\n\nThe same app on your own files, offline:\n\n```sh\nnpx slidetake deck.md\n```\n\nImages next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. So an AI agent can write `deck.md` while you watch it take shape.\n\n### Your website: users view, you record\n\n`slidetake.js` puts decks inside your own pages, in your site\'s colours. Users get a clean viewer; add `?obs` to the address and the same page records your video.\n\n## <span class="st-heart" aria-hidden="true"></span> Open source\n\nOpen source, Apache 2.0: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake). Nothing to sign up for, and your decks stay yours: [Privacy](/privacy).\n\nNext, every feature and what it saves you: **[Features \u2192](/features)**\n';
+  var sample_default = '---\ntitle: Slidetake \u2014 write in markdown, record without timeline editing\nbrand: slidetake\npip: bottom-right\n---\n\n<!-- camera: on, full, on -->\n\n# ![](/favicon.svg) Slide<span class="st-take">take</span>\n\n**Write in markdown. Present on a spatial canvas. Record without timeline editing.**\n\nFor developers and technical educators who explain things on video. You\'re inside a Slidetake deck right now. Press \u2192 to walk it, **O** for the map.\n\n## \u2702\uFE0F Record without timeline editing\n\n**Retake by slide.** The slide is the timeline marker, so a fumbled line costs one press, not an editing session.\n\n### Record right here, nothing to install\n\nPress **<span class="st-rec">\u25CF Record</span>** and the deck records itself, in Chrome or Edge: your slides and camera in one 16:9 frame, at 1080p. Or let **[OBS Studio](https://obsproject.com)** record while the deck drives it. No scenes to switch, no recording to watch.\n\n### Every slide is a take\n\nStumbled on a slide? Press \u2190 and say it again. Every attempt is kept, and recording carries on.\n\n### Pick, don\'t scrub\n\nChoose the best take of each slide. Slidetake joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), with the YouTube **chapters** and the description.\n\n### One session, one finished video\n\nWrite, present and record in one sitting. What comes out is ready to upload.\n\n## \u{1F5FA}\uFE0F A map, not a stack\n\n<!-- view: overview -->\n\nYour headings are the hierarchy: zoom out for the whole system, zoom in for one part. This slide just showed you the map.\n\n### Headings become cards\n\n`#` is the first card, `##` branches from it, `###` goes a level deeper. No layout to draw.\n\n### A path your viewer can follow\n\n\u2192 always walks the same order, and **path** lays it out as a staircase, so the audience never loses its place.\n\n## \u{1F3A5} The camera is part of the deck\n\n<!-- camera: on, full, on -->\n\nA comment in a slide moves you: corner, full screen, or off. Turn on **Camera** and watch this slide do it.\n\n### Camera moves, step by step\n\n<!-- camera: 40%, full, on -->\n\nWith **Camera** on, press \u2192: this slide puts you large in the corner, then full screen, then back to the corner. One comment, one press per move:\n\n```md\n### Camera moves, step by step\n<!-- camera: 40%, full, on -->\n```\n\nCombine `on`, `off`, `full`, a size like `40%`, a corner, `flip` or `circle`.\n\n## \u270D\uFE0F Plain markdown in\n\nMarkdown you already know: headings, lists, tables, code, steps, diagrams (Graphviz, D2, SVG), charts, images and YouTube links. [See them all in the showcase \u2192](/showcase)\n\n### A few comments do the rest\n\nMarkdown has no word for "reveal one at a time" or "move the camera", so a handful of HTML comments say it. They stay invisible anywhere else markdown is read:\n\n```md\n<!-- steps -->             \u2190 the rest, one press each\n<!-- camera: full, on -->  \u2190 move the camera\n<!-- view: overview -->    \u2190 the map first\n<!-- view: full -->        \u2190 a big-image card\n```\n\n## \u{1F3A8} Your colours\n\nOne line, `accent: "#3b82f6"`, gives a deck its own colour, shaded for dark and light. On your website, decks wear your site\'s palette.\n\n`brand:` and `logo:` put your name and logo in the corner of every slide, so every frame of the video carries them.\n\n## \u{1F310} Run it anywhere\n\nThree places, one deck format: a markdown file.\n\n### slidetake.com: write, view, share\n\nWrite a deck in the **\u270E Editor**, or view one straight from a link: a GitHub file, a gist or any markdown URL. **Share** a link with the deck inside it. Nothing to install.\n\n### Your computer: all that, plus AI\n\nThe same app on your own files, offline:\n\n```sh\nnpx slidetake deck.md\n```\n\nImages next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. So an AI agent can write `deck.md` while you watch it take shape.\n\n### Your website: users view, you record\n\n`slidetake.js` puts decks inside your own pages, in your site\'s colours. Users get a clean viewer; add `?obs` to the address and the same page records your video.\n\n## <span class="st-heart" aria-hidden="true"></span> Open source\n\nOpen source, Apache 2.0: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake). Nothing to sign up for, and your decks stay yours: [Privacy](/privacy).\n\nNext, every feature and what it saves you: **[Features \u2192](/features)**\n';
 
   // src/docs.md
-  var docs_default = "---\ntitle: Slidetake Docs\nbrand: slidetake\npip: none\n---\n\n# ![](/favicon.svg) Slide<span class=\"st-take\">take</span> Docs\n\nEverything in order: **get started \u2192 write \u2192 present \u2192 record \u2192 share**. Press \u2192 to walk it, \u2193 \u2191 to go into a step and back out, **O** for the map.\n\n## 1\uFE0F\u20E3 Get started\n\nThree places to use Slidetake, one deck format for all of them: a markdown file. And any AI can write the deck.\n\n| Where | Best for |\n|---|---|\n| **slidetake.com** | writing in the Editor, viewing any deck from a link, sharing |\n| **Your computer** | the same on your own files and images, offline, with an AI agent writing alongside |\n| **Your website** | decks your users view, and the page you record from |\n\n### On slidetake.com\n\nOpen a deck straight from a link: a GitHub file, a gist or any markdown URL. Or press **\u270E Editor** and type: the first keystroke makes it [your copy](#your-copy), kept in this browser.\n\n| Link | Opens |\n|---|---|\n| `/gh/owner/repo/path/deck.md` | a GitHub file, default branch |\n| `/gh/owner/repo@branch/deck.md` | another branch or tag |\n| `/gist/<id>` | a gist's first markdown file |\n| `/?src=https://\u2026/deck.md` | anything else |\n| `/new` | a template: blank, talk or recording |\n\n### On your computer\n\nKeep the deck and its images together in a folder, and run one command there:\n\n```sh\nnpx slidetake deck.md\n```\n\nIt opens on `http://localhost:4300` with the files next to the deck served beside it, so `![](diagram.png)` just works. Save the file in any editor and the deck reloads where you are; type in the browser's editor and it saves to the file. Nothing leaves your machine. Needs Node 20 or later.\n\n`npx slidetake` in a folder opens its `index.md`, `deck.md`, `slides.md` or `README.md`. `--open` opens the browser; `--port 5000` picks the port.\n\n### On your website\n\n`slidetake.js` turns a deck on any page into a Slidetake deck. Describe the deck, then load the script:\n\n```html\n<script>\nwindow.SLIDETAKE = {\n  markdown: \"# My deck\\n\\n## A section\",\n  settings: {title: \"My deck\"},\n  base: location.href,                 // where relative images resolve\n  trail: [{label: \"My site\", url: \"/\"}],\n  themeKey: \"my-site-theme\",           // optional: your site's light/dark key\n  colors: {accent: \"#2563eb\"}          // optional: your colours\n};\n<\/script>\n<script src=\"https://cdn.jsdelivr.net/npm/slidetake/dist/slidetake.js\"><\/script>\n```\n\nUsers get a viewer with no recording controls; `?obs` on the page's address brings them back for you. The hugo-continuum theme writes this for slide pages with `engine: slidetake`, so a Hugo site previews decks locally with `hugo server`.\n\n### With AI\n\nThe deck is plain markdown, so any AI can write one. Point it at the format, [slidetake.com/llms.txt](/llms.txt), and say what the talk is about.\n\n- **With an agent that edits files** (Claude Code and the like): *\"Write a Slidetake deck about X in talk/deck.md, following slidetake.com/llms.txt\"*, then `npx slidetake talk/deck.md`. Ask for changes and the open deck reloads as the file is saved.\n- **In a chat** (Claude, no tools): ask for the deck as one markdown block, then on slidetake.com press **\u270E Editor**, select all and paste. It's your copy at once; **Share** gives a link with the deck inside it.\n- **Images:** an agent places them next to the file; in a chat, use full image URLs, or `base:` pointing at where they live.\n\n## 2\uFE0F\u20E3 Write a deck\n\nA deck is an ordinary markdown file. **Every heading becomes a card**, and a heading branches off the nearest shallower heading above it.\n\n```md\n# Product            \u2190 the first card\nIntro text.\n\n## Pricing           \u2190 branches from Product\n### Enterprise       \u2190 branches from Pricing\n## Roadmap {#plan}   \u2190 branches from Product, id \"plan\"\n\nSee the [roadmap](#plan).\n```\n\n### Cards\n\n- Text before the first heading becomes a card of its own.\n- Headings inside fenced code blocks are ignored.\n- A card's id is its heading slugified (`## Moving around` \u2192 `moving-around`), or set one with `{#id}` at the end of the heading.\n- A link to `#id` flies to that card.\n- Cards widen for wide tables, columns, diagrams and embeds; anything wider still is scaled to fit.\n\n### What a card can hold\n\nPlain markdown, and the layout follows from what's on the card. [See every one in the showcase \u2192](/showcase)\n\n| Write | Get |\n|---|---|\n| `<!-- steps -->` | what follows, one press each (a list item by item), to the end of the card or a `<!-- steps: off -->` |\n| ` ```dot `, ` ```d2 ` | a Graphviz or D2 diagram |\n| ` ```echarts ` with JSON options | a chart, in the deck's colours for dark and light |\n| ` ```svg ` | an SVG drawing, inline: `currentColor` is the text colour and `var(--text)`, `var(--text-muted)`, `var(--accent)` switch with dark and light; scripts, styles and links are removed |\n| `![](drawing.svg)` | an SVG image, as drawn |\n| an image alone | an image card: a phone shot sits beside the heading and caption, a landscape one spans the card between them, a 16:9 one fills it |\n| an image and text | a split card: the image sits on the side written first |\n| a list of images, diagrams or charts | a gallery; with `<!-- steps -->` a carousel, one per press |\n| two or more images, diagrams or charts in a row after `<!-- steps -->` | a carousel, one per press |\n| images in one paragraph | a grid, up to four a row |\n| `<!-- view: full -->` in a card | a 16:9 card for a big image, without the camera unless the card asks for it |\n| a YouTube link alone on a line | the video: the next press plays it, leaving pauses it |\n\nThe first and last cards animate in on their own. The alt text of an image is its caption.\n\n### Deck settings\n\nAn optional block at the top of the file:\n\n```yaml\n---\ntitle: My talk               \u2190 the page title, and the video's\nduration: 10m                \u2190 talk length, for the timer\naccent: \"#3b82f6\"            \u2190 the deck's colour (Slidetake's own is green)\nbrand: example.com/talks     \u2190 text in the top-right corner\nlogo: https://\u2026/logo.png     \u2190 image beside it\nbase: https://\u2026/deck-folder/ \u2190 where relative images live, for a file opened from elsewhere\n---\n```\n\n`accent` is one colour; Slidetake makes it bright for dark mode and deep enough to read on white for light mode, and uses it for text accents, lines, charts and diagrams. Camera and recording settings are in [step 4](#4-record-a-video).\n\n### Decks from elsewhere\n\n**reveal.js** decks open as they are: `---` starts a slide and `--` a vertical one beneath it. Fragments (`fade-up`, `grow`, \u2026), `r-stack`, `<!-- .element: \u2026 -->`, `<section>` slides, `data-autoslide`, `data-gsap` entrances and `title-scramble` all work.\n\n**Older `+++` decks**, with `id`, `parent`, `x`, `y` frontmatter, still load.\n\n## 3\uFE0F\u20E3 Present\n\nClick a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch screen, the bottom bar adds \u2190 \u2192 buttons.\n\n| Key | Does |\n|---|---|\n| \u2192 \u2190 Space | next / previous step, in document order |\n| \u2193 \u2191 | first child / parent |\n| O | the whole map; **O** again or Esc goes back |\n| F | fullscreen; **F** again or Esc leaves |\n| K or ? | these keys; again closes them |\n| 1 2 3 4 | focus, path, radial, tree |\n| + \u2212 | bigger / smaller slides (remembered) |\n| E \xB7 L | editor \xB7 light / dark |\n| C \xB7 V \xB7 R | camera \xB7 camera layouts \xB7 record |\n\n### Layouts\n\n**Focus** doesn't travel at all: the next slide fades in where the last one was.\n\n**Path**, the default, is made for presenting and video: a staircase in presenting order. Each section is a row, and the next one starts just below where the last ended, so every move is a short step right or down.\n\n**Radial** rings out from the first card, and **tree** is a top-down chart.\n\nThe layout you pick is remembered in this browser, for every deck.\n\n### On screen\n\nText keeps one size within a section and only changes when the section does; charts and diagrams are fitted on their own.\n\n`<!-- view: overview -->` on a slide pulls back to the whole map for a beat before flying in: a good start to a chapter.\n\n### Progress and timer\n\nIn fullscreen the cursor and controls hide after two seconds without the mouse moving, and a thin bar along the bottom fills with every press.\n\nWith `duration: 10m` (or `90s`, `1h`, `12:30`), a lighter layer of the same colour grows behind it with the clock: if it shows past the solid fill, you're behind; if it reaches the end, the bar pulses. The timer is for you, so recordings show progress only, unless the deck says `timer: always`. `progress: off` hides the bar.\n\n## 4\uFE0F\u20E3 Record a video\n\nRecording takes **[OBS Studio](https://obsproject.com)** (free and open source). OBS records at full quality; Slidetake drives it, slide by slide, so there's no timeline to edit afterwards.\n\n### Set up OBS\n\n1. In OBS, turn on Tools \u2192 WebSocket Server Settings.\n2. In Slidetake, press **\u25CF Record** and enter OBS's host, port and password. Tick *Remember* to skip this next time.\n3. Use a 16:9 screen (YouTube is 16:9): the Record dialog checks yours. If it isn't, move the window to one that is, physical or virtual (say 1920\xD71080), and press **F** there.\n\n`?obs=localhost:4455` (or `?obs=host:port:password`) in the address fills this in and connects as the page opens.\n\nFrom https://slidetake.com, OBS must be on the same computer: browsers block secure pages from reaching plain `ws://` addresses elsewhere. For OBS on another machine, use `npx slidetake`, which serves over http.\n\n### Add your camera\n\n**C** (or **Camera**) turns your webcam on in its box, and OBS records you and the slides together. The camera is off every time the page opens; until it's on, the deck's camera settings are ignored, so readers get slides using the whole screen.\n\n```yaml\n---\npip: bottom-right            \u2190 camera corner, or none\npip_size: 24%                \u2190 camera box width\npip_shape: rect              \u2190 rect (16:9) or circle\npip_mirror: yes              \u2190 mirror the webcam\ncamera: 24%, 40%, full, off  \u2190 layouts V cycles through\n---\n```\n\nSlides are always placed clear of the brand and the camera box.\n\n### Move the camera per slide\n\nA comment in a slide changes the camera from that slide on:\n\n```md\n## Intro\n<!-- camera: full -->       \u2190 camera fills the screen\n\n## Pricing\n<!-- camera: 18% flip -->   \u2190 small, on the other side\n```\n\nWords you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`, `circle` / `rect`, `mirror` / `unmirror`. List them with commas to step through them on one slide: `full, on` opens on you, and the next \u2192 shrinks the camera to its corner and shows the slide.\n\n**V** steps through the deck's `camera:` list by hand.\n\n### Take by take\n\n**\u25CF Record** (or **R**) connects to OBS, counts down and starts recording. From then on the deck drives everything: camera layouts, reveals and slides follow \u2192 (a Bluetooth clicker works).\n\n- **\u2190** takes the current slide again, keeping every attempt\n- **B** pauses and resumes\n- one press past the last step stops OBS\n\nClicks, dragging and the map are locked so the take only moves forward.\n\n### Review, cut and publish\n\nThen the review opens: every slide with its takes (the last one picked), previews from the OBS file, a ready-to-run **[ffmpeg](https://ffmpeg.org)** command for the picked takes (frame-exact), and the YouTube title, description with **chapters** and links, and tags. Sessions are kept in this browser, so a take can be reviewed again later from \u25CF Record.\n\nThe description comes from the deck's top block:\n\n| Key | Used for |\n|---|---|\n| `title` | the video title |\n| `summary` | the description's first paragraph |\n| `related` | a list of `[Title](url)` links |\n| `tags` | tags (any other list ending in `_tags` is added too) |\n| `permalink` or `site` | the link back to the deck |\n\n## 5\uFE0F\u20E3 Share and keep\n\nEvery deck you open is **read-only**: Slidetake's own decks, templates, files on the web and shared links. Viewing one never changes anything.\n\n### Your copy\n\n**Type in a deck**, and it becomes your copy, at `/edit`. It lives in this browser, remembers where it came from, and is there whenever you come back: **Your copy \u2192** in the editor takes you to it.\n\n- There's one copy at a time; the editor bar says whose it is, and marks **edited** while it has changes you haven't saved or shared.\n- **Reset to original** throws your edits away.\n- Starting a new copy asks first if the old one has edits you haven't kept.\n\n### Save and share\n\n**Save** downloads the markdown. **Share** copies a link: the short link while your copy still matches an online original, otherwise a `/share#deflate:\u2026` link with the whole deck compressed inside it. That part of a link never reaches a server. **Open** loads a markdown file from your computer into your copy.\n\n### Address options\n\n| Option | Does |\n|---|---|\n| `?edit=1` | opens the editor |\n| `?layout=focus` (path, radial, tree) | picks the layout; path is the default |\n| `?mode=light` | light theme |\n| `?duration=10m` | talk length for the timer |\n| `#card-id` | opens at a card |\n\n## \u{1F512} Your data\n\nNo accounts, and no decks kept: your copy and settings stay in this browser, and decks inside links never reach a server. `npx slidetake` keeps everything on your machine. What slidetake.com does collect (Google Analytics, which the **Privacy & analytics** button in the header turns off), and which services a deck can reach, is all on the [privacy page](/privacy).\n\nSlidetake is open source: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake).\n";
+  var docs_default = "---\ntitle: Slidetake Docs\nbrand: slidetake\npip: none\n---\n\n# ![](/favicon.svg) Slide<span class=\"st-take\">take</span> Docs\n\nEverything in order: **get started \u2192 write \u2192 present \u2192 record \u2192 share**. Press \u2192 to walk it, \u2193 \u2191 to go into a step and back out, **O** for the map.\n\n## 1\uFE0F\u20E3 Get started\n\nThree places to use Slidetake, one deck format for all of them: a markdown file. And any AI can write the deck.\n\n| Where | Best for |\n|---|---|\n| **slidetake.com** | writing in the Editor, viewing any deck from a link, sharing |\n| **Your computer** | the same on your own files and images, offline, with an AI agent writing alongside |\n| **Your website** | decks your users view, and the page you record from |\n\n### On slidetake.com\n\nOpen a deck straight from a link: a GitHub file, a gist or any markdown URL. Or press **\u270E Editor** and type: the first keystroke makes it [your copy](#your-copy), kept in this browser.\n\n| Link | Opens |\n|---|---|\n| `/gh/owner/repo/path/deck.md` | a GitHub file, default branch |\n| `/gh/owner/repo@branch/deck.md` | another branch or tag |\n| `/gist/<id>` | a gist's first markdown file |\n| `/?src=https://\u2026/deck.md` | anything else |\n| `/new` | a template: blank, talk or recording |\n\n### On your computer\n\nKeep the deck and its images together in a folder, and run one command there:\n\n```sh\nnpx slidetake deck.md\n```\n\nIt opens on `http://localhost:4300` with the files next to the deck served beside it, so `![](diagram.png)` just works. Save the file in any editor and the deck reloads where you are; type in the browser's editor and it saves to the file. Nothing leaves your machine. Needs Node 20 or later.\n\n`npx slidetake` in a folder opens its `index.md`, `deck.md`, `slides.md` or `README.md`. `--open` opens the browser; `--port 5000` picks the port.\n\n### On your website\n\n`slidetake.js` turns a deck on any page into a Slidetake deck. Describe the deck, then load the script:\n\n```html\n<script>\nwindow.SLIDETAKE = {\n  markdown: \"# My deck\\n\\n## A section\",\n  settings: {title: \"My deck\"},\n  base: location.href,                 // where relative images resolve\n  trail: [{label: \"My site\", url: \"/\"}],\n  themeKey: \"my-site-theme\",           // optional: your site's light/dark key\n  colors: {accent: \"#2563eb\"}          // optional: your colours\n};\n<\/script>\n<script src=\"https://cdn.jsdelivr.net/npm/slidetake/dist/slidetake.js\"><\/script>\n```\n\nUsers get a viewer with no recording controls; `?obs` on the page's address brings them back for you. The hugo-continuum theme writes this for slide pages with `engine: slidetake`, so a Hugo site previews decks locally with `hugo server`.\n\n### With AI\n\nThe deck is plain markdown, so any AI can write one. Point it at the format, [slidetake.com/llms.txt](/llms.txt), and say what the talk is about.\n\n- **With an agent that edits files** (Claude Code and the like): *\"Write a Slidetake deck about X in talk/deck.md, following slidetake.com/llms.txt\"*, then `npx slidetake talk/deck.md`. Ask for changes and the open deck reloads as the file is saved.\n- **In a chat** (Claude, no tools): ask for the deck as one markdown block, then on slidetake.com press **\u270E Editor**, select all and paste. It's your copy at once; **Share** gives a link with the deck inside it.\n- **Images:** an agent places them next to the file; in a chat, use full image URLs, or `base:` pointing at where they live.\n\n## 2\uFE0F\u20E3 Write a deck\n\nA deck is an ordinary markdown file. **Every heading becomes a card**, and a heading branches off the nearest shallower heading above it.\n\n```md\n# Product            \u2190 the first card\nIntro text.\n\n## Pricing           \u2190 branches from Product\n### Enterprise       \u2190 branches from Pricing\n## Roadmap {#plan}   \u2190 branches from Product, id \"plan\"\n\nSee the [roadmap](#plan).\n```\n\n### Cards\n\n- Text before the first heading becomes a card of its own.\n- Headings inside fenced code blocks are ignored.\n- A card's id is its heading slugified (`## Moving around` \u2192 `moving-around`), or set one with `{#id}` at the end of the heading.\n- A link to `#id` flies to that card.\n- Cards widen for wide tables, columns, diagrams and embeds; anything wider still is scaled to fit.\n\n### What a card can hold\n\nPlain markdown, and the layout follows from what's on the card. [See every one in the showcase \u2192](/showcase)\n\n| Write | Get |\n|---|---|\n| `<!-- steps -->` | what follows, one press each (a list item by item), to the end of the card or a `<!-- steps: off -->` |\n| ` ```dot `, ` ```d2 ` | a Graphviz or D2 diagram |\n| ` ```echarts ` with JSON options | a chart, in the deck's colours for dark and light |\n| ` ```svg ` | an SVG drawing, inline: `currentColor` is the text colour and `var(--text)`, `var(--text-muted)`, `var(--accent)` switch with dark and light; scripts, styles and links are removed |\n| `![](drawing.svg)` | an SVG image, as drawn |\n| an image alone | an image card: a phone shot sits beside the heading and caption, a landscape one spans the card between them, a 16:9 one fills it |\n| an image and text | a split card: the image sits on the side written first |\n| a list of images, diagrams or charts | a gallery; with `<!-- steps -->` a carousel, one per press |\n| two or more images, diagrams or charts in a row after `<!-- steps -->` | a carousel, one per press |\n| images in one paragraph | a grid, up to four a row |\n| `<!-- view: full -->` in a card | a 16:9 card for a big image, without the camera unless the card asks for it |\n| a YouTube link alone on a line | the video: the next press plays it, leaving pauses it |\n\nThe first and last cards animate in on their own. The alt text of an image is its caption.\n\n### Deck settings\n\nAn optional block at the top of the file:\n\n```yaml\n---\ntitle: My talk               \u2190 the page title, and the video's\nduration: 10m                \u2190 talk length, for the timer\naccent: \"#3b82f6\"            \u2190 the deck's colour (Slidetake's own is green)\nbrand: example.com/talks     \u2190 text in the top-right corner\nlogo: https://\u2026/logo.png     \u2190 image beside it\nbase: https://\u2026/deck-folder/ \u2190 where relative images live, for a file opened from elsewhere\n---\n```\n\n`accent` is one colour; Slidetake makes it bright for dark mode and deep enough to read on white for light mode, and uses it for text accents, lines, charts and diagrams. Camera and recording settings are in [step 4](#4-record-a-video).\n\n### Decks from elsewhere\n\n**reveal.js** decks open as they are: `---` starts a slide and `--` a vertical one beneath it. Fragments (`fade-up`, `grow`, \u2026), `r-stack`, `<!-- .element: \u2026 -->`, `<section>` slides, `data-autoslide`, `data-gsap` entrances and `title-scramble` all work.\n\n**Older `+++` decks**, with `id`, `parent`, `x`, `y` frontmatter, still load.\n\n## 3\uFE0F\u20E3 Present\n\nClick a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch screen, the bottom bar adds \u2190 \u2192 buttons.\n\n| Key | Does |\n|---|---|\n| \u2192 \u2190 Space | next / previous step, in document order |\n| \u2193 \u2191 | first child / parent |\n| O | the whole map; **O** again or Esc goes back |\n| F | fullscreen; **F** again or Esc leaves |\n| K or ? | these keys; again closes them |\n| 1 2 3 4 | focus, path, radial, tree |\n| + \u2212 | bigger / smaller slides (remembered) |\n| E \xB7 L | editor \xB7 light / dark |\n| C \xB7 V \xB7 R | camera \xB7 camera layouts \xB7 record |\n\n### Layouts\n\n**Focus** doesn't travel at all: the next slide fades in where the last one was.\n\n**Path**, the default, is made for presenting and video: a staircase in presenting order. Each section is a row, and the next one starts just below where the last ended, so every move is a short step right or down.\n\n**Radial** rings out from the first card, and **tree** is a top-down chart.\n\nThe layout you pick is remembered in this browser, for every deck.\n\n### On screen\n\nText keeps one size within a section and only changes when the section does; charts and diagrams are fitted on their own.\n\n`<!-- view: overview -->` on a slide pulls back to the whole map for a beat before flying in: a good start to a chapter.\n\n### Progress and timer\n\nIn fullscreen the cursor and controls hide after two seconds without the mouse moving, and a thin bar along the bottom fills with every press.\n\nWith `duration: 10m` (or `90s`, `1h`, `12:30`), a lighter layer of the same colour grows behind it with the clock: if it shows past the solid fill, you're behind; if it reaches the end, the bar pulses. The timer is for you, so recordings show progress only, unless the deck says `timer: always`. `progress: off` hides the bar.\n\n## 4\uFE0F\u20E3 Record a video\n\nTwo ways to record, both slide by slide, so there's no timeline to edit afterwards. Press **\u25CF Record** and pick one:\n\n| | In this browser | OBS |\n|---|---|---|\n| Install | nothing | [OBS Studio](https://obsproject.com) (free) |\n| Browser | Chrome, Edge or another Chromium browser, on a computer | any |\n| Screen | any shape: the deck is recorded in a 16:9 frame | a 16:9 screen, physical or virtual |\n| Quality | 1080p, or 720p on a smaller screen | whatever OBS records |\n| Final video | **Render** joins the picked takes, in the browser | an ffmpeg command |\n\n### Record in the browser\n\n1. Press **\u25CF Record** and choose **In this browser**. The dialog checks the browser and screen, and lists your cameras and microphones with a level meter.\n2. Press **Start recording** and, when Chrome asks, share **this tab**. The deck goes fullscreen in a 16:9 frame; only the frame (slides and camera) is recorded, never the rest of the screen.\n3. Every take is its own file, kept in this browser's private storage until you render or delete it.\n\nIn fullscreen, the frame must be at least 1280\xD7720 real pixels for 720p, 1920\xD71080 for 1080p: a Retina laptop makes 1080p, a 1366\xD7768 screen 720p. Below that, use OBS.\n\n### Set up OBS\n\n1. In OBS, turn on Tools \u2192 WebSocket Server Settings.\n2. In Slidetake, press **\u25CF Record** and enter OBS's host, port and password. Tick *Remember* to skip this next time.\n3. Use a 16:9 screen (YouTube is 16:9): the Record dialog checks yours. If it isn't, move the window to one that is, physical or virtual (say 1920\xD71080), and press **F** there.\n\n`?obs=localhost:4455` (or `?obs=host:port:password`) in the address fills this in and connects as the page opens.\n\nFrom https://slidetake.com, OBS must be on the same computer: browsers block secure pages from reaching plain `ws://` addresses elsewhere. For OBS on another machine, use `npx slidetake`, which serves over http.\n\n### Add your camera\n\n**C** (or **Camera**) turns your webcam on in its box, and the recording has you and the slides together. The camera is off every time the page opens; until it's on, the deck's camera settings are ignored, so readers get slides using the whole screen.\n\n```yaml\n---\npip: bottom-right            \u2190 camera corner, or none\npip_size: 24%                \u2190 camera box width\npip_shape: rect              \u2190 rect (16:9) or circle\npip_mirror: yes              \u2190 mirror the webcam\ncamera: 24%, 40%, full, off  \u2190 layouts V cycles through\n---\n```\n\nSlides are always placed clear of the brand and the camera box.\n\n### Move the camera per slide\n\nA comment in a slide changes the camera from that slide on:\n\n```md\n## Intro\n<!-- camera: full -->       \u2190 camera fills the screen\n\n## Pricing\n<!-- camera: 18% flip -->   \u2190 small, on the other side\n```\n\nWords you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`, `circle` / `rect`, `mirror` / `unmirror`. List them with commas to step through them on one slide: `full, on` opens on you, and the next \u2192 shrinks the camera to its corner and shows the slide.\n\n**V** steps through the deck's `camera:` list by hand.\n\n### Take by take\n\n**\u25CF Record** (or **R**) counts down and starts recording. From then on the deck drives everything: camera layouts, reveals and slides follow \u2192 (a Bluetooth clicker works).\n\n- **\u2190** takes the current slide again, keeping every attempt\n- **B** pauses and resumes\n- one press past the last step ends the take (**Esc** ends it early)\n\nClicks, dragging and the map are locked so the take only moves forward.\n\n### Review, cut and publish\n\nThen the review opens: every slide with its takes (the last one picked), click one to preview it, and the YouTube title, description with **chapters** and links, and tags. Sessions are kept in this browser, so a take can be reviewed again later from \u25CF Record.\n\n- **Recorded in the browser:** **Render the video** joins the picked takes into one MP4, in a few seconds, without re-encoding. **Delete these takes** frees the space.\n- **Recorded with OBS:** previews come from the OBS file, and a ready-to-run **[ffmpeg](https://ffmpeg.org)** command cuts the picked takes (frame-exact).\n\nThe description comes from the deck's top block:\n\n| Key | Used for |\n|---|---|\n| `title` | the video title |\n| `summary` | the description's first paragraph |\n| `related` | a list of `[Title](url)` links |\n| `tags` | tags (any other list ending in `_tags` is added too) |\n| `permalink` or `site` | the link back to the deck |\n\n## 5\uFE0F\u20E3 Share and keep\n\nEvery deck you open is **read-only**: Slidetake's own decks, templates, files on the web and shared links. Viewing one never changes anything.\n\n### Your copy\n\n**Type in a deck**, and it becomes your copy, at `/edit`. It lives in this browser, remembers where it came from, and is there whenever you come back: **Your copy \u2192** in the editor takes you to it.\n\n- There's one copy at a time; the editor bar says whose it is, and marks **edited** while it has changes you haven't saved or shared.\n- **Reset to original** throws your edits away.\n- Starting a new copy asks first if the old one has edits you haven't kept.\n\n### Save and share\n\n**Save** downloads the markdown. **Share** copies a link: the short link while your copy still matches an online original, otherwise a `/share#deflate:\u2026` link with the whole deck compressed inside it. That part of a link never reaches a server. **Open** loads a markdown file from your computer into your copy.\n\n### Address options\n\n| Option | Does |\n|---|---|\n| `?edit=1` | opens the editor |\n| `?layout=focus` (path, radial, tree) | picks the layout; path is the default |\n| `?mode=light` | light theme |\n| `?duration=10m` | talk length for the timer |\n| `#card-id` | opens at a card |\n\n## \u{1F512} Your data\n\nNo accounts, and no decks kept: your copy and settings stay in this browser, and decks inside links never reach a server. `npx slidetake` keeps everything on your machine. What slidetake.com does collect (Google Analytics, which the **Privacy & analytics** button in the header turns off), and which services a deck can reach, is all on the [privacy page](/privacy).\n\nSlidetake is open source: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake).\n";
 
   // src/features.md
-  var features_default = "---\ntitle: Slidetake Features\nbrand: slidetake\npip: none\n---\n\n# ![](/favicon.svg) Slide<span class=\"st-take\">take</span> Features\n\nThe complete list, one line each. Press \u2192 to walk it, **O** for the map.\n\n## \u2702\uFE0F Record without timeline editing\n\n| Feature | Advantage |\n|---|---|\n| **Takes per slide** (\u2190) | every attempt kept; recording never stops |\n| **OBS, driven by the deck** | it starts and stops for you; you only talk |\n| **Pause and resume** (B) | step away without a gap to cut |\n| **Clicker support** | any Bluetooth presenter remote moves the deck |\n| **16:9 check** | the Record dialog warns before a video with bars |\n| **Review** | every slide's takes, previewed from the OBS file |\n| **Frame-exact [ffmpeg](https://ffmpeg.org) cut** | one command, no video editor |\n| **Publish pack** | YouTube title, description, chapters, links and tags from the deck |\n| **Saved sessions** | review a recording again later |\n\n## \u{1F5FA}\uFE0F A map, not a stack\n\n| Feature | Advantage |\n|---|---|\n| **Four layouts** | focus, path (the default), radial, tree |\n| **The map** (O) | the whole talk at a glance, and back |\n| **Map moments** (`view: overview`) | open a chapter on the big picture |\n| **Steady text** | one size per section, so slides don't jump |\n| **Short flights** | camera moves made to read well on video |\n| **Progress and timer** | a bar that fills, and a clock that tells you if you're behind |\n\n## \u{1F3A5} The camera is part of the deck\n\n| Feature | Advantage |\n|---|---|\n| **Webcam in its box** | you and the slides in one recording, no compositing |\n| **Camera per slide** | corner, size, side, circle, full screen or off |\n| **Steps on one slide** | open on you, then reveal the slide |\n| **V** | try camera layouts live without editing |\n| **Off until you turn it on** | readers never see an empty camera box |\n\n## \u270D\uFE0F Plain markdown in\n\n| Feature | Advantage |\n|---|---|\n| **One file** | any editor, versioned in git, reviewed like code |\n| **Steps, diagrams, charts** | Graphviz, D2, SVG and ECharts as text |\n| **Image cards** | laid out by shape: beside text, across the card, galleries, carousels, grids |\n| **Full-screen cards** (`view: full`) | a 16:9 frame for a big image |\n| **YouTube** | plays on the next press, pauses when you leave |\n| **reveal.js and `+++` decks** | open as they are |\n\n## \u{1F3A8} Your colours\n\n| Feature | Advantage |\n|---|---|\n| **Dark and light** (L) | follows the reader, or your site |\n| **`accent:`** | one colour, shaded for both modes, charts and diagrams included |\n| **`brand:` and `logo:`** | your name on every frame |\n| **Site colours** | embedded decks wear your site's palette and header |\n\n## \u{1F310} Run it anywhere\n\n| Where | Also gives you |\n|---|---|\n| **slidetake.com** | share links that carry the whole deck; your copy of any deck, kept in this browser |\n| **Your computer** | relative images, reload on save, browser edits saved to the file; OBS on another machine |\n| **Your website** | `?obs` turns your page into the recorder; the hugo-continuum theme with one frontmatter key |\n\n## \u{1F512} Private and open\n\n| Feature | Advantage |\n|---|---|\n| **No accounts, no stored decks** | nothing to sign up for or lose ([privacy](/privacy)) |\n| **Decks inside links** | the deck stays in the `#` part, never sent to a server |\n| **Analytics you can turn off** | one button on slidetake.com |\n| **Open source, Apache 2.0** | read it, host it, change it: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake) |\n\nNext, see them working: **[Showcase \u2192](/showcase)**\n";
+  var features_default = "---\ntitle: Slidetake Features\nbrand: slidetake\npip: none\n---\n\n# ![](/favicon.svg) Slide<span class=\"st-take\">take</span> Features\n\nThe complete list, one line each. Press \u2192 to walk it, **O** for the map.\n\n## \u2702\uFE0F Record without timeline editing\n\n| Feature | Advantage |\n|---|---|\n| **Takes per slide** (\u2190) | every attempt kept; recording never stops |\n| **Record in the browser** | nothing to install: the deck records itself in a 16:9 frame, at 1080p |\n| **Or OBS, driven by the deck** | it starts and stops for you; you only talk |\n| **Pause and resume** (B) | step away without a gap to cut |\n| **Clicker support** | any Bluetooth presenter remote moves the deck |\n| **16:9 check** | the Record dialog warns before a video with bars |\n| **Review** | every slide's takes, previewed from the OBS file |\n| **Render in the browser** | the picked takes joined into one MP4 in seconds |\n| **Frame-exact [ffmpeg](https://ffmpeg.org) cut** | with OBS: one command, no video editor |\n| **Publish pack** | YouTube title, description, chapters, links and tags from the deck |\n| **Saved sessions** | review a recording again later |\n\n## \u{1F5FA}\uFE0F A map, not a stack\n\n| Feature | Advantage |\n|---|---|\n| **Four layouts** | focus, path (the default), radial, tree |\n| **The map** (O) | the whole talk at a glance, and back |\n| **Map moments** (`view: overview`) | open a chapter on the big picture |\n| **Steady text** | one size per section, so slides don't jump |\n| **Short flights** | camera moves made to read well on video |\n| **Progress and timer** | a bar that fills, and a clock that tells you if you're behind |\n\n## \u{1F3A5} The camera is part of the deck\n\n| Feature | Advantage |\n|---|---|\n| **Webcam in its box** | you and the slides in one recording, no compositing |\n| **Camera per slide** | corner, size, side, circle, full screen or off |\n| **Steps on one slide** | open on you, then reveal the slide |\n| **V** | try camera layouts live without editing |\n| **Off until you turn it on** | readers never see an empty camera box |\n\n## \u270D\uFE0F Plain markdown in\n\n| Feature | Advantage |\n|---|---|\n| **One file** | any editor, versioned in git, reviewed like code |\n| **Steps, diagrams, charts** | Graphviz, D2, SVG and ECharts as text |\n| **Image cards** | laid out by shape: beside text, across the card, galleries, carousels, grids |\n| **Full-screen cards** (`view: full`) | a 16:9 frame for a big image |\n| **YouTube** | plays on the next press, pauses when you leave |\n| **reveal.js and `+++` decks** | open as they are |\n\n## \u{1F3A8} Your colours\n\n| Feature | Advantage |\n|---|---|\n| **Dark and light** (L) | follows the reader, or your site |\n| **`accent:`** | one colour, shaded for both modes, charts and diagrams included |\n| **`brand:` and `logo:`** | your name on every frame |\n| **Site colours** | embedded decks wear your site's palette and header |\n\n## \u{1F310} Run it anywhere\n\n| Where | Also gives you |\n|---|---|\n| **slidetake.com** | share links that carry the whole deck; your copy of any deck, kept in this browser |\n| **Your computer** | relative images, reload on save, browser edits saved to the file; OBS on another machine |\n| **Your website** | `?obs` turns your page into the recorder; the hugo-continuum theme with one frontmatter key |\n\n## \u{1F512} Private and open\n\n| Feature | Advantage |\n|---|---|\n| **No accounts, no stored decks** | nothing to sign up for or lose ([privacy](/privacy)) |\n| **Decks inside links** | the deck stays in the `#` part, never sent to a server |\n| **Analytics you can turn off** | one button on slidetake.com |\n| **Open source, Apache 2.0** | read it, host it, change it: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake) |\n\nNext, see them working: **[Showcase \u2192](/showcase)**\n";
 
   // src/privacy.md
   var privacy_default = "---\ntitle: Slidetake Privacy\nbrand: slidetake\npip: none\n---\n\n# ![](/favicon.svg) Slide<span class=\"st-take\">take</span> Privacy\n\nSlidetake has no accounts and keeps no decks. This page lists everything that leaves your browser, and where it goes.\n\n*Last updated 27 October 2026.*\n\n## \u{1F4CA} What slidetake.com collects\n\nslidetake.com counts visits with **Google Analytics**: the page's address, your browser and screen, and roughly where you are. Google Analytics sets its own cookies (`_ga`) to tell visits apart.\n\nThe address it records leaves out the part after `#` and `?obs=`, so neither a deck carried in a link nor an OBS password reaches it.\n\n**You can turn it off:** the **Privacy & analytics** button in the header (the pulse icon) \u2192 *Turn analytics off*. Nothing more is sent from that browser, the `_ga` cookies are removed, and the tag isn't loaded on later visits. Cloudflare, which serves the site, still sees each request the way any web server does.\n\nThat is the only analytics. A copy of Slidetake you host yourself, the embed on your own site, and `npx slidetake` send none.\n\n## \u{1F4BE} What stays in your browser\n\nKept in this browser's storage on your device, and never sent anywhere:\n\n| What | Why |\n|---|---|\n| Your copy of a deck | so it's there when you come back |\n| Theme, layout, slide size, editor width | your preferences |\n| Recorded sessions and publish-pack settings | to review takes later |\n| OBS host, port and password | only if you tick *Remember*, stored as plain text |\n| Your analytics choice | so *off* stays off |\n\nClearing this site's data in your browser removes all of it.\n\n## \u{1F310} Services a deck can reach\n\nOpening Slidetake, or a deck that uses these, loads files from other services. Each sees your IP address, as with any web request.\n\n| Service | When |\n|---|---|\n| Google Fonts | every page, for the typefaces |\n| cdnjs, jsDelivr | every page (animation, markdown) and for diagrams, charts and OBS |\n| esm.sh | a deck with a D2 diagram |\n| GitHub | opening a GitHub file or gist |\n| YouTube (youtube-nocookie.com) | a deck with a YouTube link; YouTube's own cookies only once you play it |\n| The deck's own address | opening a deck from a link, and its images |\n\nOBS is reached only on the address you give it, normally your own computer.\n\n## \u{1F517} Decks in links\n\nA shared link carries the whole deck after `#`. Browsers never send that part of an address to a server, so the deck travels from you to whoever opens the link without passing through slidetake.com.\n\n## \u{1F4BB} On your computer\n\n`npx slidetake` runs on your machine, serves only the deck's folder, and listens only on `localhost`. It sends nothing to slidetake.com or anyone else. The deck's own diagrams, charts and fonts load from the services above as on the web.\n\n## \u2709\uFE0F Questions\n\nOpen an issue on [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake/issues). Slidetake is open source, so everything above can be checked in its code.\n";
@@ -1640,6 +1673,60 @@
     const video = mode === "mac" ? "-c:v h264_videotoolbox -b:v 12M" : "-c:v libx264 -crf 18 -preset medium";
     return chapters + "ffmpeg -i " + shq(input) + " -i /tmp/slidetake-chapters.txt" + maps + ` -vf "select='` + vKeep + `',setpts=N/FRAME_RATE/TB" -af "asetnsamples=n=48:p=0,aselect='` + aKeep + `',asetpts=N/SR/TB" ` + video + " -c:a aac -b:a 192k -movflags +faststart " + shq(output);
   }
+
+  // src/core/record.js
+  var QUALITIES = [
+    { name: "1080p", w: 1920, h: 1080, bitrate: 8e6 },
+    { name: "720p", w: 1280, h: 720, bitrate: 5e6 }
+  ];
+  var AUDIO_BITRATE = 192e3;
+  var FPS = 30;
+  function frame16x9(w, h) {
+    const fw = Math.min(w, h * 16 / 9), fh = fw * 9 / 16;
+    return { w: fw, h: fh, x: (w - fw) / 2, y: (h - fh) / 2 };
+  }
+  function bestQuality(w, h, dpr) {
+    const f = frame16x9(w, h);
+    const device = (
+      /** @type {[number, number]} */
+      [Math.floor(f.w * dpr), Math.floor(f.h * dpr)]
+    );
+    return { quality: QUALITIES.find((q) => device[0] >= q.w && device[1] >= q.h) || null, device };
+  }
+  var RECORDING_TYPES = [
+    "video/mp4;codecs=avc1.640028,mp4a.40.2",
+    "video/mp4;codecs=avc1,mp4a.40.2",
+    "video/mp4",
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm"
+  ];
+  var recordingType = (isSupported) => RECORDING_TYPES.find((t) => isSupported(t)) || "";
+  var clipExt = (type) => type.startsWith("video/mp4") ? "mp4" : "webm";
+  var bytesPerMinute = (q) => Math.round((q.bitrate + AUDIO_BITRATE) / 8 * 60);
+  function clipPlan(sess) {
+    const evs = /* @__PURE__ */ new Map();
+    sess.events.forEach((e, i) => {
+      if (!evs.has(e.id)) evs.set(e.id, []);
+      evs.get(e.id).push(i);
+    });
+    const out = [];
+    takesOf(
+      /** @type {any} */
+      sess
+    ).forEach((slide) => {
+      const pick = sess.picks[slide.id] ?? slide.takes.length;
+      const take = pick ? slide.takes[pick - 1] : null;
+      if (!take) return;
+      const e = sess.events[
+        /** @type {number[]} */
+        evs.get(slide.id)[pick - 1]
+      ];
+      if (e && e.clip && take.end > take.start) out.push({ id: slide.id, title: slide.title, clip: e.clip, keep: (take.end - take.start) / 1e3 });
+    });
+    return out;
+  }
+  var afterPrevious = (prev, t) => t > prev ? t : prev + 1e-3;
 
   // src/app.js
   var EMBED = window.SLIDETAKE || null;
@@ -3337,7 +3424,7 @@
   var obsConnected = false;
   var recStartResolve = null;
   var obsFps = null;
-  var rec = { active: false, withObs: false, counting: false, paused: false, finishing: false, t0: 0, pauseAt: 0, pausedMs: 0, events: [], outputPath: null };
+  var rec = { active: false, withObs: false, counting: false, paused: false, finishing: false, t0: 0, pauseAt: 0, pausedMs: 0, events: [], outputPath: null, browser: null };
   var wait = (ms) => new Promise((r) => setTimeout(r, ms));
   var nextFrame = () => Promise.race([new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))), wait(100)]);
   function recNow() {
@@ -3487,23 +3574,272 @@
     const shape = Math.abs(r - w / h) < 5e-3 ? name : "about " + name;
     el.innerHTML = '<span class="warn">This screen is ' + shape + " (" + w + "\xD7" + h + "), not 16:9, so the video will have bars or be cropped. Move this window to a 16:9 screen, physical or virtual (say 1920\xD71080), then press F there.</span>";
   }
+  var MEDIABUNNY_URL = "https://cdn.jsdelivr.net/npm/mediabunny@1.64.0/+esm";
+  var recCam = document.getElementById("rec-cam");
+  var recMic = document.getElementById("rec-mic");
+  var recQuality = document.getElementById("rec-quality");
+  var recMeter = document.getElementById("rec-meter");
+  var recCheck = document.getElementById("rec-browser-check");
+  var recMode = load("slidetake:rec-mode") || "";
+  var recNote = "";
+  var meter = null;
+  function browserRecording() {
+    const md = navigator.mediaDevices;
+    if (!window.isSecureContext || !md || !md.getDisplayMedia) return { why: "This page can\u2019t capture itself here. Open Slidetake in Chrome or Edge on a computer." };
+    if (!window.RestrictionTarget && !window.CropTarget) return { why: "Recording in the browser needs Chrome or Edge (or another Chromium browser) on a computer." };
+    const type = window.MediaRecorder ? recordingType((t) => MediaRecorder.isTypeSupported(t)) : "";
+    if (!type || !navigator.storage || !navigator.storage.getDirectory) return { why: "This browser can\u2019t record video here. Use a recent Chrome or Edge." };
+    const { quality, device } = bestQuality(screen.width, screen.height, devicePixelRatio || 1);
+    if (!quality) return { why: "This screen gives a " + device[0] + "\xD7" + device[1] + " frame, less than 720p. Use OBS, or a larger screen." };
+    return { ok: true, type, quality };
+  }
+  async function stopMeter() {
+    if (!meter) return;
+    cancelAnimationFrame(meter.raf);
+    meter.stream.getTracks().forEach((t) => t.stop());
+    meter.ctx.close().catch(() => {
+    });
+    meter = null;
+    recMeter.value = 0;
+  }
+  async function startMeter() {
+    await stopMeter();
+    try {
+      const id = recMic.value;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: id ? { deviceId: { exact: id } } : true });
+      const ctx = new AudioContext(), an = ctx.createAnalyser();
+      an.fftSize = 512;
+      ctx.createMediaStreamSource(stream).connect(an);
+      const buf = new Float32Array(an.fftSize);
+      meter = { stream, ctx, raf: 0 };
+      const loop = () => {
+        an.getFloatTimeDomainData(buf);
+        let peak = 0;
+        for (const v of buf) peak = Math.max(peak, Math.abs(v));
+        recMeter.value = Math.max(peak, recMeter.value * 0.85);
+        meter.raf = requestAnimationFrame(loop);
+      };
+      loop();
+    } catch (e) {
+      recCheck.innerHTML = '<span class="warn">The microphone isn\u2019t available: ' + escapeHtml(e.message || e.name) + ". Allow it in the site settings.</span>";
+    }
+  }
+  async function fillDevices() {
+    try {
+      if (!meter) await startMeter();
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const opts = (kind, saved) => devs.filter((d) => d.kind === kind).map((d, i) => '<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === saved ? " selected" : "") + ">" + escapeHtml(d.label || (kind === "audioinput" ? "Microphone " : "Camera ") + (i + 1)) + "</option>").join("");
+      recCam.innerHTML = opts("videoinput", load("slidetake:cam") || "");
+      const mic = load("slidetake:mic") || "";
+      recMic.innerHTML = opts("audioinput", mic);
+      if (mic && recMic.value === mic && meter && meter.stream.getAudioTracks()[0].getSettings().deviceId !== mic) startMeter();
+    } catch (e) {
+    }
+  }
+  recMic.onchange = () => {
+    save("slidetake:mic", recMic.value);
+    startMeter();
+  };
+  recCam.onchange = () => {
+    save("slidetake:cam", recCam.value);
+    if (cameraStream) {
+      stopWebcam();
+      startWebcam();
+    }
+  };
+  recQuality.onchange = () => save("slidetake:quality", recQuality.value);
+  async function showBrowserCheck() {
+    const b = browserRecording();
+    if (!b.ok) {
+      recCheck.innerHTML = '<span class="warn">' + escapeHtml(b.why) + "</span>";
+      return b;
+    }
+    if (recNote) {
+      recCheck.innerHTML = '<span class="warn">' + escapeHtml(recNote) + "</span>";
+      recNote = "";
+    }
+    const best = QUALITIES.indexOf(b.quality), saved = load("slidetake:quality");
+    recQuality.innerHTML = QUALITIES.slice(best).map((q) => "<option" + (q.name === saved ? " selected" : "") + ">" + q.name + "</option>").join("");
+    let room = "";
+    try {
+      const { quota, usage } = await navigator.storage.estimate();
+      const q = QUALITIES.find((x) => x.name === recQuality.value) || b.quality;
+      room = " Room for about " + Math.floor((quota - usage) / bytesPerMinute(q)) + " minutes of takes.";
+    } catch (e) {
+    }
+    if (!recCheck.querySelector(".warn")) recCheck.innerHTML = '<span class="ok">Ready: this screen records up to ' + b.quality.name + " in fullscreen." + escapeHtml(room) + "</span>";
+    return b;
+  }
+  function setRecMode(mode) {
+    recMode = mode;
+    save("slidetake:rec-mode", mode);
+    document.querySelectorAll('input[name="rec-mode"]').forEach((r) => {
+      r.checked = r.value === mode;
+    });
+    document.getElementById("rec-browser").hidden = mode !== "browser";
+    document.getElementById("rec-obs").hidden = mode !== "obs";
+    if (mode === "browser") {
+      recCheck.innerHTML = "";
+      showBrowserCheck().then((b) => {
+        recStartBtn.disabled = !b.ok;
+        if (b.ok) fillDevices();
+      });
+    } else {
+      stopMeter();
+      recStartBtn.disabled = !obsConnected;
+    }
+  }
+  document.querySelectorAll('input[name="rec-mode"]').forEach((r) => r.onchange = () => setRecMode(r.value));
+  recDialog.addEventListener("click", (e) => {
+    if (e.target === recDialog || e.target.closest("[data-close]")) stopMeter();
+  });
   function openRecordDialog() {
     if (!RECORDING_UI) return;
     const total = order.reduce((a, id) => a + slideSteps(nodes.get(id)).length, 0);
     const usesCamera = deck.camera || [...nodes.values()].some((n) => n.camera);
     document.getElementById("rec-deck-info").innerHTML = escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : "This deck")) + " \xB7 " + order.length + " slides \xB7 " + total + " presses" + (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C first if this take should include your webcam.</span>' : "");
-    recStartBtn.disabled = !obsConnected;
     renderSessionList();
     showScreenAdvice();
+    setRecMode(recMode || (browserRecording().ok ? "browser" : "obs"));
     openModal(recDialog);
   }
   document.getElementById("btn-record").onclick = openRecordDialog;
-  recStartBtn.onclick = () => startTake(true);
-  document.getElementById("rec-rehearse").onclick = () => startTake(false);
-  async function startTake(withObs) {
+  recStartBtn.onclick = () => {
+    stopMeter();
+    startTake(recMode === "browser" ? "browser" : "obs");
+  };
+  document.getElementById("rec-rehearse").onclick = () => {
+    stopMeter();
+    startTake("rehearse");
+  };
+  async function takesDir(id, create) {
+    const root = await navigator.storage.getDirectory();
+    const all = await root.getDirectoryHandle("slidetake-takes", { create: true });
+    return all.getDirectoryHandle(id, { create: !!create });
+  }
+  async function deleteTakes(id) {
+    try {
+      const root = await navigator.storage.getDirectory();
+      await (await root.getDirectoryHandle("slidetake-takes")).removeEntry(id, { recursive: true });
+    } catch (e) {
+    }
+  }
+  async function beginBrowserCapture() {
+    const b = browserRecording();
+    if (!b.ok) throw new Error(b.why);
+    const quality = QUALITIES.find((q) => q.name === recQuality.value) || b.quality;
+    document.body.classList.add("rec-frame");
+    const display = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: FPS },
+      audio: false,
+      preferCurrentTab: true,
+      selfBrowserSurface: "include",
+      surfaceSwitching: "exclude",
+      monitorTypeSurfaces: "exclude"
+    });
+    const track = display.getVideoTracks()[0];
+    const stopAll = () => display.getTracks().forEach((t) => t.stop());
+    if (!track.restrictTo && !track.cropTo) {
+      stopAll();
+      throw new Error("Share \u201Cthis tab\u201D to record the slides.");
+    }
+    try {
+      if (window.RestrictionTarget && track.restrictTo) await track.restrictTo(await RestrictionTarget.fromElement(stageWrap));
+      else await track.cropTo(await CropTarget.fromElement(stageWrap));
+    } catch (e) {
+      stopAll();
+      throw new Error("Chrome could not record just the slides (" + (e.message || e.name) + ").");
+    }
+    await track.applyConstraints({ width: quality.w, height: quality.h, frameRate: FPS, resizeMode: "crop-and-scale" }).catch(() => {
+    });
+    let mic;
+    try {
+      const id2 = load("slidetake:mic");
+      mic = await navigator.mediaDevices.getUserMedia({ audio: { ...id2 ? { deviceId: { ideal: id2 } } : {}, echoCancellation: false, autoGainControl: false, noiseSuppression: false } });
+    } catch (e) {
+      stopAll();
+      throw new Error("The microphone isn\u2019t available (" + (e.message || e.name) + ").");
+    }
+    const id = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
+    rec.browser = {
+      id,
+      display,
+      mic,
+      track,
+      quality,
+      type: b.type,
+      stream: new MediaStream([track, ...mic.getAudioTracks()]),
+      dir: await takesDir(id, true),
+      clips: [],
+      cur: null,
+      chain: Promise.resolve(),
+      error: null
+    };
+    track.addEventListener("ended", () => {
+      if (rec.active && !rec.finishing) finishTake("Sharing stopped");
+    });
+  }
+  function endBrowserCapture() {
+    const b = rec.browser;
+    if (!b) return;
+    b.display.getTracks().forEach((t) => t.stop());
+    b.mic.getTracks().forEach((t) => t.stop());
+    document.body.classList.remove("rec-frame");
+  }
+  function startClip(ev) {
+    const b = rec.browser;
+    const name = "take-" + b.clips.length + "." + clipExt(b.type);
+    const clip = { name, rec: null, done: null };
+    b.clips.push(clip);
+    ev.clip = name;
+    b.chain = b.chain.then(async () => {
+      const file = await (await b.dir.getFileHandle(name, { create: true })).createWritable();
+      const r = new MediaRecorder(b.stream, { mimeType: b.type, videoBitsPerSecond: b.quality.bitrate, audioBitsPerSecond: AUDIO_BITRATE });
+      let writes = Promise.resolve();
+      r.ondataavailable = (e) => {
+        if (e.data.size) writes = writes.then(() => file.write(e.data)).catch((err) => {
+          b.error = err;
+        });
+      };
+      clip.done = new Promise((res) => {
+        r.onstop = async () => {
+          await writes;
+          await file.close().catch(() => {
+          });
+          res();
+        };
+      });
+      await new Promise((res) => {
+        r.onstart = res;
+        r.start(1e3);
+      });
+      ev.t = Math.round(recNow());
+      const prev = b.cur;
+      b.cur = clip;
+      clip.rec = r;
+      if (prev && prev.rec.state !== "inactive") prev.rec.stop();
+    }).catch((err) => {
+      b.error = err;
+    });
+  }
+  async function startTake(kind) {
     if (rec.active || !order.length) return;
+    const withObs = kind === "obs";
+    if (kind === "browser") {
+      if (!presenting) setPresent(true);
+      try {
+        await beginBrowserCapture();
+      } catch (e) {
+        document.body.classList.remove("rec-frame");
+        if (presenting) setPresent(false);
+        recNote = e.name === "NotAllowedError" ? "Recording needs this tab shared. Start again and choose Share." : e.message;
+        openRecordDialog();
+        return;
+      }
+    }
     closeModals();
     Object.assign(rec, { active: true, withObs, counting: true, paused: false, finishing: false, t0: 0, pausedMs: 0, events: [], outputPath: null });
+    if (kind !== "browser") rec.browser = null;
     document.body.classList.add("recording");
     hidePipMsg();
     const lay = document.getElementById("rec-layout").value;
@@ -3552,6 +3888,14 @@
   function abortTake(message) {
     rec.active = false;
     rec.counting = false;
+    if (rec.browser) {
+      const b = rec.browser;
+      b.chain.then(() => {
+        if (b.cur && b.cur.rec.state !== "inactive") b.cur.rec.stop();
+      }).then(() => deleteTakes(b.id));
+      endBrowserCapture();
+      rec.browser = null;
+    }
     countdownEl.classList.remove("show");
     document.body.classList.remove("recording");
     if (presenting) setPresent(false);
@@ -3562,6 +3906,7 @@
     const n = nodes.get(id);
     const ev = { id, title: n ? n.title : id, retake: kind === "retake", t: Math.round(recNow()), obsT: null };
     rec.events.push(ev);
+    if (rec.browser) startClip(ev);
     if (rec.withObs && obsConnected) {
       obs.call("GetRecordStatus").then((r) => {
         if (r && typeof r.outputDuration === "number") ev.obsT = r.outputDuration;
@@ -3616,12 +3961,24 @@
       clearTimeout(autoTimer);
       if (rec.withObs) await obs.call("PauseRecord").catch(() => {
       });
+      if (rec.browser) {
+        const b = rec.browser;
+        b.chain = b.chain.then(() => {
+          if (b.cur && b.cur.rec.state === "recording") b.cur.rec.pause();
+        });
+      }
       pausedEl.classList.add("show");
     } else {
       pausedEl.classList.remove("show");
       await nextFrame();
       if (rec.withObs) await obs.call("ResumeRecord").catch(() => {
       });
+      if (rec.browser) {
+        const b = rec.browser;
+        b.chain = b.chain.then(() => {
+          if (b.cur && b.cur.rec.state === "paused") b.cur.rec.resume();
+        });
+      }
       rec.pausedMs += performance.now() - rec.pauseAt;
       rec.paused = false;
       scheduleAutoslide(nodes.get(currentId));
@@ -3656,6 +4013,17 @@
         reason = (reason ? reason + ". " : "") + "OBS did not confirm the stop (" + (e && e.message || e) + ")";
       }
     }
+    const b = rec.browser;
+    if (b) {
+      await wait(600);
+      await b.chain;
+      total = Math.round(recNow());
+      if (b.cur && b.cur.rec && b.cur.rec.state !== "inactive") b.cur.rec.stop();
+      await Promise.all(b.clips.map((c) => c.done));
+      endBrowserCapture();
+      rec.browser = null;
+      if (b.error) reason = (reason ? reason + ". " : "") + "Some of the take could not be saved (" + (b.error.message || b.error.name) + ")";
+    }
     rec.active = false;
     rec.finishing = false;
     document.body.classList.remove("recording");
@@ -3669,8 +4037,9 @@
       reason: reason || "",
       total,
       totalObs,
-      fps: obsFps,
-      events: rec.events.map((e) => ({ id: e.id, title: e.title, retake: e.retake, t: e.t, obsT: e.obsT })),
+      fps: b ? FPS : obsFps,
+      ...b ? { inBrowser: true, takesId: b.id, quality: b.quality.name, type: b.type } : {},
+      events: rec.events.map((e) => ({ id: e.id, title: e.title, retake: e.retake, t: e.t, obsT: e.obsT, ...e.clip ? { clip: e.clip } : {} })),
       picks: {}
     };
     saveSession(session);
@@ -3689,12 +4058,15 @@
   function saveSession(sess) {
     const all = loadSessions().filter((x) => x.date !== sess.date);
     all.unshift(sess);
+    all.slice(12).forEach((x) => {
+      if (x.takesId) deleteTakes(x.takesId);
+    });
     save("slidetake:sessions", JSON.stringify(all.slice(0, 12)));
   }
   function renderSessionList() {
     const box = document.getElementById("rec-sessions");
     const mine = loadSessions().filter((x) => x.key === sessionKey());
-    box.innerHTML = mine.length ? "<h3>Earlier takes of this deck</h3>" + mine.map((x, i) => '<div class="row"><button class="btn small" data-session="' + i + '">Review</button><span>' + escapeHtml(new Date(x.date).toLocaleString()) + " \xB7 " + fmtTime(x.totalObs ?? x.total) + (x.withObs ? "" : " \xB7 rehearsal") + (x.outputPath ? " \xB7 " + escapeHtml(baseName(x.outputPath)) : "") + "</span></div>").join("") : "";
+    box.innerHTML = mine.length ? "<h3>Earlier takes of this deck</h3>" + mine.map((x, i) => '<div class="row"><button class="btn small" data-session="' + i + '">Review</button><span>' + escapeHtml(new Date(x.date).toLocaleString()) + " \xB7 " + fmtTime(x.totalObs ?? x.total) + (x.inBrowser ? " \xB7 in this browser" + (x.cleaned ? " (takes deleted)" : "") : x.withObs ? "" : " \xB7 rehearsal") + (x.outputPath ? " \xB7 " + escapeHtml(baseName(x.outputPath)) : "") + "</span></div>").join("") : "";
     box.querySelectorAll("[data-session]").forEach((b) => b.onclick = () => {
       closeModals();
       openReview(mine[+b.dataset.session]);
@@ -3757,14 +4129,18 @@
     reviewing = sess;
     playlist = null;
     const slides = takesOf(sess), retakes = sess.events.filter((e) => e.retake).length;
-    document.getElementById("rv-title").textContent = (sess.withObs ? "Review the take \xB7 " : "Rehearsal \xB7 ") + sess.deckTitle;
+    const recorded = sess.withObs || sess.inBrowser;
+    reviewDialog.classList.toggle("in-browser", !!sess.inBrowser);
+    document.getElementById("rv-title").textContent = (recorded ? "Review the take \xB7 " : "Rehearsal \xB7 ") + sess.deckTitle;
+    document.getElementById("rv-render-status").textContent = sess.cleaned ? "These takes were deleted." : "";
+    document.getElementById("rv-render-btn").disabled = document.getElementById("rv-clean").disabled = !!sess.cleaned;
     document.getElementById("rv-info").textContent = [
       sess.reason,
       new Date(sess.date).toLocaleString(),
-      (sess.withObs ? "recorded " : "ran ") + fmtTime(sess.totalObs ?? sess.total),
+      (recorded ? "recorded " : "ran ") + fmtTime(sess.totalObs ?? sess.total),
       slides.size + " slides",
       retakes ? retakes + " retake" + (retakes > 1 ? "s" : "") : "no retakes",
-      sess.outputPath ? "saved to " + sess.outputPath : sess.withObs ? "" : "nothing was recorded"
+      sess.inBrowser ? sess.quality + ", in this browser" : sess.outputPath ? "saved to " + sess.outputPath : sess.withObs ? "" : "nothing was recorded"
     ].filter(Boolean).join(" \xB7 ");
     document.getElementById("rv-file").textContent = sess.outputPath ? " (" + baseName(sess.outputPath) + ")" : "";
     document.getElementById("rv-yt-title").value = sess.deckTitle;
@@ -3772,7 +4148,7 @@
     fpsSel.value = [...fpsSel.options].reduce((a, o) => Math.abs(o.value - fps) < Math.abs(a.value - fps) ? o : a).value;
     document.getElementById("rv-yt-tags").value = deckTags().join(", ");
     document.getElementById("rv-link").value = deckLink();
-    if (rvVideo.src && reviewFileName !== baseName(sess.outputPath) && sess.outputPath) {
+    if (rvVideo.src && (sess.inBrowser || reviewFileName !== baseName(sess.outputPath) && sess.outputPath)) {
       rvVideo.removeAttribute("src");
       rvVideo.load();
       reviewFileName = "";
@@ -3780,7 +4156,8 @@
     document.getElementById("rv-novideo").hidden = !!rvVideo.src;
     renderReview();
     openModal(reviewDialog);
-    autoLoadRecording(sess);
+    if (!sess.inBrowser) autoLoadRecording(sess);
+    else rvNow.textContent = sess.cleaned ? "" : "Click a take to preview it.";
   }
   function renderReview() {
     const sess = reviewing, list = document.getElementById("rv-list");
@@ -3797,7 +4174,12 @@
       saveSession(sess);
       renderReview();
       const slide = takesOf(sess).get(b.dataset.id), t = slide && slide.takes[+b.dataset.take - 1];
-      if (t) playRange([{ start: t.start, end: t.end, title: slide.title + (slide.takes.length > 1 ? " \xB7 take " + t.no : "") }]);
+      if (!t) return;
+      const title = slide.title + (slide.takes.length > 1 ? " \xB7 take " + t.no : "");
+      if (sess.inBrowser) {
+        const ev = sess.events.filter((e) => e.id === b.dataset.id)[t.no - 1];
+        if (ev && ev.clip) playClips([{ clip: ev.clip, keep: (t.end - t.start) / 1e3, title }]);
+      } else playRange([{ start: t.start, end: t.end, title }]);
     });
     document.getElementById("rv-ffmpeg").value = ffmpegScript2(sess, document.getElementById("rv-mode").value);
     describe(sess);
@@ -3852,7 +4234,137 @@
     rvNow.textContent = "\u25B6 " + next.title;
   });
   document.getElementById("rv-play-final").onclick = () => {
-    if (reviewing) playRange(pickedRanges(reviewing).map((r) => ({ start: r.start, end: r.end, title: r.title })));
+    if (!reviewing) return;
+    if (reviewing.inBrowser) playClips(clipPlan(reviewing));
+    else playRange(pickedRanges(reviewing).map((r) => ({ start: r.start, end: r.end, title: r.title })));
+  };
+  var clipList = null;
+  async function clipFile(sess, name) {
+    return (await (await takesDir(sess.takesId)).getFileHandle(name)).getFile();
+  }
+  async function playClips(parts, i = 0) {
+    if (!reviewing || reviewing.cleaned || !parts.length) return;
+    playlist = null;
+    clipList = { parts, i };
+    try {
+      const file = await clipFile(reviewing, parts[i].clip);
+      if (rvVideo.src) URL.revokeObjectURL(rvVideo.src);
+      rvVideo.src = URL.createObjectURL(file);
+      rvNow.textContent = "\u25B6 " + parts[i].title;
+      await rvVideo.play();
+    } catch (e) {
+      if (e && e.name === "AbortError") return;
+      clipList = null;
+      rvNow.textContent = e && e.name === "NotFoundError" ? "This take is no longer in the browser." : "Could not play this take: " + (e && e.message || e);
+    }
+  }
+  rvVideo.addEventListener("timeupdate", () => {
+    if (!clipList || rvVideo.currentTime < clipList.parts[clipList.i].keep) return;
+    if (clipList.i + 1 < clipList.parts.length) playClips(clipList.parts, clipList.i + 1);
+    else {
+      rvVideo.pause();
+      clipList = null;
+      rvNow.textContent = "";
+    }
+  });
+  rvVideo.addEventListener("ended", () => {
+    if (clipList && clipList.i + 1 < clipList.parts.length) playClips(clipList.parts, clipList.i + 1);
+  });
+  var renderStatus = document.getElementById("rv-render-status");
+  document.getElementById("rv-render-btn").onclick = async () => {
+    const sess = reviewing;
+    if (!sess || !sess.inBrowser || sess.cleaned) return;
+    const plan = clipPlan(sess);
+    if (!plan.length) {
+      renderStatus.textContent = "Every slide is left out: nothing to render.";
+      return;
+    }
+    const mp4 = clipExt(sess.type || "") === "mp4";
+    const name = sessionKey() + "." + (mp4 ? "mp4" : "webm");
+    let file = null;
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: "Video", accept: mp4 ? { "video/mp4": [".mp4"] } : { "video/webm": [".webm"] } }] });
+        file = await handle.createWritable();
+      } catch (e) {
+        if (e && e.name === "AbortError") return;
+      }
+    }
+    const btn = document.getElementById("rv-render-btn");
+    btn.disabled = true;
+    renderStatus.textContent = "Loading the video tools\u2026";
+    try {
+      const MB = await import(MEDIABUNNY_URL);
+      const target = file ? new MB.StreamTarget(file) : new MB.BufferTarget();
+      const out = new MB.Output({ format: mp4 ? new MB.Mp4OutputFormat({ fastStart: file ? false : "in-memory" }) : new MB.WebMOutputFormat(), target });
+      let vSrc = null, aSrc = null, offset = 0, lastV = -1, lastA = -1;
+      for (const [i, part] of plan.entries()) {
+        renderStatus.textContent = "Joining take " + (i + 1) + " of " + plan.length + "\u2026";
+        const input = new MB.Input({ source: new MB.BlobSource(await clipFile(sess, part.clip)), formats: MB.ALL_FORMATS });
+        const vt = await input.getPrimaryVideoTrack(), at = await input.getPrimaryAudioTrack();
+        if (!vt) throw new Error(part.title + " has no video");
+        if (!vSrc) {
+          vSrc = new MB.EncodedVideoPacketSource(await vt.getCodec());
+          out.addVideoTrack(vSrc, { frameRate: FPS });
+          if (at) {
+            aSrc = new MB.EncodedAudioPacketSource(await at.getCodec());
+            out.addAudioTrack(aSrc);
+          }
+          await out.start();
+        }
+        const vMeta = { decoderConfig: await vt.getDecoderConfig() };
+        let end = 0, first = true;
+        for await (const pk of new MB.EncodedPacketSink(vt).packets()) {
+          if (pk.timestamp >= part.keep) continue;
+          lastV = afterPrevious(lastV, offset + pk.timestamp);
+          await vSrc.add(pk.clone({ timestamp: lastV }), first && i === 0 ? vMeta : void 0);
+          first = false;
+          end = Math.max(end, pk.timestamp + pk.duration);
+        }
+        if (at && aSrc) {
+          const aMeta = { decoderConfig: await at.getDecoderConfig() };
+          let aFirst = true;
+          for await (const pk of new MB.EncodedPacketSink(at).packets()) {
+            if (pk.timestamp + pk.duration > end + 1e-4) continue;
+            lastA = afterPrevious(lastA, offset + pk.timestamp);
+            await aSrc.add(pk.clone({ timestamp: lastA }), aFirst && i === 0 ? aMeta : void 0);
+            aFirst = false;
+          }
+        }
+        offset += end;
+      }
+      renderStatus.textContent = "Finishing\u2026";
+      await out.finalize();
+      if (!file) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([target.buffer], { type: mp4 ? "video/mp4" : "video/webm" }));
+        a.download = name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1e4);
+      }
+      renderStatus.textContent = "Rendered " + fmtTime(offset * 1e3) + " to " + name + ".";
+    } catch (e) {
+      renderStatus.textContent = "Could not render: " + (e && e.message || e);
+      if (file) file.abort().catch(() => {
+      });
+    } finally {
+      btn.disabled = !!sess.cleaned;
+    }
+  };
+  document.getElementById("rv-clean").onclick = async () => {
+    const sess = reviewing;
+    if (!sess || !sess.inBrowser || sess.cleaned) return;
+    if (!confirm("Delete the recorded takes of this session from this browser? Render the video first if you need it.")) return;
+    await deleteTakes(sess.takesId);
+    sess.cleaned = true;
+    saveSession(sess);
+    if (rvVideo.src) {
+      URL.revokeObjectURL(rvVideo.src);
+      rvVideo.removeAttribute("src");
+      rvVideo.load();
+    }
+    clipList = null;
+    openReview(sess);
   };
   function idb(name) {
     return new Promise((res, rej) => {
@@ -4043,7 +4555,8 @@
       camBtn.disabled = true;
       showPipMsg("Waiting for camera permission \u2014 check the browser prompt near the address bar.", true);
       try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, audio: false });
+        const camId = load("slidetake:cam");
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { ...camId ? { deviceId: { ideal: camId } } : {}, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, audio: false });
         hidePipMsg();
       } catch (e) {
         const name = e && e.name;

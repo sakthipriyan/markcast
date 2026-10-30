@@ -333,6 +333,17 @@
   /* while a take runs nothing but the slides and the camera is on screen */
   body.recording #breadcrumbs, body.recording #navbar, body.recording #minimap, body.recording #pip-msg{display:none !important;}
   body.recording, body.recording *{cursor:none !important;}
+  /* recording in the browser: the deck in a 16:9 frame, the only part captured. Chrome captures an element
+     only while it is its own stacking context, hence the isolation (without it the capture is silently empty). */
+  body.rec-frame main{background:#000;}
+  body.rec-frame #stage-wrap{flex:none;margin:auto;width:min(100%, calc(100vh * 16 / 9));aspect-ratio:16/9;isolation:isolate;}
+  .rec-modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px;}
+  .rec-mode{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--panel-line);border-radius:10px;padding:10px 12px;cursor:pointer;}
+  .rec-mode:has(input:checked){border-color:var(--accent);}
+  .rec-mode input{margin-top:3px;}
+  .rec-mode small{display:block;color:var(--text-muted);font-size:12px;margin-top:2px;}
+  .rec-level meter{flex:1;height:10px;}
+  #review.in-browser #rv-novideo, #review.in-browser #rv-ffmpeg-box, #review:not(.in-browser) #rv-render{display:none !important;}
   #rec-countdown{
     position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
     background:rgba(4,7,13,.9);font-family:var(--display);color:var(--accent);
