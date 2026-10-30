@@ -2163,10 +2163,11 @@ const ffmpegScript = (sess, mode)=>ffmpegScriptCore(sess, mode, {
   loudness: loudOn()
 });
 // bring the sound to YouTube's level when the video is made (on unless turned off)
-const loudBox = document.getElementById('rv-loud');
+const loudBtn = document.getElementById('rv-loud');
 const loudOn = ()=>load('slidetake:loudness') !== 'off';
-loudBox.checked = loudOn();
-loudBox.onchange = ()=>{ save('slidetake:loudness', loudBox.checked ? 'on' : 'off'); if (reviewing) renderReview(); };
+const showLoud = ()=>{ loudBtn.setAttribute('aria-pressed', String(loudOn())); loudBtn.classList.toggle('on', loudOn()); };
+showLoud();
+loudBtn.onclick = ()=>{ save('slidetake:loudness', loudOn() ? 'off' : 'on'); showLoud(); if (reviewing) renderReview(); };
 
 // ---------- YouTube publish pack ----------
 function deckTags(){

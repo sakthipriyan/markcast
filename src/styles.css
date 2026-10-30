@@ -369,6 +369,8 @@
   .rv-video{grid-area:video;}
   .rv-list{grid-area:list;contain:size;}
   .rv-bar{grid-area:bar;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;}
+  .btn.toggle{color:var(--text-muted);}
+  .btn.toggle.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   .rv-final{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--text-muted);}
   #rv-now{grid-area:now;}
   #review:not(.in-browser) #rv-render-btn{display:none;}
