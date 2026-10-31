@@ -115,7 +115,7 @@
 
 <div id="help">
   <div class="panel">
-    <button class="close" id="help-close" aria-label="Close">✕</button>
+    <button class="btn close" id="help-close">✕ Close</button>
     <h2>Keys</h2>
     <table class="keys">
       <tr><td><kbd>→</kbd> <kbd>←</kbd> <kbd>Space</kbd></td><td>next / previous step</td></tr>
@@ -136,7 +136,7 @@
 
 <div id="analytics-dialog" class="modal" role="dialog" aria-labelledby="analytics-title">
   <div class="panel">
-    <button class="close" data-close aria-label="Close">✕</button>
+    <button class="btn close" data-close>✕ Close</button>
     <h2 id="analytics-title">Privacy &amp; analytics</h2>
     <p>Your decks, copies and recordings never leave this browser. This is only about counting visits to slidetake.com.</p>
     <div class="choices" role="radiogroup" aria-label="Privacy &amp; analytics">
@@ -155,7 +155,7 @@
 
 <div id="new-dialog" class="modal" role="dialog" aria-labelledby="new-title">
   <div class="panel">
-    <button class="close" data-close aria-label="Close">✕</button>
+    <button class="btn close" data-close>✕ Close</button>
     <h2 id="new-title">Start a new deck</h2>
     <p>Pick a template. It opens as it is; start typing and it becomes your own copy at <code>/edit</code>.</p>
     <ul class="templates">
@@ -170,7 +170,7 @@
 
 <div id="open-dialog" class="modal" role="dialog" aria-labelledby="open-title">
   <div class="panel">
-    <button class="close" data-close aria-label="Close">✕</button>
+    <button class="btn close" data-close>✕ Close</button>
     <h2 id="open-title">Load a deck from a link</h2>
     <p>Paste a link to a markdown file: a GitHub file or folder, a gist, or any URL that allows other sites to read it.</p>
     <form id="open-form" class="row">
@@ -191,7 +191,7 @@
 
 <div id="rec-dialog" class="modal" role="dialog" aria-labelledby="rec-title">
   <div class="panel wide">
-    <button class="close" data-close aria-label="Close">✕</button>
+    <button class="btn close" data-close>✕ Close</button>
     <h2 id="rec-title">Record a take</h2>
     <p id="rec-deck-info"></p>
     <div class="rec-modes" role="radiogroup" aria-label="Record with">
@@ -232,8 +232,10 @@
 
 <div id="review" class="modal" role="dialog" aria-labelledby="rv-title">
   <div class="panel xwide">
-    <button class="close" data-close aria-label="Close">✕</button>
-    <button class="btn rv-setup-btn rv-board-only" id="rv-setup-btn" aria-expanded="false" aria-controls="rv-setup">⚙ Setup</button>
+    <div class="panel-actions">
+      <button class="btn rv-setup-btn rv-board-only" id="rv-setup-btn" aria-expanded="false" aria-controls="rv-setup">⚙ Setup</button>
+      <button class="btn close" data-close>✕ Close</button>
+    </div>
     <h2 id="rv-title">Review the take</h2>
     <p id="rv-info"></p>
     <details id="rv-setup" class="rv-board-only">

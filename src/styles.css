@@ -298,7 +298,11 @@
   .modal h3{font-family:var(--display);font-size:13px;margin:18px 0 8px;color:var(--text);display:flex;align-items:center;gap:10px;}
   .modal p, .modal li{font-size:13px;line-height:1.6;color:var(--text-muted);margin:0 0 6px;}
   .modal ul{padding-left:18px;margin:0;}
-  .modal .close{position:absolute;top:23px;right:16px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+  /* ✕ Close: a regular button at the top right, on the title's line (with ⚙ Setup beside it on the board) */
+  .modal .panel > .close, .modal .panel-actions{position:absolute;top:20px;right:24px;}
+  .modal .panel-actions{display:flex;gap:8px;}
+  .modal h2{padding-right:96px;}
+  #review h2{padding-right:190px;}
   .modal .fields{display:grid;grid-template-columns:2fr 1fr 2fr;gap:10px;}
   #open-form{display:flex;gap:8px;margin:12px 0 6px;}
   #help table.keys{border-collapse:collapse;margin:6px 0 12px;font-size:13px;}
@@ -387,7 +391,6 @@
   .rv-chip.outdated{opacity:.6;text-decoration:line-through;}
   .rv-none{font-size:12px;color:var(--text-muted);font-style:italic;}
   /* Recording setup: opened from the ⚙ Setup button at the top right, shown under the title */
-  .modal .rv-setup-btn{position:absolute;top:20px;right:48px;}
   .modal .rv-setup-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   #rv-setup{margin:4px 0 12px;border:1px solid var(--panel-line);border-radius:8px;padding:10px 14px;}
   #rv-setup > summary{display:none;}
@@ -681,7 +684,7 @@
     background:var(--code-bg);border:1px solid var(--panel-line);border-radius:6px;
     padding:10px 12px;font-family:var(--mono);font-size:11.5px;color:var(--text);overflow-x:auto;
   }
-  #help .close{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+  #help .close{position:absolute;top:22px;right:16px;}
   kbd{
     font-family:var(--mono);background:var(--node-bg);border:1px solid var(--node-border);
     border-radius:4px;padding:1px 6px;font-size:11px;color:var(--accent);

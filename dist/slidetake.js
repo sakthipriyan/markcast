@@ -1222,7 +1222,11 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
   .modal h3{font-family:var(--display);font-size:13px;margin:18px 0 8px;color:var(--text);display:flex;align-items:center;gap:10px;}
   .modal p, .modal li{font-size:13px;line-height:1.6;color:var(--text-muted);margin:0 0 6px;}
   .modal ul{padding-left:18px;margin:0;}
-  .modal .close{position:absolute;top:23px;right:16px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+  /* \u2715 Close: a regular button at the top right, on the title's line (with \u2699 Setup beside it on the board) */
+  .modal .panel > .close, .modal .panel-actions{position:absolute;top:20px;right:24px;}
+  .modal .panel-actions{display:flex;gap:8px;}
+  .modal h2{padding-right:96px;}
+  #review h2{padding-right:190px;}
   .modal .fields{display:grid;grid-template-columns:2fr 1fr 2fr;gap:10px;}
   #open-form{display:flex;gap:8px;margin:12px 0 6px;}
   #help table.keys{border-collapse:collapse;margin:6px 0 12px;font-size:13px;}
@@ -1311,7 +1315,6 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
   .rv-chip.outdated{opacity:.6;text-decoration:line-through;}
   .rv-none{font-size:12px;color:var(--text-muted);font-style:italic;}
   /* Recording setup: opened from the \u2699 Setup button at the top right, shown under the title */
-  .modal .rv-setup-btn{position:absolute;top:20px;right:48px;}
   .modal .rv-setup-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   #rv-setup{margin:4px 0 12px;border:1px solid var(--panel-line);border-radius:8px;padding:10px 14px;}
   #rv-setup > summary{display:none;}
@@ -1605,7 +1608,7 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
     background:var(--code-bg);border:1px solid var(--panel-line);border-radius:6px;
     padding:10px 12px;font-family:var(--mono);font-size:11.5px;color:var(--text);overflow-x:auto;
   }
-  #help .close{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+  #help .close{position:absolute;top:22px;right:16px;}
   kbd{
     font-family:var(--mono);background:var(--node-bg);border:1px solid var(--node-border);
     border-radius:4px;padding:1px 6px;font-size:11px;color:var(--accent);
@@ -1695,7 +1698,7 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
 
 <div id="help">
   <div class="panel">
-    <button class="close" id="help-close" aria-label="Close">\u2715</button>
+    <button class="btn close" id="help-close">\u2715 Close</button>
     <h2>Keys</h2>
     <table class="keys">
       <tr><td><kbd>\u2192</kbd> <kbd>\u2190</kbd> <kbd>Space</kbd></td><td>next / previous step</td></tr>
@@ -1716,7 +1719,7 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
 
 <div id="analytics-dialog" class="modal" role="dialog" aria-labelledby="analytics-title">
   <div class="panel">
-    <button class="close" data-close aria-label="Close">\u2715</button>
+    <button class="btn close" data-close>\u2715 Close</button>
     <h2 id="analytics-title">Privacy &amp; analytics</h2>
     <p>Your decks, copies and recordings never leave this browser. This is only about counting visits to slidetake.com.</p>
     <div class="choices" role="radiogroup" aria-label="Privacy &amp; analytics">
@@ -1735,7 +1738,7 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
 
 <div id="new-dialog" class="modal" role="dialog" aria-labelledby="new-title">
   <div class="panel">
-    <button class="close" data-close aria-label="Close">\u2715</button>
+    <button class="btn close" data-close>\u2715 Close</button>
     <h2 id="new-title">Start a new deck</h2>
     <p>Pick a template. It opens as it is; start typing and it becomes your own copy at <code>/edit</code>.</p>
     <ul class="templates">
@@ -1750,7 +1753,7 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
 
 <div id="open-dialog" class="modal" role="dialog" aria-labelledby="open-title">
   <div class="panel">
-    <button class="close" data-close aria-label="Close">\u2715</button>
+    <button class="btn close" data-close>\u2715 Close</button>
     <h2 id="open-title">Load a deck from a link</h2>
     <p>Paste a link to a markdown file: a GitHub file or folder, a gist, or any URL that allows other sites to read it.</p>
     <form id="open-form" class="row">
@@ -1771,7 +1774,7 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
 
 <div id="rec-dialog" class="modal" role="dialog" aria-labelledby="rec-title">
   <div class="panel wide">
-    <button class="close" data-close aria-label="Close">\u2715</button>
+    <button class="btn close" data-close>\u2715 Close</button>
     <h2 id="rec-title">Record a take</h2>
     <p id="rec-deck-info"></p>
     <div class="rec-modes" role="radiogroup" aria-label="Record with">
@@ -1812,8 +1815,10 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
 
 <div id="review" class="modal" role="dialog" aria-labelledby="rv-title">
   <div class="panel xwide">
-    <button class="close" data-close aria-label="Close">\u2715</button>
-    <button class="btn rv-setup-btn rv-board-only" id="rv-setup-btn" aria-expanded="false" aria-controls="rv-setup">\u2699 Setup</button>
+    <div class="panel-actions">
+      <button class="btn rv-setup-btn rv-board-only" id="rv-setup-btn" aria-expanded="false" aria-controls="rv-setup">\u2699 Setup</button>
+      <button class="btn close" data-close>\u2715 Close</button>
+    </div>
     <h2 id="rv-title">Review the take</h2>
     <p id="rv-info"></p>
     <details id="rv-setup" class="rv-board-only">
