@@ -130,7 +130,7 @@ Three places to use Slidetake, one deck format for all of them: a markdown file.
 |---|---|
 | **slidetake.com** | writing in the Editor, viewing any deck from a link, sharing |
 | **Your computer** | the same on your own files and images, offline, with an AI agent writing alongside |
-| **Your website** | decks your users view, and the page you record from |
+| **Your website** | decks your readers view |
 
 ### On slidetake.com
 
@@ -463,9 +463,9 @@ Every deck you open is **read-only**: Slidetake's own decks, templates, files on
 
 ## \u{1F512} Your data
 
-No accounts, and no decks kept: your copy and settings stay in this browser, and decks inside links never reach a server. \`npx slidetake\` keeps everything on your machine. What slidetake.com does collect (Google Analytics, which the **Privacy & analytics** button in the header turns off), and which services a deck can reach, is all on the [privacy page](/privacy).
+No accounts, and no decks kept. Recording stays on your device.
 
-Slidetake is open source: [github.com/slidetake/slidetake](https://github.com/slidetake/slidetake).
+Next, everything that leaves your browser, and where it goes: **[Privacy \u2192](/privacy)**
 `});var Tn,Cn=G(()=>{Tn=`---
 title: Slidetake Features
 brand: slidetake
@@ -579,7 +579,7 @@ pip: none
 
 Slidetake has no accounts and keeps no decks. This page lists everything that leaves your browser, and where it goes.
 
-*Last updated 27 October 2026.*
+*Last updated 31 October 2026.*
 
 ## \u{1F4CA} What slidetake.com collects
 
@@ -591,6 +591,13 @@ The address it records leaves out the part after \`#\` and \`?obs=\`, so neither
 
 That is the only analytics. A copy of Slidetake you host yourself, the embed on your own site, and \`npx slidetake\` send none.
 
+## \u{1F3A5} Recording stays on your device
+
+Your camera, your microphone and the tab you share are read only by your browser, and only while you record. Nothing is uploaded:
+
+- **Easy mode** saves each take in this browser's private storage. **\u2193 Download** writes the video to a folder you pick.
+- **Pro mode** has OBS record on your computer; Slidetake only tells it when to start and stop.
+
 ## \u{1F4BE} What stays in your browser
 
 Kept in this browser's storage on your device, and never sent anywhere:
@@ -599,11 +606,13 @@ Kept in this browser's storage on your device, and never sent anywhere:
 |---|---|
 | Your copy of a deck | so it's there when you come back |
 | Theme, layout, slide size, editor width | your preferences |
-| Recorded sessions and publish-pack settings | to review takes later |
-| OBS host, port and password | only if you tick *Remember*, stored as plain text |
+| Recorded takes | to cut the video, until you purge them |
+| Camera, mic and sound choices | your recording setup |
+| Folders you pick for videos | so Studio needn't ask again |
+| OBS host, port and password | only with *Remember*, as plain text |
 | Your analytics choice | so *off* stays off |
 
-Clearing this site's data in your browser removes all of it.
+Clearing this site's data in your browser removes all of it, recorded takes included.
 
 ## \u{1F310} Services a deck can reach
 
@@ -612,7 +621,7 @@ Opening Slidetake, or a deck that uses these, loads files from other services. E
 | Service | When |
 |---|---|
 | Google Fonts | every page, for the typefaces |
-| cdnjs, jsDelivr | every page (animation, markdown) and for diagrams, charts and OBS |
+| cdnjs, jsDelivr | every page (animation, markdown), and for diagrams, charts, recording and OBS |
 | esm.sh | a deck with a D2 diagram |
 | GitHub | opening a GitHub file or gist |
 | YouTube (youtube-nocookie.com) | a deck with a YouTube link; YouTube's own cookies only once you play it |
@@ -902,7 +911,7 @@ A deck sets its own colour with one line, \`accent: "#3b82f6"\`, shaded for both
 
 ## \u2702\uFE0F Record a video
 
-Try it: press **\u25CF Studio** (top right), then **\u25CF Record**. In Chrome or Edge the deck records itself, nothing to install; in any browser, [OBS](https://obsproject.com) can record while the deck drives it. It records slide by slide: stumble, press \u2190, say it again. **Slidetake Studio** then plays the picked takes and hands you the final video and the YouTube chapters. Step by step: [Docs \u2192 Record a video](/docs#4-record-a-video).
+Try it: press **\u25CF Studio** (top right), then **\u25CF Record**. Stumble on a slide, press \u2190, say it again; then pick the best take of each. Step by step: [Docs \u2192 Record a video](/docs#4-record-a-video).
 
 ## \u{1F310} Open from anywhere
 

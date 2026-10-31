@@ -8,7 +8,7 @@ pip: none
 
 Slidetake has no accounts and keeps no decks. This page lists everything that leaves your browser, and where it goes.
 
-*Last updated 27 October 2026.*
+*Last updated 31 October 2026.*
 
 ## 📊 What slidetake.com collects
 
@@ -20,6 +20,13 @@ The address it records leaves out the part after `#` and `?obs=`, so neither a d
 
 That is the only analytics. A copy of Slidetake you host yourself, the embed on your own site, and `npx slidetake` send none.
 
+## 🎥 Recording stays on your device
+
+Your camera, your microphone and the tab you share are read only by your browser, and only while you record. Nothing is uploaded:
+
+- **Easy mode** saves each take in this browser's private storage. **↓ Download** writes the video to a folder you pick.
+- **Pro mode** has OBS record on your computer; Slidetake only tells it when to start and stop.
+
 ## 💾 What stays in your browser
 
 Kept in this browser's storage on your device, and never sent anywhere:
@@ -28,11 +35,13 @@ Kept in this browser's storage on your device, and never sent anywhere:
 |---|---|
 | Your copy of a deck | so it's there when you come back |
 | Theme, layout, slide size, editor width | your preferences |
-| Recorded sessions and publish-pack settings | to review takes later |
-| OBS host, port and password | only if you tick *Remember*, stored as plain text |
+| Recorded takes | to cut the video, until you purge them |
+| Camera, mic and sound choices | your recording setup |
+| Folders you pick for videos | so Studio needn't ask again |
+| OBS host, port and password | only with *Remember*, as plain text |
 | Your analytics choice | so *off* stays off |
 
-Clearing this site's data in your browser removes all of it.
+Clearing this site's data in your browser removes all of it, recorded takes included.
 
 ## 🌐 Services a deck can reach
 
@@ -41,7 +50,7 @@ Opening Slidetake, or a deck that uses these, loads files from other services. E
 | Service | When |
 |---|---|
 | Google Fonts | every page, for the typefaces |
-| cdnjs, jsDelivr | every page (animation, markdown) and for diagrams, charts and OBS |
+| cdnjs, jsDelivr | every page (animation, markdown), and for diagrams, charts, recording and OBS |
 | esm.sh | a deck with a D2 diagram |
 | GitHub | opening a GitHub file or gist |
 | YouTube (youtube-nocookie.com) | a deck with a YouTube link; YouTube's own cookies only once you play it |
