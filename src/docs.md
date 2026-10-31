@@ -203,7 +203,7 @@ In fullscreen, the frame must be at least 1280×720 real pixels for 720p, 1920×
 ### Set up OBS
 
 1. In OBS, turn on Tools → WebSocket Server Settings.
-2. In Slidetake, press **● Record**, then **⚙ Setup → Use OBS**, and enter OBS's host, port and password. Tick *Remember* to skip this next time. ● Record opens in the mode you used last; **Use this browser** switches back.
+2. In Slidetake, press **● Record**, then **⚙ Setup → Use OBS**, and enter OBS's host, port and password. Tick *Remember* to skip this next time. ● Record opens in the mode you used last; **Use Chrome** (or Edge, Brave…: your browser's name) switches back. Beside ⚙ Setup, a line shows what a take will use: `In Chrome · camera · microphone`, or `OBS · camera`.
 3. Use a 16:9 screen (YouTube is 16:9): Setup checks yours. If it isn't, move the window to one that is, physical or virtual (say 1920×1080), and press **F** there.
 
 `?obs=localhost:4455` (or `?obs=host:port:password`) in the address fills this in and connects as the page opens.

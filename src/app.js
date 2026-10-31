@@ -1806,10 +1806,11 @@ async function startMeter(){
     loop();
   } catch(e){ recCheck.innerHTML = '<span class="warn">The microphone isn’t available: ' + escapeHtml(e.message || e.name) + '. Allow it in the site settings.</span>'; }
 }
-async function fillDevices(withMic = true){
+// withMeter: the mic's level shows (Setup is open in the browser); it also lets the browser name the devices
+async function fillDevices(withMeter = true){
   try {
-    // labels are only listed once the page may use a device, so ask for the mic first (OBS records the mic)
-    if (withMic && !meter) await startMeter();
+    // labels are only listed once the page may use a device, so ask for the mic first
+    if (withMeter && !meter) await startMeter();
     const devs = await navigator.mediaDevices.enumerateDevices();
     // Chrome lists the system default (and on Windows the communications device) again as extra entries:
     // drop them, and mark the device they stand for instead
@@ -1825,12 +1826,11 @@ async function fillDevices(withMic = true){
     const cam = camChoice();
     recCam.innerHTML = '<option value="none"' + (cam === 'none' ? ' selected' : '') + '>No camera</option>' + opts('videoinput', cam);
     const mic = load('slidetake:mic') || '';
-    if (!withMic) return;
     recMic.innerHTML = opts('audioinput', mic);
     if (mic && recMic.value === mic && meter && meter.stream.getAudioTracks()[0].getSettings().deviceId !== mic) startMeter();
   } catch(e){}
 }
-recMic.onchange = ()=>{ save('slidetake:mic', recMic.value); startMeter(); };
+recMic.onchange = ()=>{ save('slidetake:mic', recMic.value); startMeter(); setupSummary(); };
 recCam.onchange = ()=>{
   setCamChoice(recCam.value);
   if (recCam.value !== 'none' && cameraStream){ stopWebcam(); startWebcam(); }
@@ -2330,7 +2330,7 @@ function openReview(sess, opts = {}){
   renderReview();
   openModal(reviewDialog);
   setupEl.open = !!opts.setup || !obsConnected || !!sess.empty;
-  if (setupEl.open) refreshSetup();
+  if (setupEl.open) refreshSetup(); else fillDevices(false).then(setupSummary);
   say(opts.note || (sess.empty ? (obsConnected ? 'Press ● Record: OBS records the deck.' : 'Connect to OBS in Setup, then press ● Record.')
     : rvVideo.src ? 'Click a take to preview it.' : 'Open the recording to preview it.'));
   if (!sess.empty) autoLoadRecording(sess);
@@ -2788,16 +2788,29 @@ setupEl.addEventListener('toggle', ()=>{
 setupBtn.onclick = ()=>{ setupEl.open = !setupEl.open; };
 reviewDialog.addEventListener('click', e=>{ if (e.target === reviewDialog || e.target.closest('[data-close]')) stopMeter(); });
 function refreshSetup(){
-  if (obsMode()){ showScreenAdvice(); fillDevices(false); return; }
+  if (obsMode()){ showScreenAdvice(); fillDevices(false).then(setupSummary); return; }
   recCheck.innerHTML = '';
   showBrowserCheck().then(b=>{ if (b.ok) fillDevices().then(setupSummary); else setupSummary(); });
 }
+// the browser by its name (Chrome, Edge, Brave…), for the labels that switch between it and OBS
+const browserName = (()=>{
+  const brands = (navigator.userAgentData && navigator.userAgentData.brands || []).map(b=>b.brand)
+    .filter(b=>!/chromium|not.?a.?brand/i.test(b));
+  if (brands.length) return brands[0].replace(/^(Google|Microsoft) /, '');
+  const ua = navigator.userAgent;
+  return /Firefox\//.test(ua) ? 'Firefox' : /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Chrome\//.test(ua) ? 'Chrome'
+    : /Safari\//.test(ua) ? 'Safari' : 'this browser';
+})();
+document.querySelectorAll('.browser-name').forEach(el=>{ el.textContent = browserName; });
+// what a take will use, beside ⚙ Setup, so it shows without opening it: the mode, the camera and (in the
+// browser) the microphone
 function setupSummary(){
-  const mic = recMic.selectedOptions[0], b = browserRecording();
-  const cam = recCam.selectedOptions[0];
-  const text = b.ok ? [recQuality.value, cam ? cam.textContent : camChoice() === 'none' ? 'No camera' : 'Camera', mic && mic.textContent].filter(Boolean).join(' · ') : 'not ready';
-  document.getElementById('rv-setup-sum').textContent = text;
-  setupBtn.title = 'Recording setup: ' + text;
+  const name = /** @param {HTMLSelectElement} sel */ sel=>{ const o = sel.selectedOptions[0]; return o ? o.textContent.replace(/ \(system default\)$/, '') : ''; };
+  const cam = name(recCam) || (camChoice() === 'none' ? 'No camera' : 'Camera');
+  const parts = obsMode() ? ['OBS', cam] : browserRecording().ok ? ['In ' + browserName, cam, name(recMic) || 'Microphone'] : ['In ' + browserName, 'can’t record here'];
+  const el = document.getElementById('rv-using');
+  el.textContent = parts.join(' · ');
+  el.title = setupBtn.title = 'Recording with ' + parts.join(' · ');
 }
 function openBoard(opts = {}){
   if (!RECORDING_UI) return;
@@ -2816,7 +2829,7 @@ function openBoard(opts = {}){
   openModal(reviewDialog);
   const ready = browserRecording().ok;
   setupEl.open = !!opts.setup || !ready || !board.takes.length;
-  if (setupEl.open) refreshSetup(); else setupSummary();
+  if (setupEl.open) refreshSetup(); else fillDevices(false).then(setupSummary);
   say(opts.note || selNote() || (board.takes.length ? 'Click a take to preview it.' : 'Nothing recorded yet. Press ● Record to record the deck.'));
 }
 function renderBoard(){

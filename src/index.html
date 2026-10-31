@@ -192,6 +192,7 @@
 <div id="review" class="modal" role="dialog" aria-labelledby="rv-title">
   <div class="panel xwide">
     <div class="panel-actions">
+      <span class="rv-using" id="rv-using"></span>
       <button class="btn rv-setup-btn" id="rv-setup-btn" aria-expanded="false" aria-controls="rv-setup">⚙ Setup</button>
       <button class="btn close" data-close>✕ Close</button>
     </div>
@@ -200,9 +201,9 @@
     <details id="rv-setup">
       <summary>Recording setup</summary>
       <div class="rv-setup-head">
-        <h4 class="for-browser">Record in this browser</h4><h4 class="for-obs">Record with OBS</h4>
+        <h4 class="for-browser">Record in <span class="browser-name">this browser</span></h4><h4 class="for-obs">Record with OBS</h4>
         <button class="btn small for-browser" id="rv-use-obs" title="Record with OBS instead of in this browser">Use OBS</button>
-        <button class="btn small for-obs" id="rv-use-browser" title="Record in this browser instead of with OBS">Use this browser</button>
+        <button class="btn small for-obs" id="rv-use-browser" title="Record in this browser instead of with OBS">Use <span class="browser-name">this browser</span></button>
       </div>
       <div class="rv-setup-cols">
         <section class="for-obs">
@@ -283,7 +284,6 @@
         <span class="rv-setup-note">During a take: → next · ← take this slide again · B pause · Esc stop</span>
       </div>
       <p class="rv-setup-note for-browser">When Chrome asks, share <strong>this tab</strong>. Only the slides and your camera are recorded, in a 16:9 frame; nothing else on the screen is.</p>
-      <p class="rv-setup-sum" id="rv-setup-sum" hidden></p>
     </details>
     <div class="rv-grid">
       <div>
