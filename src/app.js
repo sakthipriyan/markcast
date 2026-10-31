@@ -6,13 +6,16 @@ import BLANK_MD from '../examples/blank.md';
 import TALK_MD from '../examples/talk.md';
 import RECORDING_MD from '../examples/recording.md';
 import SHOWCASE_MD from '../examples/showcase.md';
-import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime} from './core/text.js';
+import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime, fmtLength} from './core/text.js';
 import {parseDeck as parseDeckCore, cameraDirective, mapDirective, settingsBlock} from './core/parse.js';
 import {CORNERS, clampPipSize, applyPreset, cameraPresets, stepsFor} from './core/steps.js';
 import {normalizeSource, shortLink} from './core/source.js';
 import {encodeDeck, decodeDeck, parseHash, deckHash} from './core/share.js';
 import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from './core/doc.js';
 import {youtubeVideo, embedUrl} from './core/media.js';
+import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious, deviceName, sizeName} from './core/record.js';
+import {YOUTUBE_LUFS, MAX_BOOST_DB, loudnessMeter, gainToTarget, dbToGain, peakLimiter} from './core/loudness.js';
+import {fingerprint, deckSlides, takesFromRun, boardRows, boardSession, selectedInOrder, rangeOf} from './core/board.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
@@ -25,9 +28,9 @@ const LOCAL = window.SLIDETAKE_LOCAL || null;
 // the logo, read once from the header (which an embed replaces): the corner mark and the credit reuse it
 const LOGO = document.querySelector('header .mark .logo').outerHTML;
 document.documentElement.classList.toggle('embed', !!EMBED);
-// Camera and Record are for making a video. On slidetake.com they're always there; embedded in a site
-// they'd only puzzle readers, so they appear there with ?obs= in the address (or recording: true).
-const RECORDING_UI = !EMBED || EMBED.recording === true || new URLSearchParams(location.search).has('obs');
+// Camera and Studio are for making a video: on slidetake.com and `npx slidetake`. Embedded in a site,
+// Slidetake is only a viewer; the deck is recorded from its markdown on slidetake.com or locally.
+const RECORDING_UI = !EMBED;
 document.documentElement.classList.toggle('no-record', !RECORDING_UI);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slidetake's own read-only decks
@@ -101,6 +104,22 @@ function renderMd(body){
 
 
 
+
+// Slidetake's own decks (brand: slidetake) write the name as the logo and the two-tone word, as the
+// header does, wherever it appears in a card's text (not in code, or in italics: a quoted prompt)
+const NAME_MARK = '<span class="st-name">' + LOGO + 'Slide<span class="st-take">take</span></span>';
+/** @param {HTMLElement} body */
+function markName(body){
+  const walk = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {acceptNode: t=>
+    /Slidetake/.test(t.nodeValue || '') && !t.parentElement?.closest('code, pre, kbd, svg, em, .st-name') ? 1 : 2});
+  const hits = [];
+  while (walk.nextNode()) hits.push(walk.currentNode);
+  hits.forEach(t=>{
+    const span = document.createElement('span');
+    span.innerHTML = escapeHtml(t.nodeValue || '').replace(/Slidetake/g, NAME_MARK);
+    t.replaceWith(...span.childNodes);
+  });
+}
 
 function applyDeckSettings(){
   const name = deck.brand || '', logo = deck.logo || '';
@@ -217,8 +236,8 @@ function toggleMode(){
   if (EMBED && EMBED.themeKey){ save(EMBED.themeKey, next); document.documentElement.classList.toggle('dark', next === 'dark'); }
   else save('slidetake:mode', next);
   applyMode();
-  // charts are drawn for one mode; redraw them for the other
-  if (world.querySelector('.echarts-container, .diagram.d2')) rebuild(true);
+  // charts and diagrams are drawn for one mode; redraw them for the other
+  if (world.querySelector('.echarts-container, .diagram.d2, .diagram.dot')) rebuild(true);
 }
 
 // ---------- camera layouts ----------
@@ -455,7 +474,8 @@ function applyElementComments(root){
 // ---------- images and YouTube in plain markdown ----------
 // A card's media decides its layout, with no classes to write (the alt text is the caption):
 //   one image or video alone        → media card: the image fills the card, caption below
-//   one image or video + text       → split: media on one side (the side it was written on), text on the other
+//   one image + text                → split: the image on one side (the side it was written on), text on the other;
+//                                     a YouTube video stays full width with its text above or below
 //   a list of images or diagrams    → gallery; under <!-- steps --> a carousel, one per press
 //   (under <!-- steps -->, two or more images or diagrams in a row are such a list)
 //   several images in one paragraph → grid
@@ -574,12 +594,13 @@ function applyMedia(el, body){
   const parts = [...body.children].filter(c=>!/^H[1-6]$/.test(c.tagName) && !(c.nodeType === 1 && c.tagName === 'HR'));
   const media = parts.filter(c=>c.matches('figure.media'));
   if (media.length === 1 && parts.length === 1) el.classList.add('card-media');
-  // an image or a carousel alone runs edge to edge, the heading and caption laid over it
-  if (parts.length === 1 && (parts[0].matches('figure.media:not(.yt)') || parts[0].matches('.gallery.carousel:not(.diagrams)'))) el.classList.add('card-bleed');
   // <!-- view: full --> makes the card a 16:9 frame for its image, placed like any other slide
   const walker = document.createTreeWalker(body, NodeFilter.SHOW_COMMENT);
   while (walker.nextNode()) if (/^\s*view\s*:\s*full\s*$/i.test(walker.currentNode.data)) el.classList.add('card-full');
-  else if (media.length === 1){
+  // an image or a carousel alone runs edge to edge, the heading and caption laid over it; one image with
+  // text beside it makes a split card (a YouTube video stays full width, under its text)
+  if (parts.length === 1 && (parts[0].matches('figure.media:not(.yt)') || parts[0].matches('.gallery.carousel:not(.diagrams)'))) el.classList.add('card-bleed');
+  else if (media.length === 1 && parts.length > 1 && !media[0].matches('.yt')){
     el.classList.add('card-split', parts.indexOf(media[0]) === 0 ? 'media-first' : 'media-last');
     const text = document.createElement('div');
     text.className = 'split-text';
@@ -685,7 +706,7 @@ function resolveUrls(root){
   });
   return unresolved;
 }
-// width the card needs: wide tables, columns, logo grids, diagrams, charts and embeds get more room
+// width the card needs: wide tables and code, columns, logo grids, diagrams, charts and embeds get more room
 function sizeCard(n){
   const el = n.el, b = el.querySelector('.body');
   el.classList.add('measuring');
@@ -698,11 +719,11 @@ function sizeCard(n){
   //   portrait or near-square → image on the right at the card's height, the heading and caption beside it
   //   wider     → image edge to edge across the card, the heading above it and the caption below
   //   16:9 → the image fills the card, the heading and caption over it
-  // A <!-- view: full --> card is 16:9 and fits its image whole, never cropped: an image narrow enough to leave
+  // A <!-- view: full --> card is 16:9 and fits its image whole (one nearly 16:9 just fills it): an image narrow enough to leave
   // room beside it sits on the right with the text in that room, as a portrait card does; a wider one fills
   // the card with the text over it.
   const full = el.classList.contains('card-full');
-  el.classList.remove('img-portrait', 'img-landscape', 'img-overlay');
+  el.classList.remove('img-portrait', 'img-landscape', 'img-overlay', 'img-cover');
   if (full) w = XWIDE_W;
   if (el.classList.contains('card-bleed')){
     const aspect = Math.max(0, ...[...b.querySelectorAll('img')].map(i=>i.naturalWidth && i.naturalHeight ? i.naturalWidth / i.naturalHeight : 0)) || 16 / 9;
@@ -712,7 +733,12 @@ function sizeCard(n){
       el.style.setProperty('--img-w', Math.round(BLEED_H * aspect) + 'px');
       w = XWIDE_W;
     }
-    else if (full || Math.abs(aspect - 16 / 9) < 0.08){ el.classList.add('img-overlay'); w = XWIDE_W; }
+    else if (full || Math.abs(aspect - 16 / 9) < 0.08){
+      el.classList.add('img-overlay'); w = XWIDE_W;
+      // nearly 16:9 (a 1200×630 link preview, say): fill the frame, losing a sliver at the sides, rather
+      // than leave thin bars above and below
+      if (aspect >= 16 / 9 && aspect <= 16 / 9 * 1.15) el.classList.add('img-cover');
+    }
     else if (aspect < 1.3){
       const iw = Math.min(Math.round(BLEED_H * aspect), XWIDE_W - 300);   // leave the text at least 300px
       el.classList.add('img-portrait');
@@ -734,6 +760,17 @@ function sizeCard(n){
     // long cell text wraps rather than stretching the card past WIDE_W; real overflow is handled below
     // (+12: offsetWidth rounds down, and a table at its exact width starts wrapping)
     tables.forEach(t=>{ w = Math.max(w, Math.min(WIDE_W, Math.ceil(t.offsetWidth) + pad + 12)); });
+  }
+  // code gets the width its longest line needs, so it doesn't scroll unless it's wider than the widest card
+  const codes = b.querySelectorAll('pre');
+  if (codes.length){
+    el.style.width = XWIDE_W + 'px';
+    const pad = el.offsetWidth - b.clientWidth;
+    codes.forEach(p=>{
+      p.style.width = 'max-content';
+      w = Math.max(w, Math.min(XWIDE_W, Math.ceil(p.offsetWidth) + pad + 2));
+      p.style.width = '';
+    });
   }
   // a "grow" fragment ends up 1.3x its size; leave room so its last step stays inside the card
   const growers = b.querySelectorAll('.fragment.grow');
@@ -810,6 +847,17 @@ function d2Theme(){
   steps.forEach((x, i)=>{ t['B' + (i + 2)] = mixHex(tint, card, x); });
   return t;
 }
+// Graphviz in the deck's colours, for dark or light: written at the top of the diagram, so anything the
+// diagram sets itself (a colour, a background) comes after and wins
+function dotTheme(){
+  const text = tokenHex('--text'), muted = tokenHex('--text-muted'), accent = tokenHex('--accent');
+  const font = '"Helvetica,Arial,sans-serif"';
+  return ' graph [bgcolor=transparent color="' + muted + '" fontcolor="' + text + '" fontname=' + font + ']' +
+    ' node [color="' + accent + '" fontcolor="' + text + '" fontname=' + font + ']' +
+    ' edge [color="' + muted + '" fontcolor="' + muted + '" fontname=' + font + '] ';
+}
+/** @param {string} code @param {string} theme */
+const withDotTheme = (code, theme)=>code.replace('{', '{' + theme);
 // ELK lays out D2's containers more cleanly than the default; a deck's own d2-config still wins
 const withD2Defaults = code=>/d2-config\s*:/.test(code) ? code : 'vars: {\n  d2-config: {\n    layout-engine: elk\n  }\n}\n' + code;
 const scripts = {};
@@ -841,10 +889,11 @@ async function renderRich(){
       await loadScript(VIZ_URL);
       viz = viz || await Viz.instance();
       if (gen !== buildGen) return;
+      const theme = dotTheme();
       dots.forEach(code=>{
         const box = document.createElement('div');
-        box.className = 'diagram';
-        try { box.appendChild(viz.renderSVGElement(code.textContent)); }
+        box.className = 'diagram dot';
+        try { box.appendChild(viz.renderSVGElement(withDotTheme(code.textContent, theme))); }
         catch(e){ box.className = 'diagram err'; box.textContent = 'Diagram error: ' + e.message; }
         replaceBlock(code.parentElement, box);
       });
@@ -946,6 +995,7 @@ function build(){
     applyStepsComments(body);
     groupVisualRuns(body);
     applyMedia(el, body);
+    if (/^slidetake$/i.test(deck.brand || '')) markName(body);
     // a markdown table needs a header row; a blank one (| | |) is only there to satisfy the syntax
     body.querySelectorAll('thead').forEach(h=>{ if (!h.textContent.trim()) h.remove(); });
     unresolved += resolveUrls(body);
@@ -1300,6 +1350,7 @@ function navigate(id, instant, atLastStep){
     leaveSlide();
   }
   const arriving = id !== currentId;
+  if (arriving) arrivedFrom = currentId;
   currentId = id;
   clearTimeout(mapTimer); mapTimer = null;
   if (arriving && layoutMode === 'focus' && !instant && !reduceMotion){
@@ -1308,7 +1359,7 @@ function navigate(id, instant, atLastStep){
     el.classList.add('entering'); void el.offsetWidth; el.classList.remove('entering');
   }
   applyStepState(arriving);
-  if (arriving) logTake('slide', id);
+  if (arriving && !quietArrival) logTake('slide', id);
   const n = nodes.get(id);
   if (arriving && n.mapFirst && !atLastStep && !instant && layoutMode !== 'focus'){
     // a map moment: show the whole deck for a beat, then fly in
@@ -1320,6 +1371,8 @@ function navigate(id, instant, atLastStep){
   setHash(id);
 }
 let mapTimer = null;
+// the slide the current one was reached from, and a move that is not a new take (a retake replaying its entry)
+let arrivedFrom = null, quietArrival = false;
 // the slide being left goes back to its finished state
 function leaveSlide(){
   const prev = nodes.get(currentId);
@@ -1599,6 +1652,7 @@ document.getElementById('btn-mode').onclick = toggleMode;
 function setPresent(on){
   presenting = on;
   document.body.classList.toggle('presenting', on);
+  lightUp(document.getElementById('btn-present'), on);
   markActive();
   const de = document.documentElement;
   if (on && de.requestFullscreen && !document.fullscreenElement) de.requestFullscreen().catch(()=>{});
@@ -1618,16 +1672,15 @@ const OBS_URL = 'https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.5/dist/obs-ws
 const NEXT_KEYS = ['ArrowRight', 'PageDown', ' ', 'ArrowDown', 'Enter'];
 const BACK_KEYS = ['ArrowLeft', 'PageUp', 'ArrowUp', 'r', 'R'];
 const PAUSE_KEYS = ['b', 'B', '.'];
-const recDialog = document.getElementById('rec-dialog'), reviewDialog = document.getElementById('review');
+const reviewDialog = document.getElementById('review');
 const countdownEl = document.getElementById('rec-countdown'), pausedEl = document.getElementById('rec-paused');
 const obsHost = document.getElementById('obs-host'), obsPort = document.getElementById('obs-port'), obsPass = document.getElementById('obs-pass');
 const obsRemember = document.getElementById('obs-remember'), obsStatus = document.getElementById('obs-status');
-const recStartBtn = document.getElementById('rec-start');
-let obs = null, obsConnected = false, recStartResolve = null, obsFps = null;
+let obs = null, obsConnected = false, recStartResolve = null, obsFps = null, obsSize = '';
 // t0/pausedMs give "time into the recording"; log holds slide arrivals and retakes; cuts are the bad parts
 // t0/pausedMs give "time into the recording"; every slide start (first attempt or retake) is an event,
 // stamped with OBS's own recording time when OBS is connected so cut points match the file exactly
-const rec = {active:false, withObs:false, counting:false, paused:false, finishing:false, t0:0, pauseAt:0, pausedMs:0, events:[], outputPath:null};
+const rec = {active:false, withObs:false, counting:false, paused:false, finishing:false, t0:0, pauseAt:0, pausedMs:0, events:[], outputPath:null, browser:null};
 const wait = ms=>new Promise(r=>setTimeout(r, ms));
 // two painted frames (so an overlay is really gone), but never hang if the tab isn't painting
 const nextFrame = ()=>Promise.race([new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))), wait(100)]);
@@ -1665,12 +1718,6 @@ function closeModals(){ document.querySelectorAll('.modal.open').forEach(m=>m.cl
 document.querySelectorAll('.modal').forEach(m=>{
   m.addEventListener('click', e=>{ if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('open'); });
 });
-document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click', ()=>{
-  const ta = document.getElementById(b.dataset.copy);
-  ta.select();
-  (navigator.clipboard ? navigator.clipboard.writeText(ta.value) : Promise.reject()).catch(()=>document.execCommand('copy'));
-  b.textContent = 'Copied'; setTimeout(()=>{ b.textContent = 'Copy'; }, 1500);
-}));
 
 // OBS connection settings: ?obs=host:port[:password], else what was remembered
 function loadObsSettings(){
@@ -1690,7 +1737,12 @@ function saveObsSettings(){
   if (obsRemember.checked) save('slidetake:obs', JSON.stringify({host:obsHost.value.trim(), port:obsPort.value.trim(), password:obsPass.value}));
   else { try { localStorage.removeItem('slidetake:obs'); } catch(e){} }
 }
-function setObsStatus(text, kind){ obsStatus.textContent = text; obsStatus.className = kind || ''; }
+// a short status beside Connect; what went wrong and what to do, when it failed, on the lines below
+function setObsStatus(text, kind, detail){
+  obsStatus.textContent = text; obsStatus.className = kind || ''; obsStatus.title = detail || text;
+  const d = document.getElementById('obs-detail');
+  d.textContent = detail || ''; d.hidden = !detail;
+}
 // A secure (https) page may only open plain ws:// connections to this computer: browsers block them to any
 // other address, and OBS has no secure WebSocket of its own. Say so instead of failing with a vague error.
 const isLoopback = host=>/^(localhost|127(\.\d+){3}|\[?::1\]?)$/i.test(host);
@@ -1702,11 +1754,12 @@ async function connectObs(){
   const host = obsHost.value.trim() || 'localhost';
   const url = 'ws://' + host + ':' + (obsPort.value.trim() || '4455');
   if (obsBlockedHere(host)){
-    obsConnected = false; recStartBtn.disabled = true;
-    setObsStatus(OBS_HTTPS_HELP, 'err');
+    obsConnected = false;
+    setObsStatus('Blocked here', 'err', OBS_HTTPS_HELP);
     return;
   }
-  setObsStatus('Connecting to ' + url + '…');
+  setObsStatus('Connecting…');
+  obsStatus.title = 'Connecting to ' + url;
   try {
     await loadScript(OBS_URL);
     const Ctor = window.OBSWebSocket && (window.OBSWebSocket.default || window.OBSWebSocket);
@@ -1714,8 +1767,7 @@ async function connectObs(){
     obs = new Ctor();
     obs.on('ConnectionClosed', ()=>{
       obsConnected = false;
-      setObsStatus('Disconnected from OBS', 'err');
-      recStartBtn.disabled = true;
+      setObsStatus('Disconnected', 'err');
     });
     obs.on('RecordStateChanged', e=>{
       if (e.outputState === 'OBS_WEBSOCKET_OUTPUT_STARTED' && recStartResolve){ recStartResolve(); recStartResolve = null; }
@@ -1724,14 +1776,20 @@ async function connectObs(){
     const info = await obs.connect(url, obsPass.value || undefined);
     obsConnected = true;
     // cut points snap to OBS's exact frame rate
-    try { const v = await obs.call('GetVideoSettings'); if (v && v.fpsNumerator && v.fpsDenominator) obsFps = v.fpsNumerator / v.fpsDenominator; } catch(e){}
-    setObsStatus('Connected' + (info && info.obsWebSocketVersion ? ' · OBS WebSocket ' + info.obsWebSocketVersion : ''), 'ok');
+    try {
+      const v = await obs.call('GetVideoSettings');
+      if (v && v.fpsNumerator && v.fpsDenominator) obsFps = v.fpsNumerator / v.fpsDenominator;
+      obsSize = v && v.outputWidth && v.outputHeight ? sizeName(v.outputWidth, v.outputHeight) : '';   // what OBS records at
+    } catch(e){}
+    setObsStatus('Connected', 'ok', '');
+    obsStatus.title = 'Connected' + (info && info.obsWebSocketVersion ? ' · OBS WebSocket ' + info.obsWebSocketVersion : '');
     saveObsSettings();
+    if (reviewDialog.classList.contains('open') && obsMode()){ say('Connected to OBS. Press ● Record.'); setupSummary(); }
   } catch(e){
     obsConnected = false;
-    setObsStatus('Could not connect (' + ((e && e.message) || e) + '). Is OBS running with its WebSocket server on, and is the password right?', 'err');
+    const why = e && e.message && e.message !== 'Error' ? e.message + '.' : 'Nothing answered at ' + url + '.';
+    setObsStatus('Could not connect', 'err', why + ' Is OBS running with its WebSocket server on, and are the port and password right?');
   }
-  recStartBtn.disabled = !obsConnected;
 }
 document.getElementById('obs-connect').onclick = connectObs;
 obsRemember.addEventListener('change', saveObsSettings);
@@ -1749,35 +1807,284 @@ function showScreenAdvice(){
   el.innerHTML = '<span class="warn">This screen is ' + shape + ' (' + w + '×' + h + '), not 16:9, so the video will have bars or be cropped. ' +
     'Move this window to a 16:9 screen, physical or virtual (say 1920×1080), then press F there.</span>';
 }
-function openRecordDialog(){
-  if (!RECORDING_UI) return;
-  const total = order.reduce((a, id)=>a + slideSteps(nodes.get(id)).length, 0);
-  const usesCamera = deck.camera || [...nodes.values()].some(n=>n.camera);
-  document.getElementById('rec-deck-info').innerHTML =
-    escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : 'This deck')) + ' · ' + order.length + ' slides · ' + total + ' presses' +
-    (usesCamera && cameraOff ? '<br><span class="warn">The camera is off. Press C first if this take should include your webcam.</span>' : '');
-  recStartBtn.disabled = !obsConnected;
-  renderSessionList();
-  showScreenAdvice();
-  openModal(recDialog);
+// ---------- recording in the browser: this tab's 16:9 frame plus the mic, a recorder per take ----------
+// Chromium only for now: it captures one element of the current tab (Element Capture, or Region Capture
+// before Chrome 132) and records MP4. Takes go to the browser's private storage, one file each.
+const MEDIABUNNY_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.64.0/+esm';
+const recCam = document.getElementById('rec-cam'), recMic = document.getElementById('rec-mic'), recQuality = document.getElementById('rec-quality');
+const recMeter = document.getElementById('rec-meter'), recCheck = document.getElementById('rec-browser-check');
+let recMode = load('slidetake:rec-mode') || '';
+let recNote = '';   // why the last start failed, shown in place of the check once
+let meter = null;   // the mic preview while the dialog is open: {stream, ctx, raf}
+function browserRecording(){
+  const md = navigator.mediaDevices;
+  if (!window.isSecureContext || !md || !md.getDisplayMedia) return {why:'This page can’t capture itself here. Open Slidetake in Chrome or Edge on a computer.'};
+  if (!window.RestrictionTarget && !window.CropTarget) return {why:'Recording in the browser needs Chrome or Edge (or another Chromium browser) on a computer.'};
+  const type = window.MediaRecorder ? recordingType(t=>MediaRecorder.isTypeSupported(t)) : '';
+  if (!type || !navigator.storage || !navigator.storage.getDirectory) return {why:'This browser can’t record video here. Use a recent Chrome or Edge.'};
+  // in fullscreen the frame is the largest 16:9 area of the screen
+  const {quality, device} = bestQuality(screen.width, screen.height, devicePixelRatio || 1);
+  if (!quality) return {why:'This screen gives a ' + device[0] + '×' + device[1] + ' frame, less than 720p. Use pro mode (OBS), or a larger screen.'};
+  return {ok:true, type, quality};
 }
-document.getElementById('btn-record').onclick = openRecordDialog;
-recStartBtn.onclick = ()=>startTake(true);
-document.getElementById('rec-rehearse').onclick = ()=>startTake(false);
+let meterToken = 0;   // only the latest start keeps its microphone
+async function stopMeter(){
+  meterToken++;
+  if (!meter) return;
+  cancelAnimationFrame(meter.raf);
+  meter.stream.getTracks().forEach(t=>t.stop());
+  meter.ctx.close().catch(()=>{});
+  meter = null;
+  recMeter.value = 0;
+}
+async function startMeter(){
+  await stopMeter();
+  const token = meterToken;
+  try {
+    const id = recMic.value;
+    const stream = await navigator.mediaDevices.getUserMedia({audio:micConstraints(id)});   // the meter hears what the recording will
+    if (token !== meterToken){ stream.getTracks().forEach(t=>t.stop()); return; }
+    const ctx = new AudioContext(), an = ctx.createAnalyser();
+    an.fftSize = 512;
+    ctx.createMediaStreamSource(stream).connect(an);
+    const buf = new Float32Array(an.fftSize);
+    const m = meter = {stream, ctx, raf:0};
+    const loop = ()=>{
+      if (meter !== m) return;             // stopped, or a newer meter took over
+      an.getFloatTimeDomainData(buf);
+      let peak = 0; for (const v of buf) peak = Math.max(peak, Math.abs(v));
+      recMeter.value = Math.max(peak, recMeter.value * 0.85);
+      m.raf = requestAnimationFrame(loop);
+    };
+    loop();
+  } catch(e){ recCheck.innerHTML = '<span class="warn">The microphone isn’t available: ' + escapeHtml(e.message || e.name) + '. Allow it in the site settings.</span>'; }
+}
+// withMeter: the mic's level shows (Setup is open in the browser); it also lets the browser name the devices
+async function fillDevices(withMeter = true){
+  try {
+    // labels are only listed once the page may use a device, so ask for the mic first
+    if (withMeter && !meter) await startMeter();
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    // Chrome lists the system default (and on Windows the communications device) again as extra entries:
+    // drop them, and mark the device they stand for instead
+    const opts = (kind, saved)=>{
+      const all = devs.filter(d=>d.kind === kind), def = all.find(d=>d.deviceId === 'default');
+      const defLabel = def ? def.label.replace(/^Default - /, '') : '';
+      const list = all.filter(d=>d.deviceId !== 'default' && d.deviceId !== 'communications');
+      const isDef = d=>!!def && (d.label === defLabel || (!!def.groupId && d.groupId === def.groupId && !list.some(x=>x !== d && x.label === defLabel)));
+      // names without Chrome's USB ids; two devices that would then read the same are numbered
+      const names = list.map((d, i)=>deviceName(d.label) || (kind === 'audioinput' ? 'Microphone ' : 'Camera ') + (i + 1));
+      names.forEach((n, i)=>{ const k = names.slice(0, i).filter(m=>m === n).length; if (k) names[i] = n + ' ' + (k + 1); });
+      const pick = list.some(d=>d.deviceId === saved) || saved === 'none' ? saved : (list.find(isDef) || list[0] || {}).deviceId;
+      return list.map((d, i)=>'<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === pick ? ' selected' : '') + '>' +
+        escapeHtml(names[i] + (isDef(d) ? ' (system default)' : '')) + '</option>').join('');
+    };
+    const cam = camChoice();
+    recCam.innerHTML = '<option value="none"' + (cam === 'none' ? ' selected' : '') + '>No camera</option>' + opts('videoinput', cam);
+    const mic = load('slidetake:mic') || '';
+    recMic.innerHTML = opts('audioinput', mic);
+    if (mic && recMic.value === mic && meter && meter.stream.getAudioTracks()[0].getSettings().deviceId !== mic) startMeter();
+  } catch(e){}
+}
+recMic.onchange = ()=>{ save('slidetake:mic', recMic.value); startMeter(); setupSummary(); };
+recCam.onchange = ()=>{
+  setCamChoice(recCam.value);
+  if (recCam.value !== 'none' && cameraStream){ stopWebcam(); startWebcam(); }
+  setupSummary();
+};
+// ---------- the camera in a recording: chosen once per deck, turned on by Record ----------
+// The C button is for presenting; a recording uses the setup's choice, so a forgotten C never costs a take.
+// The default: your camera when the deck has a camera box or camera moves, otherwise none.
+const deckUsesCamera = ()=>(deck.pip || 'none').toLowerCase() !== 'none' || !!deck.camera || [...nodes.values()].some(n=>n.camera);
+const camChoiceKey = ()=>'slidetake:rec-cam:' + sessionKey();
+/** 'none', 'default' (the browser's camera) or a device id */
+function camChoice(){
+  const c = load(camChoiceKey());
+  return c ? c : deckUsesCamera() ? (load('slidetake:cam') || 'default') : 'none';
+}
+function setCamChoice(c){
+  save(camChoiceKey(), c);
+  if (c !== 'none' && c !== 'default') save('slidetake:cam', c);   // the device the webcam opens
+}
+// before a recording's countdown: the camera as chosen, so you see your framing during 3-2-1
+function cameraForRecording(){
+  rec.camWas = !cameraOff;
+  const want = camChoice() !== 'none';
+  if (want !== !cameraOff) setCameraEnabled(want, true);
+}
+// after it: back to how it was (a camera that was off goes off again)
+function restoreCamera(){
+  if (rec.camWas == null) return;
+  if (rec.camWas !== !cameraOff) setCameraEnabled(rec.camWas, true);
+  rec.camWas = null;
+}
+recQuality.onchange = ()=>{ save('slidetake:quality', recQuality.value); setupSummary(); };
+async function showBrowserCheck(){
+  const b = browserRecording();
+  if (!b.ok){ recCheck.innerHTML = '<span class="warn">' + escapeHtml(b.why) + '</span>'; return b; }
+  if (recNote){ recCheck.innerHTML = '<span class="warn">' + escapeHtml(recNote) + '</span>'; recNote = ''; }
+  const best = QUALITIES.indexOf(b.quality), saved = load('slidetake:quality');
+  recQuality.innerHTML = QUALITIES.slice(best).map(q=>'<option' + (q.name === saved ? ' selected' : '') + '>' + q.name + '</option>').join('');
+  let room = '';
+  try {
+    const {quota, usage} = await navigator.storage.estimate();
+    const q = QUALITIES.find(x=>x.name === recQuality.value) || b.quality;
+    room = ' Room for about ' + Math.floor((quota - usage) / bytesPerMinute(q)) + ' minutes of takes.';
+  } catch(e){}
+  if (!recCheck.querySelector('.warn')) recCheck.innerHTML = '<span class="ok">Ready: this screen records up to ' + b.quality.name + ' in fullscreen.' + escapeHtml(room) + '</span>';
+  return b;
+}
+// Record opens the takes screen, in the mode last used: takes recorded in this browser (a board of every take
+// of every slide), or one OBS recording (its takes, cut from the file by ffmpeg)
+function setRecMode(mode){
+  recMode = mode;
+  save('slidetake:rec-mode', mode);
+  if (reviewDialog.classList.contains('open')) openTakes({setup:true});
+}
+const obsMode = ()=>reviewDialog.classList.contains('obs');
+function openTakes(opts = {}){
+  if (!RECORDING_UI) return;
+  // a browser that can't record itself (Safari, Firefox) always opens with OBS
+  if (browserRecording().ok && (recMode || 'browser') === 'browser') openBoard(opts);
+  else openObsTakes(opts);
+}
+// OBS: the deck's latest recording, the one video being edited; a new recording takes its place
+function openObsTakes(opts = {}){
+  const last = loadSessions().find(x=>x.key === sessionKey() && x.withObs && !x.inBrowser);
+  openReview(last || {key:sessionKey(), deckTitle:deck.title || (order[0] ? nodes.get(order[0]).title : 'Deck'), date:new Date().toISOString(),
+    withObs:true, outputPath:null, reason:'', total:0, totalObs:null, fps:obsFps, events:[], picks:{}, empty:true}, opts);
+}
+document.getElementById('btn-studio').onclick = ()=>openTakes();
 
-async function startTake(withObs){
+// the takes of each session live in the browser's private storage, in a folder named after the session
+async function takesDir(id, create){
+  const root = await navigator.storage.getDirectory();
+  const all = await root.getDirectoryHandle('slidetake-takes', {create:true});
+  return all.getDirectoryHandle(id, {create:!!create});
+}
+async function deleteTakes(id){
+  try { const root = await navigator.storage.getDirectory(); await (await root.getDirectoryHandle('slidetake-takes')).removeEntry(id, {recursive:true}); } catch(e){}
+}
+// The recorded size. The 16:9 shape is asked for outright: Chrome keeps the shape of the page as it measured it
+// when the tab was shared, and the page can still be mid-layout then (going fullscreen), which came out
+// 1828×1080 instead of 1920×1080. With the shape fixed, Chrome crops to it and the size is exact.
+const outputSize = q=>({width:q.w, height:q.h, aspectRatio:16 / 9, frameRate:FPS, resizeMode:'crop-and-scale'});
+async function attachCapture(track){
+  if (window.RestrictionTarget && track.restrictTo) await track.restrictTo(await RestrictionTarget.fromElement(stageWrap));
+  else await track.cropTo(await CropTarget.fromElement(stageWrap));
+}
+async function reattachCapture(b){
+  try {
+    if (window.RestrictionTarget && b.track.restrictTo) await b.track.restrictTo(null); else await b.track.cropTo(null);
+    await attachCapture(b.track);
+  } catch(e){}
+  await b.track.applyConstraints(outputSize(b.quality)).catch(()=>{});
+  await nextFrame();
+}
+// called from the Start click, before anything else: sharing the tab needs that click
+async function beginBrowserCapture(){
+  const b = browserRecording();
+  if (!b.ok) throw new Error(b.why);
+  const quality = QUALITIES.find(q=>q.name === recQuality.value) || b.quality;
+  document.body.classList.add('rec-frame');   // the frame must exist (and be capturable) before the capture is cut to it
+  const display = await navigator.mediaDevices.getDisplayMedia({video:{frameRate:FPS}, audio:false,
+    preferCurrentTab:true, selfBrowserSurface:'include', surfaceSwitching:'exclude', monitorTypeSurfaces:'exclude'});
+  const track = display.getVideoTracks()[0];
+  const stopAll = ()=>display.getTracks().forEach(t=>t.stop());
+  if (!track.restrictTo && !track.cropTo){ stopAll(); throw new Error('Share “this tab” to record the slides.'); }
+  try { await attachCapture(track); }
+  catch(e){ stopAll(); throw new Error('Chrome could not record just the slides (' + (e.message || e.name) + ').'); }
+  await track.applyConstraints(outputSize(quality)).catch(()=>{});
+  let mic;
+  try {
+    const id = load('slidetake:mic');
+    mic = await navigator.mediaDevices.getUserMedia({audio:micConstraints(id)});
+  } catch(e){ stopAll(); throw new Error('The microphone isn’t available (' + (e.message || e.name) + ').'); }
+  const id = new Date().toISOString().replace(/[:.]/g, '-');
+  rec.browser = {id, display, mic, track, quality, type:b.type, stream:new MediaStream([track, ...mic.getAudioTracks()]),
+    dir:await takesDir(id, true), clips:[], cur:null, chain:Promise.resolve(), error:null};
+  // stopping the share from Chrome's bar ends the take like Esc
+  track.addEventListener('ended', ()=>{ if (rec.active && !rec.finishing) finishTake('Sharing stopped'); });
+}
+function endBrowserCapture(){
+  const b = rec.browser;
+  if (!b) return;
+  b.display.getTracks().forEach(t=>t.stop());
+  b.mic.getTracks().forEach(t=>t.stop());
+  document.body.classList.remove('rec-frame');
+}
+// a new take: its own recorder and file. The new one starts first and the one before stops once it is
+// running, so no moment is missed; the take's start is stamped when its recorder actually starts.
+function startClip(ev){
+  const b = rec.browser;
+  const name = 'take-' + b.clips.length + '.' + clipExt(b.type);
+  const clip = {name, rec:null, done:null};
+  b.clips.push(clip);
+  ev.clip = b.id + '/' + name;   // the recording's folder and the file: takes from many recordings sit side by side
+  b.chain = b.chain.then(async ()=>{
+    const file = await (await b.dir.getFileHandle(name, {create:true})).createWritable();
+    const r = new MediaRecorder(b.stream, {mimeType:b.type, videoBitsPerSecond:b.quality.bitrate, audioBitsPerSecond:AUDIO_BITRATE});
+    let writes = Promise.resolve();
+    r.ondataavailable = e=>{ if (e.data.size) writes = writes.then(()=>file.write(e.data)).catch(err=>{ b.error = err; }); };
+    clip.done = new Promise(res=>{ r.onstop = async ()=>{ await writes; await file.close().catch(()=>{}); res(); }; });
+    await new Promise(res=>{ r.onstart = res; r.start(1000); });
+    ev.t = Math.round(recNow());
+    if (ev.cutAt != null) ev.lead = Math.max(0, Math.round(ev.t - ev.cutAt));
+    const prev = b.cur;
+    b.cur = clip; clip.rec = r;
+    if (prev && prev.rec.state !== 'inactive') prev.rec.stop();
+  }).catch(err=>{ b.error = err; });
+}
+
+// kind: 'obs' (OBS records), 'browser' (this tab records itself) or 'rehearse' (nothing is recorded)
+// only: the slides to record (ticked on the board), in deck order; without it, the whole deck
+async function startTake(kind, only){
   if (rec.active || !order.length) return;
+  const withObs = kind === 'obs';
+  stopMeter();
+  if (kind === 'browser'){
+    if (!presenting) setPresent(true);        // fullscreen first, while the click still counts
+    try { await beginBrowserCapture(); }
+    catch(e){
+      document.body.classList.remove('rec-frame');
+      if (presenting) setPresent(false);
+      recNote = e.name === 'NotAllowedError' ? 'Recording needs this tab shared: press ● Record again and choose Share.' : e.message;
+      openBoard({setup:true});
+      return;
+    }
+  }
   closeModals();
-  Object.assign(rec, {active:true, withObs, counting:true, paused:false, finishing:false, t0:0, pausedMs:0, events:[], outputPath:null});
+  const pick = only && only.length ? only.filter(id=>order.includes(id)) : null;
+  const firstId = pick ? pick[0] : order[0];
+  const beforeId = order[order.indexOf(firstId) - 1] || null;   // a selection starts with its entry from the slide before
+  Object.assign(rec, {active:true, withObs, counting:true, paused:false, finishing:false, t0:0, pausedMs:0, events:[], outputPath:null,
+    only:pick ? new Set(pick) : null});
+  if (kind !== 'browser') rec.browser = null;
   document.body.classList.add('recording');
   hidePipMsg();
   const lay = document.getElementById('rec-layout').value;
   if (lay !== 'current' && lay !== layoutMode) setMode(lay, true);
   if (!presenting) setPresent(true);          // this click allows fullscreen
-  if (currentId === order[0]){ stepPos = 0; camManual = null; camCycle = -1; }
-  navigate(order[0], true);                   // step 0 of the first slide, its camera layout included
+  cameraForRecording();
+  if (beforeId){
+    // the slide before, finished, for the countdown; the take then starts with the flight in
+    document.body.classList.add('no-anim');
+    nodes.get(beforeId)._played = true;
+    quietArrival = true; navigate(beforeId, true, true); quietArrival = false;
+    pipEl.getAnimations().forEach(a=>a.finish());
+    await nextFrame();
+    document.body.classList.remove('no-anim');
+  } else {
+    if (currentId === firstId){ stepPos = 0; camManual = null; camCycle = -1; }
+    navigate(firstId, true);                  // step 0 of the first slide, its camera layout included
+  }
   // 3-2-1 on screen; OBS only starts after it, so the countdown is never in the footage
+  // fullscreen: asked for with the click, but a browser's share prompt can take it away; one more try, and
+  // if that is refused, F during the countdown (a key press is allowed to ask)
+  if (!document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen().catch(()=>{});
+  const hint = countdownEl.querySelector('.hint');
   for (let i = 3; i > 0; i--){
+    hint.textContent = (document.fullscreenElement ? '' : 'Press F for fullscreen · ') + 'recording starts after the countdown · Esc to cancel';
     countdownEl.querySelector('.num').textContent = i;
     countdownEl.classList.add('show');
     await wait(1000);
@@ -1792,27 +2099,51 @@ async function startTake(withObs){
     await started;
     if (!rec.active) return;
   }
+  // the frame has settled (fullscreen, 16:9): attach the capture to it again. Chrome takes the frame's place and
+  // size when the capture is attached and doesn't follow it after; attached while the page was still going
+  // fullscreen, the video showed part of the frame, enlarged and cut off (and 1828×1080 instead of 1920×1080).
+  if (rec.browser) await reattachCapture(rec.browser);
   rec.counting = false;
   rec.t0 = performance.now();
+  const first = nodes.get(firstId);
+  if (beforeId){
+    logTake('slide', firstId);
+    if (rec.browser) await rec.browser.chain;  // its recorder is running before the flight starts
+    resetEntrances(first);
+    quietArrival = true; navigate(firstId); quietArrival = false;
+    return;
+  }
   // the first slide starts now: replay its entrances on camera and log chapter 0:00
-  const first = nodes.get(currentId);
   resetEntrances(first);
   applyStepState(true);
   logTake('slide', currentId);
 }
 function abortTake(message){
   rec.active = false; rec.counting = false;
+  if (rec.browser){
+    const b = rec.browser;
+    b.chain.then(()=>{ if (b.cur && b.cur.rec.state !== 'inactive') b.cur.rec.stop(); }).then(()=>deleteTakes(b.id));
+    endBrowserCapture();
+    rec.browser = null;
+  }
   countdownEl.classList.remove('show');
   document.body.classList.remove('recording');
   if (presenting) setPresent(false);
+  restoreCamera();
   showPipMsg(message);
 }
 
-function logTake(kind, id){
+// cutAt: for a retake, when ← was pressed; the take being redone ends there
+function logTake(kind, id, cutAt){
   if (!rec.active || !rec.t0 || rec.finishing) return;
   const n = nodes.get(id);
   const ev = {id, title:n ? n.title : id, retake:kind === 'retake', t:Math.round(recNow()), obsT:null};
+  // in the browser a take's recorder starts a moment after the press, while the deck is already moving:
+  // the take before ends at the press, so it never shows the start of the next move
+  if (cutAt == null && rec.browser) cutAt = ev.t;
+  if (cutAt != null){ ev.cutAt = cutAt; ev.lead = Math.max(0, Math.round(ev.t - cutAt)); }
   rec.events.push(ev);
+  if (rec.browser) startClip(ev);
   if (rec.withObs && obsConnected){
     obs.call('GetRecordStatus').then(r=>{ if (r && typeof r.outputDuration === 'number') ev.obsT = r.outputDuration; }).catch(()=>{});
     // OBS 30.2+ also writes these into Hybrid MP4 recordings; other setups ignore them
@@ -1825,7 +2156,12 @@ function takeKey(e){
   const handled = NEXT_KEYS.includes(k) || BACK_KEYS.includes(k) || PAUSE_KEYS.includes(k) || k === 'Escape';
   if (handled) e.preventDefault();
   if (k === 'Escape'){ if (rec.counting) abortTake('Take cancelled'); else finishTake('Stopped early'); return; }
-  if (rec.counting || rec.finishing) return;
+  if ((k === 'f' || k === 'F') && !document.fullscreenElement && document.documentElement.requestFullscreen){
+    e.preventDefault();
+    document.documentElement.requestFullscreen().catch(()=>{});
+    return;
+  }
+  if (rec.counting || rec.finishing || retaking) return;
   if (PAUSE_KEYS.includes(k)){ togglePause(); return; }
   if (rec.paused) return;
   if (NEXT_KEYS.includes(k)) takeForward();
@@ -1834,19 +2170,74 @@ function takeKey(e){
 function takeForward(){
   const steps = slideSteps(nodes.get(currentId));
   const lastStep = Math.min(stepPos, steps.length - 1) >= steps.length - 1;
-  if (lastStep && order.indexOf(currentId) === order.length - 1) finishTake();
-  else step(1);
+  const i = order.indexOf(currentId);
+  if (!lastStep){ step(1); return; }
+  if (!rec.only){ if (i === order.length - 1) finishTake(); else step(1); return; }
+  // recording ticked slides: the next ticked one, jumping over any in between as a retake jumps back
+  const next = order.slice(i + 1).find(id=>rec.only.has(id));
+  if (!next) finishTake();
+  else if (order[i + 1] === next) step(1);
+  else enterFresh(order[order.indexOf(next) - 1], next, 'slide');
 }
-// ← during a take: the slide starts over as a new take; the earlier attempt is kept to choose from
-function retake(){
+// ← during a take: the slide starts over as a new take, its entry included. The deck goes back to where the
+// slide before it ended, instantly and outside any take; then the new take starts and the entry (the flight,
+// the camera moving) plays as it did the first time. Whichever take is picked, the join into it flows. The
+// earlier attempt is kept to choose from, cut where ← was pressed.
+let retaking = false;
+async function retake(){
   const n = nodes.get(currentId);
-  if (!n) return;
-  logTake('retake', currentId);
+  if (!n || retaking) return;
+  const target = currentId, from = arrivedFrom;
+  if (!from || from === target || !nodes.has(from)){ restartSlide(n); return; }   // the first slide has no entry
+  enterFresh(from, target, 'retake');
+}
+// The deck goes to `from` exactly as it ended, outside any take; then a new take of `target` starts and its
+// entry plays. A retake does this from the slide before; recording ticked slides, from the slide before the
+// next ticked one, so the slides in between are skipped without a seam.
+async function enterFresh(from, target, kind){
+  const n = nodes.get(target);
+  if (!n || retaking) return;
+  retaking = true;
+  const cutAt = recNow();
+  // the slide before, exactly as it ended: finished, its entrance not played again, nothing easing into place
+  document.body.classList.add('no-anim');
+  const prev = nodes.get(from);
+  quietArrival = true;
+  prev._played = true;
+  navigate(from, true, true);
+  pipEl.getAnimations().forEach(a=>a.finish());
+  quietArrival = false;
+  await nextFrame();
+  document.body.classList.remove('no-anim');
+  logTake(kind, target, cutAt);
+  if (rec.browser) await rec.browser.chain;      // its recorder is running before the entry plays
+  if (rec.withObs) await obsHold();
+  resetEntrances(n);
+  quietArrival = true;
+  navigate(target);
+  quietArrival = false;
+  if (!cameraStream && !pipEl.hidden && pipState.used) startWebcam();
+  retaking = false;
+}
+// With OBS, where a take starts is known only to within a few hundred ms (OBS reports its time as encoded,
+// behind the screen). So a new take holds still for a moment, the cut starting halfway into it: early or
+// late, the first frame is the same still picture the take before ended on.
+const OBS_HOLD = 600;
+async function obsHold(){
+  const ev = rec.events[rec.events.length - 1];
+  if (ev) ev.skip = OBS_HOLD / 2;
+  await wait(OBS_HOLD);
+}
+async function restartSlide(n){
+  retaking = true;
   stepPos = 0; camManual = null; camCycle = -1;
   resetEntrances(n);
   applyStepState(true);
   if (!cameraStream && !pipEl.hidden && pipState.used) startWebcam(); else refocus();
   updateActivePath();
+  logTake('retake', currentId);
+  if (rec.withObs) await obsHold();
+  retaking = false;
 }
 async function togglePause(){
   if (!rec.t0) return;
@@ -1854,11 +2245,13 @@ async function togglePause(){
     rec.paused = true; rec.pauseAt = performance.now();
     clearTimeout(autoTimer);
     if (rec.withObs) await obs.call('PauseRecord').catch(()=>{});
+    if (rec.browser){ const b = rec.browser; b.chain = b.chain.then(()=>{ if (b.cur && b.cur.rec.state === 'recording') b.cur.rec.pause(); }); }
     pausedEl.classList.add('show');
   } else {
     pausedEl.classList.remove('show');
     await nextFrame();                      // the pause screen must be gone before OBS resumes
     if (rec.withObs) await obs.call('ResumeRecord').catch(()=>{});
+    if (rec.browser){ const b = rec.browser; b.chain = b.chain.then(()=>{ if (b.cur && b.cur.rec.state === 'paused') b.cur.rec.resume(); }); }
     rec.pausedMs += performance.now() - rec.pauseAt;
     rec.paused = false;
     scheduleAutoslide(nodes.get(currentId));
@@ -1872,22 +2265,36 @@ async function finishTake(reason){
   if (rec.paused){ rec.pausedMs += performance.now() - rec.pauseAt; rec.paused = false; pausedEl.classList.remove('show'); }
   let total = Math.round(recNow()), totalObs = null;
   if (rec.withObs){
-    await wait(1200);                       // hold the last frame a moment before the cut
-    total = Math.round(recNow());
+    // the take ends at the press: what follows (Esc leaving full screen, the Studio opening) is never in the cut
     try { const st = await obs.call('GetRecordStatus'); if (st && typeof st.outputDuration === 'number') totalObs = st.outputDuration; } catch(e){}
+    await wait(1200);                       // OBS keeps recording a moment past the cut, so the end is surely in the file
     try { const r = await obs.call('StopRecord'); rec.outputPath = r && r.outputPath; }
     catch(e){ reason = (reason ? reason + '. ' : '') + 'OBS did not confirm the stop (' + ((e && e.message) || e) + ')'; }
+  }
+  const b = rec.browser;
+  if (b){
+    await wait(600);                        // hold the last frame a moment
+    await b.chain;
+    total = Math.round(recNow());
+    if (b.cur && b.cur.rec && b.cur.rec.state !== 'inactive') b.cur.rec.stop();
+    await Promise.all(b.clips.map(c=>c.done));
+    endBrowserCapture();
+    rec.browser = null;
+    if (b.error) reason = (reason ? reason + '. ' : '') + 'Some of the take could not be saved (' + (b.error.message || b.error.name) + ')';
   }
   rec.active = false; rec.finishing = false;
   document.body.classList.remove('recording');
   if (presenting) setPresent(false);
+  restoreCamera();
   const session = {
     key:sessionKey(), deckTitle:deck.title || nodes.get(order[0]).title, date:new Date().toISOString(),
-    withObs:rec.withObs, outputPath:rec.outputPath, reason:reason || '', total, totalObs, fps:obsFps,
-    events:rec.events.map(e=>({id:e.id, title:e.title, retake:e.retake, t:e.t, obsT:e.obsT})), picks:{}
+    withObs:rec.withObs, outputPath:rec.outputPath, reason:reason || '', total, totalObs, fps:b ? FPS : obsFps,
+    ...(b ? {inBrowser:true, takesId:b.id, quality:b.quality.name, type:b.type} : {}),
+    events:rec.events.map(e=>({id:e.id, title:e.title, retake:e.retake, t:e.t, obsT:e.obsT, ...(e.lead ? {lead:e.lead} : {}), ...(e.skip ? {skip:e.skip} : {}), ...(e.clip ? {clip:e.clip} : {})})), picks:{}
   };
+  if (session.inBrowser){ addToBoard(session); return; }
   saveSession(session);
-  openReview(session);
+  openReview(session, {note:(reason ? reason + '. ' : '') + takesOf(session).size + ' slides recorded with OBS.'});
 }
 
 // ---------- sessions: kept in this browser so a take can be reviewed (and re-picked) later ----------
@@ -1896,16 +2303,9 @@ function loadSessions(){ try { return JSON.parse(load('slidetake:sessions') || '
 function saveSession(sess){
   const all = loadSessions().filter(x=>x.date !== sess.date);
   all.unshift(sess);
+  // a session that drops off the list takes its recorded takes with it
+  all.slice(12).forEach(x=>{ if (x.takesId) deleteTakes(x.takesId); });
   save('slidetake:sessions', JSON.stringify(all.slice(0, 12)));
-}
-function renderSessionList(){
-  const box = document.getElementById('rec-sessions');
-  const mine = loadSessions().filter(x=>x.key === sessionKey());
-  box.innerHTML = mine.length ? '<h3>Earlier takes of this deck</h3>' + mine.map((x, i)=>
-    '<div class="row"><button class="btn small" data-session="' + i + '">Review</button><span>' +
-    escapeHtml(new Date(x.date).toLocaleString()) + ' · ' + fmtTime(x.totalObs ?? x.total) + (x.withObs ? '' : ' · rehearsal') +
-    (x.outputPath ? ' · ' + escapeHtml(baseName(x.outputPath)) : '') + '</span></div>').join('') : '';
-  box.querySelectorAll('[data-session]').forEach(b=>b.onclick = ()=>{ closeModals(); openReview(mine[+b.dataset.session]); });
 }
 
 // the picked take of each slide (default: the last attempt), as ranges of the recording, in order
@@ -1928,88 +2328,88 @@ const finalChapters = sess=>finalChaptersCore(sess, sectionInfo);
 const ffmpegScript = (sess, mode)=>ffmpegScriptCore(sess, mode, {
   input: sess.outputPath || reviewFileName || 'recording.mov',
   outputName: sessionKey() + '-final.mp4',
-  sectionOf: sectionInfo
+  sectionOf: sectionInfo,
+  loudness: loudOn()
 });
-
-// ---------- YouTube publish pack ----------
-function deckTags(){
-  // tags, plus any other *_tags list a site keeps (Hugo sites often split tags by section)
-  const all = Object.keys(deck).filter(k=>k === 'tags' || /_tags$/.test(k)).flatMap(k=>[].concat(deck[k])).filter(t=>typeof t === 'string');
-  return [...new Set(all.map(t=>t.trim()).filter(Boolean))];
-}
-function relatedLinks(){
-  return [].concat(deck.related || []).map(x=>{
-    const md = String(x).match(/^\[([^\]]+)\]\(([^)]+)\)$/), pipe = String(x).split('|');
-    if (md) return md[1] + ': ' + md[2];
-    if (pipe.length === 2) return pipe[0].trim() + ': ' + pipe[1].trim();
-    return String(x);
-  });
-}
-// the deck's public page: front matter permalink/url, else site + the path it was loaded from
-function deckLink(){
-  if (deck.permalink || deck.url) return deck.permalink || deck.url;
-  const site = deck.site || load('slidetake:site');
-  if (!site || !deckBase) return '';
-  try {
-    const path = new URL(deckBase).pathname.replace(/\/index\.md$/i, '/').replace(/\.md$/i, '/');
-    return new URL(path, site).href;
-  } catch(e){ return ''; }
-}
-function describe(sess){
-  const ch = finalChapters(sess), link = document.getElementById('rv-link').value.trim(), related = relatedLinks(), tags = deckTags();
-  const parts = [];
-  if (deck.summary) parts.push(deck.summary);
-  if (link) parts.push('📑 Slides: ' + link);
-  if (ch.lines.length >= 3) parts.push('Chapters\n' + ch.lines.join('\n'));
-  if (related.length) parts.push('Related\n' + related.map(r=>'• ' + r).join('\n'));
-  if (tags.length) parts.push(tags.slice(0, 3).map(t=>'#' + t.replace(/[^\p{L}\p{N}]+/gu, '')).join(' '));
-  document.getElementById('rv-yt-desc').value = parts.join('\n\n');
-  document.getElementById('rv-chapters-note').textContent =
-    (ch.dropped ? ch.dropped + ' section' + (ch.dropped > 1 ? 's were' : ' was') + ' under 10 seconds and folded into the chapter before, as YouTube requires. ' : '') +
-    (ch.lines.length < 3 ? 'YouTube needs at least three chapters, so none are listed. ' : '') +
-    'Final length ' + fmtTime(ch.length) + '.';
-}
+// bring the sound to YouTube's level when the video is made (on unless turned off)
+const loudBtns = document.querySelectorAll('.rv-loud');   // in the board's setup, and by the ffmpeg command
+const loudOn = ()=>load('slidetake:loudness') !== 'off';
+const showLoud = ()=>loudBtns.forEach(b=>{ b.setAttribute('aria-pressed', String(loudOn())); b.classList.toggle('on', loudOn()); });
+// the peak limiter, off unless chosen: with it, Volume boost goes all the way to -14 LUFS
+const limiterBtn = document.getElementById('rv-limiter');
+const limiterOn = ()=>load('slidetake:limiter') === 'on';
+const showLimiter = ()=>{ limiterBtn.setAttribute('aria-pressed', String(limiterOn())); limiterBtn.classList.toggle('on', limiterOn()); };
+showLimiter();
+limiterBtn.onclick = ()=>{ save('slidetake:limiter', limiterOn() ? 'off' : 'on'); showLimiter(); };
+// the mic's sound: raw (no processing), or voice (the browser's noise suppression)
+const micSound = ()=>load('slidetake:mic-sound') === 'voice' ? 'voice' : 'raw';
+const micConstraints = id=>({...(id ? {deviceId:{ideal:id}} : {}), echoCancellation:false, autoGainControl:false, noiseSuppression:micSound() === 'voice'});
+const soundBtns = document.querySelectorAll('[data-sound]');
+const showSound = ()=>soundBtns.forEach(b=>{ const on = b.dataset.sound === micSound(); b.classList.toggle('active', on); b.setAttribute('aria-checked', String(on)); });
+showSound();
+soundBtns.forEach(b=>b.onclick = ()=>{ save('slidetake:mic-sound', b.dataset.sound); showSound(); if (meter) startMeter(); });
+showLoud();
+loudBtns.forEach(b=>b.onclick = ()=>{ save('slidetake:loudness', loudOn() ? 'off' : 'on'); showLoud(); if (reviewing) renderReview(); });
 
 // ---------- the review screen ----------
 let reviewing = null, playlist = null;
 const rvVideo = document.getElementById('rv-video'), rvNow = document.getElementById('rv-now');
-function openReview(sess){
+// the board's one line of news, beside Preview: the newest message wins, on one line, in full on hover
+/** @param {string} text @param {{warn?: boolean, html?: string, title?: string}} [opts] */
+function say(text, {warn = false, html = '', title = ''} = {}){
+  rvNow.classList.toggle('warn', warn);
+  if (html) rvNow.innerHTML = html; else rvNow.textContent = text;
+  rvNow.title = title || rvNow.textContent;
+  const again = document.getElementById('rv-save-again');
+  if (again) again.onclick = ()=>downloadVideo(true);
+}
+let lastTicked = -1;
+const selNote = ()=>{
+  const n = selectedInOrder(order, selected).length;
+  return n ? n + '/' + order.length + ' slide' + (n === 1 ? '' : 's') + ' up for a take' : '';
+};
+function openReview(sess, opts = {}){
+  closeModals();
   reviewing = sess;
   playlist = null;
-  const slides = takesOf(sess), retakes = sess.events.filter(e=>e.retake).length;
-  document.getElementById('rv-title').textContent = (sess.withObs ? 'Review the take · ' : 'Rehearsal · ') + sess.deckTitle;
-  document.getElementById('rv-info').textContent = [
-    sess.reason,
-    new Date(sess.date).toLocaleString(),
-    (sess.withObs ? 'recorded ' : 'ran ') + fmtTime(sess.totalObs ?? sess.total),
-    slides.size + ' slides',
-    retakes ? retakes + ' retake' + (retakes > 1 ? 's' : '') : 'no retakes',
-    sess.outputPath ? 'saved to ' + sess.outputPath : (sess.withObs ? '' : 'nothing was recorded')
-  ].filter(Boolean).join(' · ');
+  const retakes = sess.events.filter(e=>e.retake).length;
+  // what the recording is, said once as it opens
+  const about = sess.empty ? '' : takesOf(sess).size + ' slides, ' + (retakes ? retakes + ' retake' + (retakes > 1 ? 's' : '') : 'no retakes') +
+    ', recorded ' + fmtLength(sess.totalObs ?? sess.total) + '. ';
+  reviewDialog.classList.remove('in-browser', 'board');
+  reviewDialog.classList.add('obs');
+  const recBtn = document.getElementById('rv-rec');
+  recBtn.title = 'Records the deck with OBS: a new video in place of this one';
+  recBtn.disabled = false;   // OBS records, whatever this browser can do (the board turns it off where it can't)
+  document.getElementById('rv-use-browser').style.display = browserRecording().ok ? '' : 'none';
+  document.getElementById('rv-render-btn').disabled = document.getElementById('rv-clean').disabled = !!sess.cleaned;
   document.getElementById('rv-file').textContent = sess.outputPath ? ' (' + baseName(sess.outputPath) + ')' : '';
-  document.getElementById('rv-yt-title').value = sess.deckTitle;
   // pick the listed rate nearest to the take's (OBS reports e.g. 60000/1001 for 59.94)
   const fps = sessionFps(sess);
   fpsSel.value = [...fpsSel.options].reduce((a, o)=>Math.abs(o.value - fps) < Math.abs(a.value - fps) ? o : a).value;
-  document.getElementById('rv-yt-tags').value = deckTags().join(', ');
-  document.getElementById('rv-link').value = deckLink();
-  if (rvVideo.src && reviewFileName !== baseName(sess.outputPath) && sess.outputPath){
+  if (rvVideo.src && (sess.inBrowser || reviewFileName !== baseName(sess.outputPath) && sess.outputPath)){
     rvVideo.removeAttribute('src'); rvVideo.load(); reviewFileName = '';
   }
-  document.getElementById('rv-novideo').hidden = !!rvVideo.src;
+  document.getElementById('rv-novideo').hidden = !!rvVideo.src || !!sess.empty;
+  playlist = null; clipList = null;
+  resetPreview();
   renderReview();
   openModal(reviewDialog);
-  autoLoadRecording(sess);
+  setupEl.open = !!opts.setup || !obsConnected || !!sess.empty;
+  if (setupEl.open) refreshSetup(); else fillDevices(false).then(setupSummary);
+  say(opts.note || (sess.empty ? (obsConnected ? 'Press ● Record: OBS records the deck.' : 'Connect to OBS in Setup, then press ● Record.')
+    : about + (rvVideo.src ? 'Click a take to preview it.' : 'Open the recording to preview it.')));
+  if (!sess.empty) autoLoadRecording(sess);
 }
 function renderReview(){
+  if (reviewing && reviewing.board){ renderBoard(); return; }
   const sess = reviewing, list = document.getElementById('rv-list');
   let lastSec = null;
   list.innerHTML = [...takesOf(sess).values()].map(slide=>{
     const pick = sess.picks[slide.id] ?? slide.takes.length, sec = sectionOf(slide.id);
     const isSec = sec !== lastSec; lastSec = sec;
     const chips = slide.takes.map(t=>'<button class="rv-chip' + (pick === t.no ? ' on' : '') + '" data-id="' + escapeHtml(slide.id) + '" data-take="' + t.no + '">' +
-      (slide.takes.length > 1 ? 'Take ' + t.no + ' · ' : '') + fmtTime(t.end - t.start) + '</button>').join('') +
-      '<button class="rv-chip skip' + (pick === 0 ? ' on' : '') + '" data-id="' + escapeHtml(slide.id) + '" data-take="0">Leave out</button>';
+      'Take ' + t.no + ' · ' + fmtLength(t.end - t.start) + '</button>').join('');
     return '<div class="rv-row' + (isSec ? ' sec' : '') + '"><div class="t">' + escapeHtml(slide.title) +
       '<small>' + fmtTime(slide.takes[0].start) + '</small></div><div class="rv-chips">' + chips + '</div></div>';
   }).join('');
@@ -2018,18 +2418,61 @@ function renderReview(){
     saveSession(sess);
     renderReview();
     const slide = takesOf(sess).get(b.dataset.id), t = slide && slide.takes[+b.dataset.take - 1];
-    if (t) playRange([{start:t.start, end:t.end, title:slide.title + (slide.takes.length > 1 ? ' · take ' + t.no : '')}]);
+    if (!t) return;
+    const title = slide.title + (slide.takes.length > 1 ? ' · take ' + t.no : '');
+    if (sess.inBrowser){
+      const ev = sess.events.filter(e=>e.id === b.dataset.id)[t.no - 1];
+      if (ev && ev.clip) playClips([{clip:ev.clip, keep:(t.end - t.start) / 1000, title}]);
+    } else playRange([{start:t.start, end:t.end, title}]);
   });
-  document.getElementById('rv-ffmpeg').value = ffmpegScript(sess, document.getElementById('rv-mode').value);
-  describe(sess);
+  document.getElementById('rv-ffmpeg-copy').disabled = document.getElementById('rv-play-final').disabled = !sess.events.length;
+  showChapters(sess);
+  showFinalSize(sess);
 }
-document.getElementById('rv-mode').onchange = ()=>renderReview();
+// ⧉ Chapters: YouTube's chapter list for the final cut, ready to paste into the description
+let cutChapters = '';
+function showChapters(sess){
+  const ch = finalChapters(sess), btn = document.getElementById('rv-chapters');
+  cutChapters = ch.lines.join('\n');
+  btn.disabled = ch.lines.length < 3;
+  btn.title = ch.lines.length < 3 ? 'YouTube needs at least three chapters of 10 seconds or more'
+    : 'Copies the ' + ch.lines.length + ' chapters, to paste into the YouTube description';
+}
+// copies text, saying so on the button for a moment
+function copyWith(btn, text){
+  const label = btn.dataset.label || (btn.dataset.label = btn.textContent);
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).catch(()=>{});
+  btn.textContent = '✓ Copied';
+  clearTimeout(+btn.dataset.timer);
+  btn.dataset.timer = String(setTimeout(()=>{ btn.textContent = label; }, 1500));
+}
+document.getElementById('rv-chapters').onclick = e=>copyWith(e.currentTarget, cutChapters);
+document.getElementById('rv-ffmpeg-copy').onclick = e=>{
+  if (!reviewing || !reviewing.events.length) return;
+  copyWith(e.currentTarget, ffmpegScript(reviewing, document.getElementById('rv-mode').value));
+  say('Copied the ffmpeg command: run it in a terminal, in the folder with ' + (baseName(reviewing.outputPath) || 'the recording') + '.');
+};
+// the final cut's length, and for takes kept in this browser about how big the downloaded file will be
+// a take's file never changes, so its size is read once
+const clipSizes = new Map();
+let finalSizeToken = 0;
+async function showFinalSize(sess){
+  const el = document.getElementById('rv-final'), token = ++finalSizeToken;
+  const ms = pickedRanges(sess).reduce((a, r)=>a + r.end - r.start, 0);
+  const line = bytes=>(!bytes ? 'Final cut ' : 'about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB') + ' · ') + fmtLength(ms);
+  if (!sess.inBrowser || sess.cleaned){ el.textContent = line(null); return; }
+  try {
+    let bytes = 0;
+    for (const part of clipPlan(sess)){
+      if (!clipSizes.has(part.clip)) clipSizes.set(part.clip, (await clipFile(part.clip)).size);
+      bytes += clipSizes.get(part.clip);
+    }
+    // written once, whole: the line never shows without its size in between
+    if (token === finalSizeToken) el.textContent = line(bytes);
+  } catch(e){ if (token === finalSizeToken) el.textContent = line(null); }
+}
 const fpsSel = document.getElementById('rv-fps');
 fpsSel.onchange = ()=>{ if (!reviewing) return; reviewing.fps = parseFloat(fpsSel.value); saveSession(reviewing); renderReview(); };
-document.getElementById('rv-link').addEventListener('input', e=>{
-  try { save('slidetake:site', new URL(e.target.value.trim()).origin); } catch(err){}
-  if (reviewing) describe(reviewing);
-});
 
 // preview: play ranges of the recording back to back
 // a take clicked while the recording is still opening plays as soon as it is ready
@@ -2037,16 +2480,16 @@ let pendingPlay = null;
 function playRange(ranges){
   if (!rvVideo.src){
     pendingPlay = ranges;
-    rvNow.textContent = rvOpening ? 'Opening the recording… it plays when ready.' : 'Open the recording to preview.';
+    say(rvOpening ? 'Opening the recording… it plays when ready.' : 'Open the recording to preview.');
     return;
   }
   pendingPlay = null;
   playlist = {ranges, i:0};
-  rvNow.textContent = '▶ ' + ranges[0].title;
+  say('▶ ' + ranges[0].title);
   // seeking before the metadata has loaded is ignored, so wait for it
   const go = ()=>{
     rvVideo.currentTime = ranges[0].start / 1000;
-    rvVideo.play().catch(e=>{ if (e && e.name !== 'AbortError') rvNow.textContent = 'Could not play: ' + e.message; });
+    rvVideo.play().catch(e=>{ if (e && e.name !== 'AbortError') say('Could not play: ' + e.message, {warn:true}); });
   };
   if (rvVideo.readyState >= 1) go(); else rvVideo.addEventListener('loadedmetadata', go, {once:true});
 }
@@ -2055,13 +2498,528 @@ rvVideo.addEventListener('timeupdate', ()=>{
   const r = playlist.ranges[playlist.i];
   if (rvVideo.currentTime * 1000 < r.end) return;
   playlist.i++;
-  if (playlist.i >= playlist.ranges.length){ rvVideo.pause(); playlist = null; rvNow.textContent = ''; return; }
+  if (playlist.i >= playlist.ranges.length){ rvVideo.pause(); playlist = null; say(''); return; }
   const next = playlist.ranges[playlist.i];
   rvVideo.currentTime = next.start / 1000;
-  rvNow.textContent = '▶ ' + next.title;
+  say('▶ ' + next.title);
 });
-document.getElementById('rv-play-final').onclick = ()=>{
-  if (reviewing) playRange(pickedRanges(reviewing).map(r=>({start:r.start, end:r.end, title:r.title})));
+// Preview: the picked takes back to back. Right after a take was played on its own it continues from there (the
+// next slide, or the same one if that take was stopped partway); after anything else, from the start. While it
+// plays the button pauses it, and the take list follows the slide playing.
+const previewBtn = document.getElementById('rv-play-final');
+let previewFrom = null;
+function resetPreview(){ previewFrom = null; }
+previewBtn.onclick = ()=>{
+  if (!reviewing) return;
+  if (!reviewing.inBrowser){ playRange(pickedRanges(reviewing).map(r=>({start:r.start, end:r.end, title:r.title}))); return; }
+  if (clipList && !clipList.single){                 // the preview is running: pause, or go on
+    if (rvVideo.paused) rvVideo.play().catch(()=>{}); else rvVideo.pause();
+    return;
+  }
+  const plan = clipPlan(reviewing);
+  const start = Math.max(0, previewFrom ? plan.findIndex(p=>p.id === previewFrom) : 0);
+  previewFrom = null;
+  playClips(plan.slice(start));
+};
+function showPreviewState(){
+  const running = clipList && !clipList.single && !rvVideo.paused;
+  previewBtn.textContent = running ? '❚❚ Pause' : '▶ Preview';
+  document.querySelectorAll('#rv-list .rv-row.playing').forEach(r=>r.classList.remove('playing'));
+  const part = clipList && clipList.parts[clipList.i];
+  const row = part && part.id && document.querySelector('#rv-list .rv-row[data-id="' + CSS.escape(part.id) + '"]');
+  if (row){ row.classList.add('playing'); row.scrollIntoView({block:'nearest'}); }
+}
+rvVideo.addEventListener('play', showPreviewState);
+rvVideo.addEventListener('pause', ()=>{
+  // a take played on its own and stopped partway: Preview starts with that slide
+  if (clipList && clipList.single && rvVideo.currentTime < clipList.parts[0].keep - 0.05){
+    previewFrom = clipList.parts[0].id;
+    say('Preview starts from ' + clipList.parts[0].title.replace(/ · take \d+$/, '') + '.');
+  }
+  showPreviewState();
+});
+// a take played on its own has finished: Preview goes on from the next slide
+function singleTakeDone(part){
+  const plan = reviewing ? clipPlan(reviewing) : [];
+  const i = plan.findIndex(p=>p.id === part.id), next = i >= 0 ? plan[i + 1] : null;
+  previewFrom = next ? next.id : null;
+  say(next ? 'Preview continues from ' + next.title + '.' : 'That was the last slide: Preview plays from the start.');
+}
+
+// a decoded audio sample as one float array per channel
+function planesOf(smp){
+  return Array.from({length:smp.numberOfChannels}, (_, c)=>{
+    const p = new Float32Array(smp.numberOfFrames);
+    smp.copyTo(p, {planeIndex:c, format:'f32-planar'});
+    return p;
+  });
+}
+// a browser session's takes are files of their own: play each from its start for as long as it is kept
+let clipList = null;
+// a take's clip, by its path: '<recording>/<file>'
+async function clipFile(path){ const [run, name] = path.split('/'); return (await (await takesDir(run)).getFileHandle(name)).getFile(); }
+// single: one take played on its own (from the take list), after which Preview continues from it
+async function playClips(parts, i = 0, single = false){
+  if (!reviewing || reviewing.cleaned || !parts.length) return;
+  playlist = null;
+  clipList = {parts, i, single};
+  try {
+    const file = await clipFile(parts[i].clip);
+    if (!reviewDialog.classList.contains('open')) return;   // Studio closed while the take was loading
+    if (rvVideo.src) URL.revokeObjectURL(rvVideo.src);
+    rvVideo.src = URL.createObjectURL(file);
+    say('▶ ' + parts[i].title);
+    await rvVideo.play();
+  } catch(e){
+    if (e && e.name === 'AbortError') return;
+    clipList = null;
+    say(e && e.name === 'NotFoundError' ? 'This take is no longer in the browser.' : 'Could not play this take: ' + ((e && e.message) || e), {warn:true});
+  }
+}
+function clipDone(){
+  const c = clipList;
+  if (c.i + 1 < c.parts.length){ playClips(c.parts, c.i + 1, c.single); return; }
+  clipList = null;
+  rvVideo.pause();
+  if (c.single) singleTakeDone(c.parts[0]); else say('');
+  showPreviewState();
+}
+rvVideo.addEventListener('timeupdate', ()=>{ if (clipList && rvVideo.currentTime >= clipList.parts[clipList.i].keep) clipDone(); });
+rvVideo.addEventListener('ended', ()=>{ if (clipList) clipDone(); });
+
+// Render: the picked takes joined into one file, packets copied as they are (no decoding or re-encoding).
+// Every take starts on a keyframe and shares the recorder's settings, so the joins need nothing else.
+const renderBtn = document.getElementById('rv-render-btn');
+renderBtn.onclick = ()=>downloadVideo(false);
+// while a video is made, its progress is the button's label: nothing else on the board moves
+let renderDone = 0;
+const renderLabel = /** @param {string} [t] */ t=>{ clearTimeout(renderDone); renderBtn.textContent = t || '↓ Download'; };
+// where a saved video is, in words: the folder's name and the file's (browsers don't tell pages the full path)
+const savedWhere = d=>d.where ? '“' + d.where + '” as ' + d.name : 'your downloads as ' + d.name;
+// the last video saved, if it is still in its folder (a plain download can't be checked: assume it is)
+async function stillSaved(d){
+  if (!d.where) return true;
+  try {
+    const dir = await kvGet('video-folder');
+    if (!dir || dir.name !== d.where || (await dir.queryPermission({mode:'readwrite'})) !== 'granted') return true;
+    await dir.getFileHandle(d.name);
+    return true;
+  } catch(e){ return false; }
+}
+async function downloadVideo(force){
+  const sess = reviewing;
+  if (!sess || !sess.inBrowser || sess.cleaned) return;
+  const plan = clipPlan(sess);
+  if (!plan.length){ say('No slide has a take yet: nothing to save.', {warn:true}); return; }
+  // the same final cut as last time: nothing to make again
+  const sig = JSON.stringify([plan.map(c=>[c.clip, Math.round(c.keep * 1000)]), loudOn(), limiterOn(), sess.type]);
+  const last = sess.board && board.lastDownload;
+  if (!force && last && last.sig === sig && await stillSaved(last)){
+    say('', {html:'<button class="btn small" id="rv-save-again">Save another copy</button> Already saved in ' + escapeHtml(savedWhere(last)) + '.',
+      title:'Already saved in ' + savedWhere(last) + '. A new video is made only when a take or the sound settings change.'});
+    return;
+  }
+  const mp4 = clipExt(sess.type || '') === 'mp4';
+  // like OBS: a new file each time, named by the date, in your videos folder (asked once, then remembered)
+  const name = sessionKey() + ' ' + fileStamp(new Date()) + '.' + (mp4 ? 'mp4' : 'webm');
+  let file = null, where = '';
+  try {
+    const dir = await videoFolder(false);
+    if (dir){ file = await (await dir.getFileHandle(name, {create:true})).createWritable(); where = dir.name; }
+  } catch(e){ if (e && e.name === 'AbortError') return; }
+  const btn = renderBtn;
+  btn.disabled = true;
+  renderLabel('Preparing…');
+  try {
+    const MB = await import(MEDIABUNNY_URL);
+    const target = file ? new MB.StreamTarget(file) : new MB.BufferTarget();
+    const out = new MB.Output({format:mp4 ? new MB.Mp4OutputFormat({fastStart:file ? false : 'in-memory'}) : new MB.WebMOutputFormat(), target});
+    // loudness: measure the final cut, gain it to YouTube's level, then measure what that gain and the limiter
+    // actually give and correct for it. A few loud clicks carry much of the energy the first measure counts,
+    // and once the limiter tames them the voice would come out short of the target.
+    // Without the peak limiter the boost stops where the loudest peak would clip, and says so when that holds it
+    // back from -14.
+    let gain = 1, loudNote = '';
+    const useLimiter = loudOn() && limiterOn();
+    if (loudOn()){
+      const first = await measureCut(MB, plan, 1, false, 'Measuring');
+      if (first && isFinite(first.integrated)){
+        let db = gainToTarget(first, {limit:useLimiter});
+        if (useLimiter && Math.abs(db) >= 0.05){
+          const then = await measureCut(MB, plan, dbToGain(db), true, 'Checking');
+          if (then && isFinite(then.integrated)) db = Math.min(db + (YOUTUBE_LUFS - then.integrated), MAX_BOOST_DB);
+        }
+        gain = dbToGain(db);
+        const reached = useLimiter ? YOUTUBE_LUFS : first.integrated + db;
+        const heldBack = !useLimiter && gainToTarget(first, {limit:true}) - db > 0.5;
+        loudNote = ' · loudness ' + first.integrated.toFixed(1) + (Math.abs(db) < 0.05 ? ' LUFS, left as is' : ' → ' + reached.toFixed(1) + ' LUFS') +
+          (heldBack ? '; a loud peak held it back, turn on Peak limiter to reach ' + YOUTUBE_LUFS : '');
+      }
+    }
+    const reencode = gain !== 1 || useLimiter;
+    await checkJoinable(MB, plan);
+    let vSrc = null, aSrc = null, offset = 0, lastV = -1, lastA = -1, limiter = null;
+    const limited = [];   // pieces of sound waiting for the limiter: their time and length
+    const sendLimited = async ()=>{
+      while (limited.length && limiter.ready() >= limited[0].n){
+        const piece = limited.shift(), planes = limiter.take(piece.n), data = new Float32Array(piece.n * piece.ch);
+        planes.forEach((p, c)=>data.set(p, c * piece.n));
+        await aSrc.add(new MB.AudioSample({data, format:'f32-planar', numberOfChannels:piece.ch, sampleRate:piece.rate, timestamp:piece.t}));
+      }
+    };
+    for (const [i, part] of plan.entries()){
+      renderLabel('Joining ' + (i + 1) + '/' + plan.length);
+      const input = new MB.Input({source:new MB.BlobSource(await clipFile(part.clip)), formats:MB.ALL_FORMATS});
+      const vt = await input.getPrimaryVideoTrack(), at = await input.getPrimaryAudioTrack();
+      if (!vt) throw new Error(part.title + ' has no video');
+      if (!vSrc){
+        vSrc = new MB.EncodedVideoPacketSource(await vt.getCodec());
+        out.addVideoTrack(vSrc, {frameRate:FPS});
+        if (at){
+          aSrc = reencode ? new MB.AudioSampleSource({codec:mp4 ? 'aac' : 'opus', bitrate:AUDIO_BITRATE}) : new MB.EncodedAudioPacketSource(await at.getCodec());
+          out.addAudioTrack(aSrc);
+        }
+        await out.start();
+      }
+      const vMeta = {decoderConfig:await vt.getDecoderConfig()};
+      // the take ends where the next one began; frames after that belong to the next take
+      let end = 0, first = true;
+      for await (const pk of new MB.EncodedPacketSink(vt).packets()){
+        if (pk.timestamp >= part.keep) continue;
+        lastV = afterPrevious(lastV, offset + pk.timestamp);
+        await vSrc.add(pk.clone({timestamp:lastV}), first && i === 0 ? vMeta : undefined);
+        first = false;
+        end = Math.max(end, pk.timestamp + pk.duration);
+      }
+      // the sound stops with the picture, so the next take's sound starts where its picture does
+      if (at && aSrc && reencode){
+        for await (const smp of new MB.AudioSampleSink(at).samples(0, end)){
+          if (smp.timestamp + smp.duration > end + 1e-4){ smp.close(); continue; }
+          lastA = afterPrevious(lastA, offset + smp.timestamp);
+          const planes = planesOf(smp);
+          planes.forEach(p=>{ for (let k = 0; k < p.length; k++) p[k] *= gain; });
+          if (useLimiter){
+            // the limiter catches the peaks the gain pushes past the ceiling; its output runs a few ms behind,
+            // so each piece waits until its frames are ready and keeps its own time
+            limiter = limiter || peakLimiter(smp.sampleRate, planes.length);
+            limiter.push(planes);
+            limited.push({t:lastA, n:smp.numberOfFrames, rate:smp.sampleRate, ch:planes.length});
+            smp.close();
+            await sendLimited();
+          } else {
+            const n = smp.numberOfFrames, data = new Float32Array(n * planes.length);
+            planes.forEach((p, c)=>data.set(p, c * n));
+            await aSrc.add(new MB.AudioSample({data, format:'f32-planar', numberOfChannels:planes.length, sampleRate:smp.sampleRate, timestamp:lastA}));
+            smp.close();
+          }
+        }
+      } else if (at && aSrc){
+        const aMeta = {decoderConfig:await at.getDecoderConfig()};
+        let aFirst = true;
+        for await (const pk of new MB.EncodedPacketSink(at).packets()){
+          if (pk.timestamp + pk.duration > end + 1e-4) continue;
+          lastA = afterPrevious(lastA, offset + pk.timestamp);
+          await aSrc.add(pk.clone({timestamp:lastA}), aFirst && i === 0 ? aMeta : undefined);
+          aFirst = false;
+        }
+      }
+      offset += end;
+    }
+    if (limiter){
+      limiter.end();
+      await sendLimited();
+      if (limiter.events) loudNote += ', ' + limiter.events + ' peak' + (limiter.events === 1 ? '' : 's') + ' limited';
+    }
+    renderLabel('Finishing…');
+    await out.finalize();
+    if (!file){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([target.buffer], {type:mp4 ? 'video/mp4' : 'video/webm'}));
+      a.download = name;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
+    }
+    const saved = {sig, name, where};
+    if (sess.board){ board.lastDownload = saved; saveBoard(); }
+    say('Saved in ' + savedWhere(saved) + ' (' + fmtLength(offset * 1000) + loudNote + ').');
+    renderLabel('✓ Saved');
+    renderDone = setTimeout(()=>renderLabel(), 2500);
+  } catch(e){
+    renderLabel();
+    say('Could not save the video: ' + ((e && e.message) || e), {warn:true});
+    if (file) file.abort().catch(()=>{});
+  } finally { btn.disabled = !!sess.cleaned; }
+}
+// How loud the final cut is, as it will be joined: as recorded, or with a gain and the limiter after it.
+// null when there is no sound.
+async function measureCut(MB, plan, gain, limit, label){
+  let meter = null, limiter = null;
+  for (const [i, part] of plan.entries()){
+    renderLabel(label + ' ' + (i + 1) + '/' + plan.length);
+    const at = await new MB.Input({source:new MB.BlobSource(await clipFile(part.clip)), formats:MB.ALL_FORMATS}).getPrimaryAudioTrack();
+    if (!at) continue;
+    for await (const smp of new MB.AudioSampleSink(at).samples(0, part.keep)){
+      const planes = planesOf(smp);
+      meter = meter || loudnessMeter(smp.sampleRate, planes.length);
+      if (gain !== 1 && limit){
+        planes.forEach(p=>{ for (let k = 0; k < p.length; k++) p[k] *= gain; });
+        limiter = limiter || peakLimiter(smp.sampleRate, planes.length);
+        limiter.push(planes);
+        if (limiter.ready()) meter.add(limiter.take(limiter.ready()));
+      } else meter.add(planes);
+      smp.close();
+    }
+  }
+  if (limiter){ limiter.end(); if (limiter.ready()) meter.add(limiter.take(limiter.ready())); }
+  return meter ? meter.result() : null;
+}
+// Takes join without re-encoding only when they share the picture size and encoder settings. The odd ones
+// out (against the most common) are named, to be recorded again, rather than written into a broken file.
+async function checkJoinable(MB, plan){
+  const keys = [];
+  for (const part of plan){
+    const vt = await new MB.Input({source:new MB.BlobSource(await clipFile(part.clip)), formats:MB.ALL_FORMATS}).getPrimaryVideoTrack();
+    const c = vt && await vt.getDecoderConfig();
+    keys.push(c ? c.codec + ' ' + c.codedWidth + '×' + c.codedHeight + ' ' + (c.description ? [...new Uint8Array(c.description)].join('.') : '') : 'none');
+  }
+  const count = new Map();
+  keys.forEach(k=>count.set(k, (count.get(k) || 0) + 1));
+  const main = [...count.entries()].sort((a, b)=>b[1] - a[1])[0][0];
+  const odd = plan.filter((_, i)=>keys[i] !== main);
+  if (odd.length) throw new Error(odd.map(p=>p.title).join(', ') + (odd.length === 1 ? ' was' : ' were') +
+    ' recorded at a different size (' + keys[plan.indexOf(odd[0])].split(' ')[1] + ', not ' + main.split(' ')[1] + '). Tick ' + (odd.length === 1 ? 'it' : 'them') + ' and record again');
+}
+// 2026-10-30 20-04-49, as OBS names its recordings
+const fileStamp = d=>{ const p2 = n=>String(n).padStart(2, '0'); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' + p2(d.getHours()) + '-' + p2(d.getMinutes()) + '-' + p2(d.getSeconds()); };
+// where videos are saved: a folder picked once (starting in Movies / Videos) and remembered. null where the
+// browser can't keep a folder: the video is downloaded instead. ask: pick again.
+async function videoFolder(ask){
+  if (!window.showDirectoryPicker) return null;
+  let dir = ask ? null : await kvGet('video-folder');
+  if (dir){
+    let perm = await dir.queryPermission({mode:'readwrite'});
+    if (perm === 'prompt') perm = await dir.requestPermission({mode:'readwrite'});
+    if (perm === 'granted') return dir;
+  }
+  dir = await window.showDirectoryPicker({id:'slidetake-videos', mode:'readwrite', startIn:'videos'});
+  kvSet('video-folder', dir);
+  return dir;
+}
+document.getElementById('rv-folder-change').onclick = async ()=>{
+  try { const dir = await videoFolder(true); if (dir) say('Videos now go to ' + dir.name + '.'); }
+  catch(e){}
+};
+
+// ---------- the take board: every take of every slide, from every recording made in this browser ----------
+// One per deck. Takes from a later recording join their slide's row; a slide edited since has its old takes
+// marked outdated. ● Record records the deck, or only the ticked slides (shift-click ticks a range).
+let board = null, boardKey = '', selAnchor = null;
+const selected = new Set();
+const boardStoreKey = ()=>'slidetake:board:' + sessionKey();
+function loadBoard(){
+  const key = boardStoreKey();
+  if (board && boardKey === key) return board;
+  boardKey = key;
+  try { board = JSON.parse(load(key) || 'null'); } catch(e){ board = null; }
+  if (!board || !Array.isArray(board.takes)) board = {takes:[], picks:{}, type:'', quality:''};
+  return board;
+}
+const saveBoard = ()=>save(boardStoreKey(), JSON.stringify(board));
+// what a slide says now; a take recorded when it said something else is outdated
+const slideFp = id=>{ const n = nodes.get(id); return n ? fingerprint(n.title + '\n' + n.html) : ''; };
+// the deck as the board compares it: each slide's fingerprint and the slide before it
+const boardDeck = ()=>deckSlides(order, id=>({title:nodes.get(id).title, fp:slideFp(id)}));
+function addToBoard(sess){
+  loadBoard();
+  const takes = takesFromRun(sess, sess.takesId, boardDeck());
+  takes.forEach(t=>{ delete board.picks[t.id]; });   // a slide recorded again plays its newest take
+  board.takes.push(...takes);
+  Object.assign(board, {type:sess.type, quality:sess.quality});
+  saveBoard();
+  selected.clear();
+  openBoard({note:(sess.reason ? sess.reason + '. ' : '') + takes.length + ' new take' + (takes.length === 1 ? '' : 's') + ' on the board.'});
+}
+// the board as a recording: the picked takes back to back, for preview, chapters and Download
+function boardReview(){
+  const rows = boardRows(loadBoard(), boardDeck());
+  const sess = Object.assign(boardSession(rows), {board:true, inBrowser:true, withObs:false, type:board.type || 'video/mp4', quality:board.quality || '',
+    deckTitle:deck.title || (order[0] ? nodes.get(order[0]).title : 'Deck'), date:new Date().toISOString()});
+  return {rows, sess};
+}
+const setupEl = document.getElementById('rv-setup');
+const setupBtn = document.getElementById('rv-setup-btn');
+setupEl.addEventListener('toggle', ()=>{
+  setupBtn.setAttribute('aria-expanded', String(setupEl.open));
+  if (setupEl.open) refreshSetup(); else stopMeter();
+});
+setupBtn.onclick = ()=>{ setupEl.open = !setupEl.open; };
+reviewDialog.addEventListener('click', e=>{ if (e.target === reviewDialog || e.target.closest('[data-close]')) stopMeter(); });
+function refreshSetup(){
+  if (obsMode()){ showScreenAdvice(); fillDevices(false).then(setupSummary); return; }
+  recCheck.innerHTML = '';
+  showBrowserCheck().then(b=>{ if (b.ok) fillDevices().then(setupSummary); else setupSummary(); });
+}
+// the browser by its name (Chrome, Edge, Brave…), for the labels that switch between it and OBS
+const browserName = (()=>{
+  const brands = (navigator.userAgentData && navigator.userAgentData.brands || []).map(b=>b.brand)
+    .filter(b=>!/chromium|not.?a.?brand/i.test(b));
+  if (brands.length) return brands[0].replace(/^(Google|Microsoft) /, '');
+  const ua = navigator.userAgent;
+  return /Firefox\//.test(ua) ? 'Firefox' : /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Chrome\//.test(ua) ? 'Chrome'
+    : /Safari\//.test(ua) ? 'Safari' : 'this browser';
+})();
+document.querySelectorAll('.browser-name').forEach(el=>{ el.textContent = browserName; });
+// what a take will use, beside ⚙ Setup, so it shows without opening it: the mode, the camera and (in the
+// browser) the microphone
+function setupSummary(){
+  const name = /** @param {HTMLSelectElement} sel */ sel=>{ const o = sel.selectedOptions[0]; return o ? o.textContent.replace(/ \(system default\)$/, '') : ''; };
+  const cam = name(recCam) || (camChoice() === 'none' ? 'No camera' : 'Camera');
+  const parts = obsMode() ? ['Pro', 'OBS', obsSize, cam].filter(Boolean)
+    : browserRecording().ok ? ['Easy', browserName, recQuality.value, cam, name(recMic) || 'Microphone'].filter(Boolean) : ['Easy', browserName + ' can’t record here'];
+  const el = document.getElementById('rv-using');
+  el.textContent = parts.join(' · ');
+  el.title = setupBtn.title = 'Recording with ' + parts.join(' · ');
+}
+function openBoard(opts = {}){
+  if (!RECORDING_UI) return;
+  closeModals();
+  loadBoard();
+  reviewDialog.classList.remove('obs');
+  reviewDialog.classList.add('in-browser', 'board');
+  document.getElementById('rv-rec').title = 'Records the whole deck, or only the ticked slides (shift-click ticks a range)';
+  document.getElementById('rv-novideo').hidden = true;
+  if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
+  playlist = null; clipList = null;
+  resetPreview();
+  lastTicked = -1;
+  renderBoard();
+  openModal(reviewDialog);
+  const ready = browserRecording().ok;
+  setupEl.open = !!opts.setup || !ready || !board.takes.length;
+  if (setupEl.open) refreshSetup(); else showBrowserCheck().then(()=>fillDevices(false)).then(setupSummary);
+  say(opts.note || selNote() || (board.takes.length ? boardState() + '. Click a take to preview it.' : order.length + ' slides, nothing recorded yet. Press ● Record.'));
+}
+// how far the video is: slides with a take to use, and those to record again
+function boardState(){
+  const rows = boardRows(loadBoard(), boardDeck());
+  const ready = rows.filter(r=>r.pick).length, outdated = rows.filter(r=>r.takes.length && !r.pick).length;
+  return ready + ' of ' + rows.length + ' slides ready' + (outdated ? ', ' + outdated + ' to record again' : '');
+}
+function renderBoard(){
+  const {rows, sess} = boardReview();
+  reviewing = sess;
+  const list = document.getElementById('rv-list');
+  let lastSec = null;
+  list.innerHTML = rows.map(r=>{
+    const sec = sectionOf(r.id), isSec = sec !== lastSec; lastSec = sec;
+    const id = escapeHtml(r.id);
+    const why = {slide:'Recorded before this slide changed', before:'Starts with the entry from the slide before, which has changed or is gone: record this slide again'};
+    const chips = r.takes.length ? r.takes.map(t=>'<button class="rv-chip' + (r.pick === t.uid ? ' on' : '') + (t.outdated ? ' outdated" title="' + why[t.outdated] : '') +
+      '" data-id="' + id + '" data-uid="' + escapeHtml(t.uid) + '">Take ' + t.no + ' · ' + fmtLength(t.ms) + '</button>').join('') +
+      (r.pick ? '' : '<span class="rv-none">' + (r.takes.some(t=>t.outdated === 'before') && !r.takes.some(t=>t.outdated === 'slide') ? 'The slide before changed: record again' : 'Changed since: record again') + '</span>')
+      : '<span class="rv-none">No take yet</span>';
+    return '<div class="rv-row with-sel' + (isSec ? ' sec' : '') + (selected.has(r.id) ? ' selected' : '') + '" data-id="' + id + '">' +
+      '<input type="checkbox" class="rv-sel" data-id="' + id + '"' + (selected.has(r.id) ? ' checked' : '') + ' aria-label="Select ' + escapeHtml(r.title) + ' to record">' +
+      '<div><div class="t">' + escapeHtml(r.title) + '</div><div class="rv-chips">' + chips + '</div></div></div>';
+  }).join('');
+  list.querySelectorAll('.rv-chip').forEach(b=>b.onclick = ()=>{
+    board.picks[b.dataset.id] = b.dataset.uid;
+    saveBoard();
+    renderBoard();
+    const row = rows.find(r=>r.id === b.dataset.id), t = row && row.takes.find(x=>x.uid === b.dataset.uid);
+    if (t) playClips([{id:row.id, clip:t.clip, keep:t.ms / 1000, title:row.title + ' · take ' + t.no}], 0, true);
+  });
+  list.querySelectorAll('.rv-sel').forEach(c=>c.addEventListener('click', e=>{
+    const ids = e.shiftKey ? rangeOf(order, selAnchor, c.dataset.id) : [c.dataset.id];
+    ids.forEach(i=>{ if (c.checked) selected.add(i); else selected.delete(i); });
+    resetPreview();
+    selAnchor = c.dataset.id;
+    renderBoard();
+  }));
+  const ticked = selectedInOrder(order, selected), ready = browserRecording().ok;
+  document.getElementById('rv-rec').disabled = !ready;
+  // ticking or unticking says what Record will do; opening the board leaves its own message
+  if (lastTicked >= 0 && ticked.length !== lastTicked) say(selNote() || 'Record takes the whole deck.');
+  lastTicked = ticked.length;
+  document.getElementById('rv-render-btn').disabled = document.getElementById('rv-play-final').disabled = !sess.events.length;
+  showChapters(sess);
+  showFinalSize(sess);
+}
+document.getElementById('rv-rec').onclick = ()=>{
+  if (!obsMode()){ startTake('browser', selectedInOrder(order, selected)); return; }
+  if (obsConnected){ startTake('obs'); return; }
+  setupEl.open = true;
+  say('Connect to OBS first: Setup → OBS → Connect.', {warn:true});
+};
+document.getElementById('rv-use-obs').onclick = ()=>setRecMode('obs');
+document.getElementById('rv-use-browser').onclick = ()=>setRecMode('browser');
+// deleting takes: the ones no slide plays, or all of them
+async function deleteClips(takes){
+  for (const t of takes){
+    try { const [run, file] = t.clip.split('/'); await (await takesDir(run)).removeEntry(file); } catch(e){}
+  }
+  const gone = new Set(takes.map(t=>t.uid));
+  board.takes = board.takes.filter(t=>!gone.has(t.uid));
+  Object.keys(board.picks).forEach(id=>{ if (gone.has(board.picks[id])) delete board.picks[id]; });
+  saveBoard();
+  if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
+  clipList = null;
+  resetPreview();
+  renderBoard();
+}
+// the purge menu closes once a choice is made
+document.querySelectorAll('.rv-purge .rv-menu button').forEach(b=>b.addEventListener('click', ()=>{ b.closest('details').open = false; }));
+document.getElementById('rv-clean-unused').onclick = async ()=>{
+  const {rows} = boardReview(), used = new Set(rows.map(r=>r.pick).filter(Boolean));
+  const unused = board.takes.filter(t=>!used.has(t.uid));
+  if (!unused.length){ say('Every take is in use.'); return; }
+  if (!confirm('Purge ' + unused.length + ' take' + (unused.length === 1 ? '' : 's') + ' the video doesn’t use (earlier attempts and outdated takes)?')) return;
+  await deleteClips(unused);
+  say('Purged ' + unused.length + ' unused take' + (unused.length === 1 ? '' : 's') + '.');
+};
+document.getElementById('rv-clean').onclick = async ()=>{
+  if (!board.takes.length || !confirm('Purge all ' + board.takes.length + ' takes of this deck from this browser? Download the video first if you need it.')) return;
+  const runs = new Set(board.takes.map(t=>t.clip.split('/')[0]));
+  board.takes = []; board.picks = {};
+  saveBoard();
+  for (const r of runs) await deleteTakes(r);
+  if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
+  clipList = null;
+  resetPreview();
+  say('All takes purged.');
+  renderBoard();
+};
+// every deck's takes: the whole takes folder, and every deck's board, including takes no deck shows any more
+// (a deck since renamed or deleted)
+document.getElementById('rv-clean-every').onclick = async ()=>{
+  let root, bytes = 0, files = 0;
+  try { root = await navigator.storage.getDirectory(); } catch(e){ return; }
+  /** @param {FileSystemDirectoryHandle} dir */
+  const walk = async dir=>{
+    for await (const h of dir.values()){
+      if (h.kind === 'directory') await walk(h); else { files++; bytes += (await h.getFile()).size; }
+    }
+  };
+  try { await walk(await root.getDirectoryHandle('slidetake-takes')); } catch(e){}
+  const boards = [];
+  try { for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && k.startsWith('slidetake:board:')) boards.push(k); } } catch(e){}
+  const decks = boards.filter(k=>{ try { return JSON.parse(localStorage.getItem(k) || '{}').takes.length > 0; } catch(e){ return false; } }).length;
+  if (!files){ say('No takes are kept in this browser.'); return; }
+  const size = bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB';
+  if (!confirm('Purge ' + size + ' of takes (' + files + ' file' + (files === 1 ? '' : 's') + ') from ' + (decks || 'no') + ' deck' + (decks === 1 ? '' : 's') +
+    ' and any left behind? Every deck loses its takes; download the videos you need first.')) return;
+  try { await root.removeEntry('slidetake-takes', {recursive:true}); } catch(e){}
+  boards.forEach(k=>{ try { localStorage.removeItem(k); } catch(e){} });
+  // older recordings kept as sessions lose their takes too
+  save('slidetake:sessions', JSON.stringify(loadSessions().map(x=>x.inBrowser ? {...x, cleaned:true} : x)));
+  board = null; boardKey = '';
+  loadBoard();
+  clipSizes.clear();
+  if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
+  clipList = null;
+  resetPreview();
+  renderBoard();
+  say('Purged ' + size + ' of takes from every deck.');
 };
 
 // the recording: from the remembered OBS folder when the browser allows it, otherwise picked by hand
@@ -2088,13 +3046,13 @@ rvVideo.addEventListener('error', async ()=>{
   if (!rvVideo.getAttribute('src')) return;
   if (rvHandle && rvRetries < 5){
     rvRetries++;
-    rvNow.textContent = 'Reloading ' + reviewFileName + ' (OBS was still finishing it)…';
+    say('Reloading ' + reviewFileName + ' (OBS was still finishing it)…');
     await new Promise(r=>setTimeout(r, 1500));
     try { useRecording(await stableFile(rvHandle), rvHandle, true); return; } catch(e){}
   }
-  rvNow.textContent = rvHandle
+  say(rvHandle
     ? 'Chrome cannot play ' + reviewFileName + '. In OBS set Recording Format to Hybrid MP4 (or MP4) with H.264 video; the ffmpeg command still works with this file.'
-    : 'Could not play ' + (reviewFileName || 'this file') + '. If OBS was still finishing it when you opened it, open it again; if it still fails, set OBS to Hybrid MP4 (or MP4) with H.264 video.';
+    : 'Could not play ' + (reviewFileName || 'this file') + '. If OBS was still finishing it when you opened it, open it again; if it still fails, set OBS to Hybrid MP4 (or MP4) with H.264 video.', {warn:true});
 });
 // wait until OBS has stopped writing: same size and time stamp a second apart
 async function stableFile(handle){
@@ -2118,10 +3076,9 @@ function useRecording(file, handle, retry){
   rvVideo.src = URL.createObjectURL(file);
   reviewFileName = file.name;
   document.getElementById('rv-novideo').hidden = true;
-  rvNow.textContent = 'Loaded ' + file.name + '. Click a take to preview it.';
+  say('Loaded ' + file.name + '. Click a take to preview it.');
   if (pendingPlay) playRange(pendingPlay);
   else if (retry && playlist) playRange(playlist.ranges.slice(playlist.i));
-  if (reviewing) document.getElementById('rv-ffmpeg').value = ffmpegScript(reviewing, document.getElementById('rv-mode').value);
 }
 const fileInput = document.getElementById('rv-file-input');
 fileInput.addEventListener('change', ()=>{ if (fileInput.files[0]) useRecording(fileInput.files[0]); fileInput.value = ''; });
@@ -2133,23 +3090,22 @@ document.getElementById('rv-open').onclick = async ()=>{
   if (!window.showOpenFilePicker) return fileInput.click();
   try {
     const [handle] = await window.showOpenFilePicker({id:'obs-recordings', types:[{description:'Recordings', accept:{'video/*':['.mov','.mp4','.m4v','.mkv','.webm']}}]});
-    rvNow.textContent = 'Opening ' + handle.name + '…';
+    say('Opening ' + handle.name + '…');
     useRecording(await stableFile(handle), handle);
-  } catch(e){ if (!e || e.name !== 'AbortError') rvNow.textContent = 'Could not open that file.'; }
+  } catch(e){ if (!e || e.name !== 'AbortError') say('Could not open that file.', {warn:true}); }
 };
 const folderBtn = document.getElementById('rv-folder');
-folderBtn.hidden = !window.showDirectoryPicker;
+if (!window.showDirectoryPicker) folderBtn.style.display = 'none';   // `hidden` loses to .btn's display (Safari, Firefox)
 folderBtn.onclick = async ()=>{
   const name = reviewing && baseName(reviewing.outputPath);
   try {
     const dir = await window.showDirectoryPicker({id:'obs-recordings', mode:'read'});
     kvSet('obs-folder', dir);
-    if (!name){ rvNow.textContent = 'Folder remembered. This session has no file name from OBS; open the file instead.'; return; }
+    if (!name){ say('Folder remembered. This session has no file name from OBS; open the file instead.'); return; }
     const handle = await dir.getFileHandle(name);
     useRecording(await stableFile(handle), handle);
   } catch(e){
-    if (e && e.name === 'AbortError') return;
-    rvNow.textContent = (name ? name + ' is not in that folder' : 'Could not read that folder') + '. Use “Open the recording file…” instead.';
+    // not there (or unreadable): nothing to say, Open the recording file… is right beside it
   }
 };
 // a remembered folder that the browser still allows reading loads the take's file without any prompt
@@ -2161,27 +3117,11 @@ async function autoLoadRecording(sess){
     const dir = await kvGet('obs-folder');
     if (!dir || (await dir.queryPermission({mode:'read'})) !== 'granted') return;
     const handle = await dir.getFileHandle(name);
-    rvNow.textContent = 'Opening ' + name + '…';
+    say('Opening ' + name + '…');
     useRecording(await stableFile(handle), handle);
   } catch(e){}
 }
 
-document.getElementById('rv-download').onclick = ()=>{
-  if (!reviewing) return;
-  const sess = reviewing, ch = finalChapters(sess);
-  const text = '# ' + document.getElementById('rv-yt-title').value + '\n\n' +
-    'Recorded ' + new Date(sess.date).toLocaleString() + (sess.outputPath ? ' · ' + sess.outputPath : '') + ' · final length ' + fmtTime(ch.length) + '\n\n' +
-    '## Render\n\n```sh\n' + document.getElementById('rv-ffmpeg').value + '\n```\n\n' +
-    '## YouTube title\n\n' + document.getElementById('rv-yt-title').value + '\n\n' +
-    '## YouTube description\n\n' + document.getElementById('rv-yt-desc').value + '\n\n' +
-    '## Tags\n\n' + document.getElementById('rv-yt-tags').value + '\n\n' +
-    '## Picked takes\n\n' + pickedRanges(sess).map(r=>'- ' + fmtTime(r.start) + '–' + fmtTime(r.end) + '  ' + r.title).join('\n') + '\n';
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], {type:'text/markdown'}));
-  a.download = sessionKey() + '-publish.md';
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
-};
 if (loadObsSettings() && new URLSearchParams(location.search).get('obs')) connectObs();
 
 // ---------- webcam in the PIP box ----------
@@ -2232,7 +3172,8 @@ async function startWebcam(){
     camBtn.disabled = true;
     showPipMsg('Waiting for camera permission — check the browser prompt near the address bar.', true);
     try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30}}, audio:false});
+      const camId = load('slidetake:cam');
+      cameraStream = await navigator.mediaDevices.getUserMedia({video:{...(camId ? {deviceId:{ideal:camId}} : {}), width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30}}, audio:false});
       hidePipMsg();
     } catch(e){
       const name = e && e.name;
@@ -2257,13 +3198,15 @@ async function startWebcam(){
   refocus();
 }
 const CAMERA_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10.5 22 7v10l-6-3.5z"/></svg>';
+/** a bottom-bar button that is on: in the accent @param {HTMLElement} btn @param {boolean} on */
+function lightUp(btn, on){ btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', String(on)); }
 function updateCamBtn(){
   if (!camBtn.querySelector('svg')) camBtn.innerHTML = CAMERA_ICON + '<span class="lbl"> Camera</span>';
   camBtn.classList.toggle('on', !cameraOff);
   camBtn.setAttribute('aria-pressed', String(!cameraOff));
   camBtn.title = cameraOff ? 'Camera is off for every slide (C)' : 'Camera is on and follows the deck (C)';
 }
-function setCameraEnabled(on){
+function setCameraEnabled(on, quiet){
   if (on && !RECORDING_UI) return;
   cameraOff = !on;
   if (cameraOff){ stopWebcam(); hidePipMsg(); }
@@ -2274,7 +3217,7 @@ function setCameraEnabled(on){
   applyStepState();
   updateActivePath();
   refocus();
-  if (!presenting) showPipMsg(on ? 'Camera on — slides follow their camera settings.' : 'Camera off — camera settings are ignored and slides use the whole screen.');
+  if (!presenting && !quiet) showPipMsg(on ? 'Camera on — slides follow their camera settings.' : 'Camera off — camera settings are ignored and slides use the whole screen.');
   if (on) startWebcam();
 }
 camBtn.onclick = ()=>setCameraEnabled(cameraOff);
@@ -2294,6 +3237,14 @@ document.addEventListener('fullscreenchange', ()=>{
 });
 
 const help = document.getElementById('help');
+// Keys is lit while the keys are open, Studio while it is open, as the Editor is
+new MutationObserver(()=>lightUp(document.getElementById('btn-keys'), help.classList.contains('open'))).observe(help, {attributes:true, attributeFilter:['class']});
+// closing Studio (✕, Esc or a click outside it) stops a preview that is playing
+new MutationObserver(()=>{
+  const open = reviewDialog.classList.contains('open');
+  document.getElementById('btn-studio').classList.toggle('active', open);
+  if (!open && !rvVideo.paused) rvVideo.pause();
+}).observe(reviewDialog, {attributes:true, attributeFilter:['class']});
 // ? or K shows the keys; Docs (a link in the header) opens the full guide, itself a deck, in a new tab
 document.getElementById('btn-keys').onclick = ()=>help.classList.add('open');
 document.getElementById('help-close').onclick = ()=>help.classList.remove('open');
@@ -2301,7 +3252,7 @@ help.addEventListener('click', e=>{ if (e.target===help) help.classList.remove('
 
 window.addEventListener('keydown', e=>{
   // a clicker's "start" button sends F5; never let it reload the page
-  if (e.key === 'F5'){ e.preventDefault(); if (!rec.active) openRecordDialog(); return; }
+  if (e.key === 'F5'){ e.preventDefault(); if (!rec.active) openTakes(); return; }
   if (rec.active){ takeKey(e); return; }
   if (document.querySelector('.modal.open')){ if (e.key === 'Escape') closeModals(); return; }
   const tag = document.activeElement && document.activeElement.tagName;
@@ -2318,7 +3269,7 @@ window.addEventListener('keydown', e=>{
   else if (k==='o' || k==='O'){ overview(); }
   else if (k==='e' || k==='E'){ toggleEditor(); }
   else if (k==='f' || k==='F' || k==='p' || k==='P'){ setPresent(!presenting); }
-  else if (k==='r' || k==='R'){ openRecordDialog(); }
+  else if (k==='r' || k==='R'){ openTakes(); }
   else if (/^[1-4]$/.test(k)){ setMode(LAYOUTS[+k - 1]); }
   else if (k==='c' || k==='C'){ setCameraEnabled(cameraOff); }
   else if (k==='v' || k==='V'){ cycleCamera(); }

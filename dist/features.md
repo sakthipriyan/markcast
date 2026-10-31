@@ -10,17 +10,37 @@ The complete list, one line each. Press → to walk it, **O** for the map.
 
 ## ✂️ Record without timeline editing
 
+Two modes, the same takes: **easy** in the browser, **pro** with OBS.
+
 | Feature | Advantage |
 |---|---|
 | **Takes per slide** (←) | every attempt kept; recording never stops |
-| **OBS, driven by the deck** | it starts and stops for you; you only talk |
 | **Pause and resume** (B) | step away without a gap to cut |
+| **Slidetake Studio** | every slide's takes, Preview and Chapters, the same in both modes |
+| **Volume boost** | your voice at YouTube's loudness (−14 LUFS), never clipped |
+| **YouTube chapters** | one click copies them, one per section |
 | **Clicker support** | any Bluetooth presenter remote moves the deck |
-| **16:9 check** | the Record dialog warns before a video with bars |
-| **Review** | every slide's takes, previewed from the OBS file |
+
+### Easy mode: in the browser
+
+For Chrome, Edge or another Chromium browser, on a screen with enough pixels: 1920×1080 for 1080p (a Retina laptop has them), 1280×720 for 720p.
+
+| Feature | Advantage |
+|---|---|
+| **Nothing to install** | the deck records itself in a 16:9 frame, on a screen of any shape |
+| **Retake any slide later** | tick slides and record just those; an edited slide's takes are marked outdated |
+| **Download** | the picked takes joined into one MP4 in seconds |
+| **Takes kept in the browser** | every take, from every recording, until you purge them |
+
+### Pro mode: with OBS
+
+For Safari, Firefox or any browser, a screen too small for easy mode, or whatever OBS can record.
+
+| Feature | Advantage |
+|---|---|
+| **[OBS](https://obsproject.com), driven by the deck** | it starts and stops for you; you only talk |
+| **16:9 check** | Setup warns before a video with bars; use a 16:9 screen, physical or virtual |
 | **Frame-exact [ffmpeg](https://ffmpeg.org) cut** | one command, no video editor |
-| **Publish pack** | YouTube title, description, chapters, links and tags from the deck |
-| **Saved sessions** | review a recording again later |
 
 ## 🗺️ A map, not a stack
 
@@ -40,8 +60,8 @@ The complete list, one line each. Press → to walk it, **O** for the map.
 | **Webcam in its box** | you and the slides in one recording, no compositing |
 | **Camera per slide** | corner, size, side, circle, full screen or off |
 | **Steps on one slide** | open on you, then reveal the slide |
-| **V** | try camera layouts live without editing |
-| **Off until you turn it on** | readers never see an empty camera box |
+| **Camera layouts** (V) | try them live, without editing the deck |
+| **Off until you turn it on** | not shown to viewers: the slides get the whole screen |
 
 ## ✍️ Plain markdown in
 
@@ -69,7 +89,7 @@ The complete list, one line each. Press → to walk it, **O** for the map.
 |---|---|
 | **slidetake.com** | share links that carry the whole deck; your copy of any deck, kept in this browser |
 | **Your computer** | relative images, reload on save, browser edits saved to the file; OBS on another machine |
-| **Your website** | `?obs` turns your page into the recorder; the hugo-continuum theme with one frontmatter key |
+| **Your website** | a clean viewer in your site's colours; the hugo-continuum theme with one frontmatter key |
 
 ## 🔒 Private and open
 

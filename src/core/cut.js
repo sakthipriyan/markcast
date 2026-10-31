@@ -9,6 +9,11 @@ import {fmtTime} from './text.js';
  * @property {string} title
  * @property {number} t          ms on the browser clock since the take started
  * @property {number} [obsT]     ms on OBS's own recording clock, when OBS was connected
+ * @property {number} [lead]     for a retake: ms from the ← press to this take's start, while the deck went back
+ *                               to replay the slide's entry. Neither take keeps it: the one retaken ends at the press.
+ * @property {number} [skip]     ms this take's start is moved in: with OBS a retake holds still a moment before its
+ *                               entry, and the cut starts inside that hold, so a cut point a little early or late
+ *                               (OBS reports time as encoded, a few hundred ms behind the screen) still joins.
  *
  * @typedef {object} Session
  * @property {TakeEvent[]} events
@@ -33,7 +38,8 @@ export const sessionFps = sess=>sess.fps || 60;
 /** @param {number} ms @param {number} fps */
 const toFrame = (ms, fps)=>Math.round(ms * fps / 1000);
 
-/** Every slide attempt runs from its start to the next event (or the end of the recording). @param {Session} sess */
+/** Every slide attempt runs from its start to the next event (or the end of the recording); an attempt that was
+ * taken again ends where ← was pressed. @param {Session} sess */
 export function takesOf(sess){
   /** @type {Map<string, SlideTakes>} */
   const out = new Map();
@@ -42,7 +48,7 @@ export function takesOf(sess){
     if (!out.has(e.id)) out.set(e.id, {id: e.id, title: e.title, takes: []});
     const slide = /** @type {SlideTakes} */ (out.get(e.id));
     const next = sess.events[i + 1];
-    slide.takes.push({no: slide.takes.length + 1, start: evTime(e), end: next ? evTime(next) : end});
+    slide.takes.push({no: slide.takes.length + 1, start: evTime(e) + (e.skip || 0), end: next ? evTime(next) - (next.lead || 0) : end});
   });
   return out;   // in the order slides were first reached
 }
@@ -123,9 +129,10 @@ const secs = ms=>(ms / 1000).toFixed(3);
  * The shell commands that render the final cut.
  * @param {Session} sess
  * @param {'x264' | 'mac' | 'copy' | string} mode  frame-accurate x264, frame-accurate Mac hardware, or keyframe copy
- * @param {{input: string, outputName: string, sectionOf: SectionOf}} opts
+ * @param {{input: string, outputName: string, sectionOf: SectionOf, loudness?: boolean}} opts  loudness: bring the sound
+ *   to YouTube's level (-14 LUFS, peaks under -1 dB); only where the audio is re-encoded anyway
  */
-export function ffmpegScript(sess, mode, {input, outputName, sectionOf}){
+export function ffmpegScript(sess, mode, {input, outputName, sectionOf, loudness}){
   const ranges = mergedRanges(pickedRanges(sess));
   if (!sess.withObs) return '# This was a rehearsal: nothing was recorded.';
   if (!ranges.length) return '# Every slide is left out: nothing to render.';
@@ -162,6 +169,7 @@ export function ffmpegScript(sess, mode, {input, outputName, sectionOf}){
   const video = mode === 'mac' ? '-c:v h264_videotoolbox -b:v 12M' : '-c:v libx264 -crf 18 -preset medium';
   return chapters + 'ffmpeg -i ' + shq(input) + ' -i /tmp/slidetake-chapters.txt' + maps +
     ' -vf "select=\'' + vKeep + '\',setpts=N/FRAME_RATE/TB"' +
-    ' -af "asetnsamples=n=48:p=0,aselect=\'' + aKeep + '\',asetpts=N/SR/TB"' +
+    ' -af "asetnsamples=n=48:p=0,aselect=\'' + aKeep + '\',asetpts=N/SR/TB' + (loudness ? ',loudnorm=I=-14:TP=-1:LRA=11' : '') + '"' +
+    (loudness ? ' -ar 48000' : '') +    // loudnorm works at 192 kHz; the file goes back to 48 kHz
     ' ' + video + ' -c:a aac -b:a 192k -movflags +faststart ' + shq(output);
 }

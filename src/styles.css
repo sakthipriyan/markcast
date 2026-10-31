@@ -78,6 +78,10 @@
   .brand .mark .word > span{color:var(--accent);}
   /* Slidetake's two-tone name in its own decks' titles, as in the header */
   .node .body .st-take{color:var(--accent);}
+  .node .body .st-name{white-space:nowrap;color:var(--text);}
+  /* in bold the rest of the name (Studio) keeps the text colour too, not the accent bold text takes */
+  .node .body strong:has(> .st-name){color:var(--text);}
+  .node .body .st-name .logo{width:1em;height:1em;vertical-align:-.14em;margin-right:.2em;fill:var(--accent);}
   /* the Record button's red, where a deck names the button; deeper on white so it reads */
   .node .body .st-rec{color:#f87171;}
   body[data-mode="light"] .node .body .st-rec{color:#dc2626;}
@@ -91,25 +95,39 @@
   .brand .site-link:hover, .brand .site-link:focus-visible{color:var(--accent);}
   .brand .site-link svg{width:15px;height:15px;display:block;margin-right:5px;}
   .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  /* Buttons come in four kinds, and only these:
+     1. a button: a grey outline that turns accent on hover; regular (32px) or .small (24px); .icon makes it square
+     2. an accent button (.primary, and .rec in red): the one main action of a dialog or bar. Coloured text, the
+        same grey outline as any button, filling with its colour on hover
+     3. selected (.toggle.on, .seg-btn.active, .rv-chip.on, a chosen card): the accent outline on a light accent tint
+     4. bare (.close, the deck's floating bar): no outline at all */
   .btn{
     background:transparent;color:var(--text);
-    border:1px solid var(--node-border);border-radius:6px;
-    padding:7px 12px;font-size:12px;letter-spacing:.02em;cursor:pointer;
-    display:flex;align-items:center;gap:6px;
+    border:1px solid var(--node-border);border-radius:6px;box-sizing:border-box;
+    height:32px;padding:0 12px;font-size:12px;letter-spacing:.02em;white-space:nowrap;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
     transition:border-color .15s, color .15s, background .15s;
   }
+  .btn.small{height:24px;padding:0 9px;font-size:11px;}
+  .btn.icon{width:32px;padding:0;}
+  .btn.small.icon{width:24px;}
+  .btn.icon svg{width:15px;height:15px;display:block;}
+  .btn .ico{font-size:1.1em;line-height:1;}
   a.btn{text-decoration:none;}
-  .btn:hover{border-color:var(--accent);color:var(--accent);}
-  .btn.primary{border-color:var(--accent);color:var(--accent);}
-  .btn.primary:hover{background:var(--accent);color:var(--on-accent);}
-  .btn.active{background:var(--node-border);}
-  .seg{display:flex;border:1px solid var(--node-border);border-radius:6px;overflow:hidden;}
+  .btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.primary{color:var(--accent);}
+  .btn.primary:hover:not(:disabled){background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
+  .btn.rec{color:#f87171;}
+  .btn.rec:hover:not(:disabled){background:#b91c1c;border-color:#b91c1c;color:#fff;}
+  .btn.toggle{color:var(--text-muted);}
+  .btn.active, .btn.toggle.on, .seg-btn.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  .seg{display:inline-flex;height:32px;box-sizing:border-box;border:1px solid var(--node-border);border-radius:6px;overflow:hidden;}
   .seg-btn{
-    background:transparent;border:none;color:var(--text-muted);font-family:var(--mono);
-    font-size:12px;padding:7px 12px;cursor:pointer;transition:background .15s,color .15s;
+    background:transparent;border:none;color:var(--text-muted);font-family:var(--mono);height:100%;
+    font-size:12px;padding:0 12px;cursor:pointer;display:flex;align-items:center;transition:background .15s,color .15s;
   }
   .seg-btn:hover{color:var(--accent);}
-  .seg-btn.active{background:var(--node-border);color:var(--accent);}
 
   /* ---------- main layout ---------- */
   main{flex:1;display:flex;min-height:0;}
@@ -142,24 +160,16 @@
   .modal ul.templates span{font-size:12px;color:var(--text-muted);}
   /* the analytics choice: two cards, the chosen one in the accent */
   .modal .choices{display:grid;gap:8px;margin:12px 0;}
-  .modal .choice{display:flex;flex-direction:column;gap:4px;text-align:left;padding:10px 12px;border:1px solid var(--panel-line);border-radius:8px;
-    background:transparent;color:var(--text);font:inherit;cursor:pointer;}
-  .modal .choice:hover{border-color:var(--accent-line);}
-  .modal .choice[aria-checked="true"]{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 8%, transparent);}
+  /* a choice card (analytics on or off; recording in the browser or with OBS): the chosen one looks selected */
+  .modal .choice{padding:10px 12px;border:1px solid var(--panel-line);border-radius:8px;background:transparent;color:var(--text);font:inherit;cursor:pointer;}
+  .modal .choice:hover{border-color:var(--accent);}
+  .modal .choice[aria-checked="true"]{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  .modal .choice{display:flex;flex-direction:column;gap:4px;text-align:left;}
   .modal .choice strong{font-family:var(--display);font-size:14px;}
   .modal .choice span{font-size:12px;line-height:1.55;color:var(--text-muted);}
   .modal .note{font-size:12px;}
   #editor-pane.unsaved .pane-bar{box-shadow:inset 0 -2px 0 var(--accent);}
-  #editor-pane.unsaved #btn-share, #editor-pane.unsaved #btn-save{border-color:var(--accent);color:var(--accent);}
-  .btn.small{padding:3px 9px;font-size:11px;}
-  .btn.icon{padding:4px 9px;min-width:30px;display:inline-flex;align-items:center;justify-content:center;}
-  .btn.icon svg{width:15px;height:15px;display:block;}
-  /* in the header, icon buttons stand as tall as the layout switch and the text buttons beside them */
-  .hdr-actions .btn.icon{height:32px;min-width:32px;padding:0 8px;}
-  /* every header control is exactly 32px, whatever the font's line height, so they line up on any machine */
-  .hdr-actions > .btn, .hdr-actions > .seg{height:32px;}
-  .hdr-actions > .btn:not(.icon){padding-top:0;padding-bottom:0;}
-  .hdr-actions .seg-btn{height:100%;display:flex;align-items:center;padding-top:0;padding-bottom:0;}
+  #editor-pane.unsaved #btn-share, #editor-pane.unsaved #btn-save{color:var(--accent);}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   .pane-label{
     font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
@@ -272,6 +282,11 @@
     padding:10px 12px;overflow-x:auto;margin:0 0 10px;
   }
   .node .body pre code{border:none;background:none;padding:0;color:var(--text);}
+  /* a long line scrolls on a slim accent bar, not the system's grey one */
+  .node .body pre{scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--accent) 45%, transparent) transparent;}
+  .node .body pre::-webkit-scrollbar{height:5px;}
+  .node .body pre::-webkit-scrollbar-track{background:transparent;}
+  .node .body pre::-webkit-scrollbar-thumb{background:color-mix(in srgb, var(--accent) 45%, transparent);border-radius:3px;}
   .node .body strong{color:var(--accent);}
   .node .body a{color:var(--accent-teal);}
   .node .body a.xlink::after{content:" ↗";font-size:10px;}
@@ -292,7 +307,10 @@
   .modal h3{font-family:var(--display);font-size:13px;margin:18px 0 8px;color:var(--text);display:flex;align-items:center;gap:10px;}
   .modal p, .modal li{font-size:13px;line-height:1.6;color:var(--text-muted);margin:0 0 6px;}
   .modal ul{padding-left:18px;margin:0;}
-  .modal .close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+  /* ✕ Close: a regular button at the top right, on the title's line (with ⚙ Setup beside it on the board) */
+  .modal .panel > .close, .modal .panel-actions{position:absolute;top:20px;right:24px;}
+  .modal .panel-actions{display:flex;gap:8px;}
+  .modal h2{padding-right:96px;}
   .modal .fields{display:grid;grid-template-columns:2fr 1fr 2fr;gap:10px;}
   #open-form{display:flex;gap:8px;margin:12px 0 6px;}
   #help table.keys{border-collapse:collapse;margin:6px 0 12px;font-size:13px;}
@@ -315,24 +333,34 @@
   .modal textarea{width:100%;resize:vertical;line-height:1.6;}
   .modal .row{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;}
   .modal .row.end{justify-content:flex-end;margin-top:20px;}
-  .modal .btn[disabled]{opacity:.4;cursor:not-allowed;}
-  .modal .btn.small{padding:3px 9px;font-size:11px;}
-  #obs-status{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+  #obs-status{font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap;}
+  #obs-detail{color:var(--danger);}
   #obs-status.ok, #rec-screen .ok{color:#10b981;}
   #rec-screen a{color:inherit;text-decoration:underline;}
   #obs-status.err{color:var(--danger);}
   .modal .warn{color:var(--accent);}
+  #rv-setup .warn{color:var(--danger);}
   @media (max-width:560px){ .modal .fields{grid-template-columns:1fr;} }
-  #navbar #btn-record{color:#f87171;}
-  #navbar #btn-record:hover{color:#fff;background:#b91c1c;}
-  #navbar #btn-present{color:var(--accent);}
-  /* camera: a grey camera when off; green, with a live dot, when on */
+  /* Studio, beside the Editor: an accent dot (red is for ● Record itself); lit, like the Editor, while open */
+  #btn-studio .rec-dot{color:var(--accent);}
+  /* phones and tablets can't record */
+  @media (pointer:coarse){ #btn-studio{display:none;} }
+  /* the bottom bar: Keys, Camera, Fullscreen, each in the accent while it is on */
   #btn-camera{display:inline-flex;align-items:center;gap:6px;}
   #btn-camera svg{display:block;}
-  #navbar #btn-camera.on{color:#22c55e;}
+  #navbar button.on{color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent);}
   /* while a take runs nothing but the slides and the camera is on screen */
   body.recording #breadcrumbs, body.recording #navbar, body.recording #minimap, body.recording #pip-msg{display:none !important;}
   body.recording, body.recording *{cursor:none !important;}
+  /* a retake's jump back to the slide before: no transition may ease it into place */
+  body.no-anim *, body.no-anim *::before, body.no-anim *::after{transition:none !important;animation:none !important;}
+  /* recording in the browser: the deck in a 16:9 frame, the only part captured. Chrome captures an element
+     only while it is its own stacking context, hence the isolation (without it the capture is silently empty). */
+  body.rec-frame main{background:#000;}
+  body.rec-frame #stage-wrap{flex:none;margin:auto;width:min(100%, calc(100vh * 16 / 9));aspect-ratio:16/9;isolation:isolate;}
+  #review.in-browser #rv-novideo{display:none !important;}
+  /* the takes screen records in this browser, or with OBS: each mode's own controls */
+  #review.obs .for-browser, #review:not(.obs) .for-obs{display:none !important;}
   #rec-countdown{
     position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
     background:rgba(4,7,13,.9);font-family:var(--display);color:var(--accent);
@@ -345,15 +373,85 @@
     background:rgba(4,7,13,.94);font-family:var(--mono);font-size:15px;color:var(--text-muted);letter-spacing:.06em;
   }
   #rec-paused.show{display:flex;}
-  .modal .panel.xwide{width:min(1220px,100%);max-height:94vh;}
-  .rv-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px;margin-top:12px;}
-  @media (max-width:900px){ .rv-grid{grid-template-columns:1fr;} }
+  .modal .panel.xwide{width:min(1480px,100%);max-height:94vh;}
+  /* scrollbars: thin, in the accent */
+  .modal .panel, .rv-list, .modal textarea{scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--accent) 45%, transparent) transparent;}
+  /* the player and the take list side by side, the list exactly as tall as the player (it scrolls inside that);
+     play and download under both */
+  .rv-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(280px,3fr);grid-template-areas:"video list" "bar dl";
+    column-gap:18px;margin-top:12px;}
+  .rv-grid > div:first-child{display:contents;}
+  .rv-video{grid-area:video;}
+  .rv-list{grid-area:list;contain:size;}
+  .rv-bar{grid-area:bar;display:flex;align-items:center;gap:10px;margin-top:12px;min-width:0;}
+  .rv-purge{position:relative;}
+  .rv-purge summary{list-style:none;font-family:var(--mono);}
+  .rv-purge summary::-webkit-details-marker{display:none;}
+  .rv-purge .rv-menu{position:absolute;left:0;top:calc(100% + 6px);display:flex;flex-direction:column;gap:6px;padding:8px;z-index:3;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:nowrap;}
+  /* the take board: every slide, a box to select it for recording, its takes */
+  .rv-row.with-sel{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:start;}
+  .rv-row .rv-sel{margin:3px 0 0;accent-color:var(--accent);}
+  .rv-row.selected{background:color-mix(in srgb, var(--accent) 7%, transparent);}
+  .rv-row.playing{box-shadow:inset 3px 0 0 var(--accent);}
+  .rv-chip.outdated{opacity:.6;text-decoration:line-through;}
+  .rv-none{font-size:12px;color:var(--text-muted);font-style:italic;}
+  /* Recording setup: opened from the ⚙ Setup button at the top right, shown under the title */
+  .modal .rv-setup-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  #rv-setup{margin:12px 0 12px;border:1px solid var(--panel-line);border-radius:8px;padding:10px 14px;}
+  #rv-setup > summary{display:none;}
+  #rv-setup:not([open]){display:none;}
+  #review h2.rv-brand{display:flex;align-items:center;gap:8px;color:var(--text);}
+  #review h2.rv-brand .logo{width:22px;height:22px;fill:var(--accent);flex:none;}
+  #review h2.rv-brand .word > span{color:var(--accent);}
+  .rv-using{align-self:center;max-width:34vw;font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #review h2{padding-right:calc(34vw + 200px);}
+  @media (max-width:900px){ .rv-using{display:none;} #review h2{padding-right:190px;} }
+  /* three sections side by side: Camera, Microphone, Video; Use OBS at the top right */
+  .rv-setup-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--panel-line);}
+  .rv-setup-head h4{margin:0;font-family:var(--display);font-size:13px;color:var(--text-muted);}
+  .rv-setup-cols{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:18px;}
+  .rv-setup-cols section{display:flex;flex-direction:column;gap:8px;min-width:0;}
+  .rv-setup-cols h4{margin:0;font-family:var(--display);font-size:13px;color:var(--text);}
+  .rv-setup-cols select{width:100%;}
+  .rv-setup-cols #rv-fps{width:auto;}
+  .rv-setup-cols meter{width:100%;height:8px;}
+  .rv-setup-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .rv-setup-gap{flex:1}
+  .rv-files{margin-left:auto;}
+  .rv-files .rv-menu{left:auto;right:0;}
+  .rv-obs-fields{display:grid;grid-template-columns:minmax(0,1.2fr) 60px minmax(0,1fr);gap:6px;}
+  .modal .rv-obs-fields input{width:100%;min-width:0;font-size:11.5px;padding:4px 8px;}
+  .rv-setup-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:14px;padding-top:10px;border-top:1px solid var(--panel-line);}
+  .modal .rv-setup-foot label{flex-direction:row;align-items:center;gap:8px;margin:0;}
+  .rv-setup-foot select{width:auto;}
+  .modal .rv-setup-row label.check{gap:6px;margin:0;}
+  .rv-setup-label{font-size:12px;color:var(--text-muted);}
+  .seg.small{height:24px;}
+  .seg.small .seg-btn{font-size:11px;padding:0 10px;}
+  .rv-setup-note{margin:0;font-size:12px;color:var(--text-muted);line-height:1.5;}
+  #rv-setup > .rv-setup-note{margin-top:12px;}
+  @media (max-width:900px){ .rv-setup-cols{grid-template-columns:1fr;} }
+  .rv-final{font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap;}
+  /* under the takes: the final cut's size, and Download */
+  .rv-dl{grid-area:dl;display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:12px;}
+  #rv-chapters{margin-right:auto;min-width:112px;}
+  /* Preview and Pause: one width, so the button doesn't change size as it switches */
+  .btn.rv-preview{min-width:104px;}
+  @media (max-width:900px){
+    .rv-grid{grid-template-columns:1fr;grid-template-areas:"video" "bar" "list" "dl";}
+    .rv-list{contain:none;max-height:50vh;margin-top:12px;}
+  }
   .rv-video{position:relative;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;}
   .rv-video video{width:100%;height:100%;display:block;}
   #rv-novideo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;}
   #rv-novideo[hidden]{display:none;}
-  #rv-now{font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:8px;min-height:1.4em;}
-  .rv-list{max-height:52vh;overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
+  /* the preview's message, right before Preview */
+  #rv-now{flex:1;min-width:0;text-align:right;font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #rv-now.warn{color:var(--danger);}
+  #rv-now .btn{vertical-align:middle;margin-right:6px;}
+  #rv-render-btn, #rv-ffmpeg-copy{min-width:120px;}
+  .rv-list{overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
   .rv-row{padding:9px 12px;border-bottom:1px solid var(--panel-line);}
   .rv-row:last-child{border-bottom:none;}
   .rv-row .t{font-size:12.5px;color:var(--text);margin-bottom:6px;display:flex;justify-content:space-between;gap:8px;}
@@ -362,14 +460,10 @@
   .rv-chips{display:flex;flex-wrap:wrap;gap:6px;}
   .rv-chip{background:transparent;border:1px solid var(--node-border);color:var(--text-muted);border-radius:20px;
     font-family:var(--mono);font-size:11px;padding:3px 10px;cursor:pointer;}
-  .rv-chip:hover{border-color:var(--accent-teal);color:var(--text);}
+  .rv-chip:hover{border-color:var(--accent);color:var(--accent);}
   .rv-chip.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   .rv-chip.skip.on{border-color:var(--danger);color:var(--danger);background:rgba(224,100,92,.1);}
-  .rv-out{margin-top:6px;}
-  .rv-out .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  @media (max-width:900px){ .rv-out .two{grid-template-columns:1fr;} }
   .modal select{background:var(--code-bg);border:1px solid var(--node-border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11.5px;padding:4px 8px;}
-  #rec-sessions{margin-top:14px;}
 
   /* ---------- reveal.js compatibility: fragments, stacks, diagrams, charts ---------- */
   .node .fragment{opacity:0;visibility:hidden;transition:opacity .45s ease, transform .45s ease, visibility 0s .45s;}
@@ -403,7 +497,9 @@
   /* ---------- media from plain markdown (see applyMedia) ---------- */
   .node .body figure.media{margin:0;}
   .node .body figure.media img{display:block;width:100%;height:auto;max-height:70vh;object-fit:contain;border-radius:8px;}
-  .node .body figure.media figcaption{margin-top:8px;font-size:.82em;color:var(--text-muted);line-height:1.45;}
+  .node .body figure.media.yt + *{margin-top:10px;}
+  /* one caption size on every kind of image card: the size of the text (.node .body p) */
+  .node .body figure.media figcaption{margin-top:8px;font-size:13px;color:var(--text-muted);line-height:1.45;}
   .node .body figure.yt .frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#000;}
   .node .body figure.yt.portrait .frame{aspect-ratio:9/16;max-height:70vh;width:auto;margin:0 auto;}
   .node .body figure.yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
@@ -416,12 +512,11 @@
   .node .body .gallery{list-style:none;padding:0;margin:8px 0 0;display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:14px;align-items:end;}
   .node .body .gallery li{margin:0;}
   .node .body .gallery figure.media img{max-height:calc(56vh / var(--rows,1));margin:0 auto;}
-  .node .body .gallery figure.media figcaption{font-size:.72em;text-align:center;}
+  .node .body .gallery figure.media figcaption{text-align:center;}
   /* a stepped gallery: the images stack in one place and each press brings the next */
   .node .body .gallery.carousel{grid-template-columns:minmax(0,1fr);}
   .node .body .gallery.carousel > li{grid-area:1/1;}
   .node .body .gallery.carousel figure.media img{max-height:58vh;}
-  .node .body .gallery.carousel figure.media figcaption{font-size:.82em;}
   .node .body .gallery.carousel figcaption[data-count]::before{content:attr(data-count) " ";color:var(--accent);font-weight:600;white-space:pre;}
   .node .body .gallery.carousel:has(> li.visible) > li:not(.fragment){opacity:0;visibility:hidden;transition:opacity .45s ease, visibility 0s .45s;}
   .node .body .gallery.carousel > li:not(.fragment){transition:opacity .45s ease;}
@@ -430,20 +525,19 @@
   .node.card-bleed .body .gallery{margin:0;}
   .node.card-bleed .body figure.media img,
   .node.card-bleed .body .gallery.carousel figure.media img{max-height:none;border-radius:0;background:var(--code-bg);}
-  .node.card-bleed .body figure.media figcaption{margin:0;text-align:left;font-size:.9em;}
+  .node.card-bleed .body figure.media figcaption{margin:0;text-align:left;}
   /* landscape: the image spans the card; the heading sits above it, the caption below */
   .node.img-landscape .crumb{margin:12px 18px 4px;}
   .node.img-landscape .body > :is(h1,h2,h3,h4,h5,h6):first-child{margin:0 18px 10px;}
   .node.img-landscape .body figure.media img{width:100%;height:var(--img-h);object-fit:contain;}
   .node.img-landscape .body figure.media figcaption{padding:10px 18px 14px;}
   /* portrait or near-square: the image on the right at the card's height; the heading and caption share the left */
-  div.node.img-portrait{height:540px;padding:20px calc(var(--img-w) + 26px) 22px 24px;}
-  .node.img-portrait .body{display:flex;flex-direction:column;height:100%;}
+  div.node.img-portrait{height:540px;padding:20px calc(var(--img-w) + 26px) 22px 24px;display:flex;flex-direction:column;}
+  /* the text column takes what the breadcrumb leaves, so the caption ends inside the card */
+  .node.img-portrait .body{display:flex;flex-direction:column;flex:1;min-height:0;}
   .node.img-portrait .crumb{margin-bottom:10px;}
-  .node.img-portrait .body > :is(h1,h2,h3,h4,h5,h6):first-child{font-size:22px;}
   .node.img-portrait .body > .gallery, .node.img-portrait .body > figure.media{margin-top:auto;}
   .node.img-portrait .body figure.media img{position:absolute;top:0;right:0;width:var(--img-w);height:540px;object-fit:contain;}
-  .node.img-portrait .body figure.media figcaption, .node.img-portrait .body .gallery.carousel figure.media figcaption{font-size:1.35em;line-height:1.45;color:var(--text);}
   /* 16:9, or a full-screen card: the image fills the card, the heading and caption over it */
   .node.img-overlay::before{content:"";position:absolute;inset:0 0 auto;height:96px;z-index:2;pointer-events:none;
     background:linear-gradient(rgba(0,0,0,.72), rgba(0,0,0,0));border-radius:8px 8px 0 0;}
@@ -451,7 +545,8 @@
   .node.img-overlay .body > :is(h1,h2,h3,h4,h5,h6):first-child{position:absolute;top:28px;left:18px;right:18px;z-index:3;margin:0;
     color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6);}
   .node.img-overlay .body figure.media{position:relative;}
-  .node.img-overlay .body figure.media img{width:100%;height:540px;object-fit:contain;}
+  .node.img-overlay .body figure.media img{width:100%;height:540px;object-fit:contain;background:#000;}
+  .node.img-overlay.img-cover .body figure.media img{object-fit:cover;}
   .node.img-overlay .body figure.media figcaption{position:absolute;left:0;right:0;bottom:0;padding:36px 18px 14px;
     color:#f4f4f5;background:linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.78));}
   .node.img-overlay .body .gallery.carousel figure.media figcaption::before{color:color-mix(in srgb, var(--accent) 55%, #fff);}
@@ -468,8 +563,8 @@
   .node .diagram{background:#f8fafc;border:1px solid var(--panel-line);border-radius:8px;padding:12px;margin:0 0 10px;overflow:auto;}
   .node .diagram svg{display:block;width:100%;height:auto;max-height:640px;}
   .node .diagram.err{background:none;color:var(--danger);font-family:var(--mono);font-size:12px;padding:0;}
-  /* D2 is drawn in the deck's own palette, so it needs no light backdrop */
-  .node .diagram.d2{background:none;border:none;padding:0;}
+  /* D2 and Graphviz are drawn in the deck's own palette, so they need no light backdrop */
+  .node .diagram.d2, .node .diagram.dot{background:none;border:none;padding:0;}
   /* a ```svg drawing is inline: currentColor is the card's text colour, and the deck's variables switch with dark and light */
   .node .diagram.svg{background:none;border:none;padding:0;color:var(--text);}
   .node .diagram.svg svg{max-height:62vh;}
@@ -550,7 +645,7 @@
     html.embed.no-record #navbar{display:flex;}
     html.embed.no-record #navbar > :not(.touch-only){display:none !important;}
   }
-  html.no-record #btn-camera, html.no-record #btn-record, html.no-record #navbar .divider, html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
+  html.no-record #btn-camera, html.no-record #btn-studio, html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
   /* the logo written into a heading: # ![](/favicon.svg) Slidetake */
   .node .body :is(h1,h2) img[src$="favicon.svg"]{height:1em;width:auto;vertical-align:-.12em;margin-right:.25em;display:inline;}
   #brand .st-mark{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--text);}
@@ -613,7 +708,7 @@
     background:var(--code-bg);border:1px solid var(--panel-line);border-radius:6px;
     padding:10px 12px;font-family:var(--mono);font-size:11.5px;color:var(--text);overflow-x:auto;
   }
-  #help .close{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+  #help .close{position:absolute;top:22px;right:16px;}
   kbd{
     font-family:var(--mono);background:var(--node-bg);border:1px solid var(--node-border);
     border-radius:4px;padding:1px 6px;font-size:11px;color:var(--accent);

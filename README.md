@@ -2,7 +2,7 @@
 
 Markdown in, a spatial deck and a finished video out.
 
-Slidetake turns a markdown file into a deck you move through like a map, and, when you are recording, drives the camera and OBS from the deck itself: every slide is a take, a slide spoken badly is retaken on the spot, and at the end you get a frame-exact ffmpeg cut, chapters and a YouTube publish pack.
+Slidetake turns a markdown file into a deck you move through like a map, and, when you are recording, drives the camera and OBS from the deck itself: every slide is a take, a slide spoken badly is retaken on the spot, and at the end you get a frame-exact ffmpeg cut and the YouTube chapters.
 
 The built app is a single HTML file, [`dist/index.html`](dist/index.html): open it, copy it or host it anywhere. Every feature: [slidetake.com/features](https://slidetake.com/features); step by step: [slidetake.com/docs](https://slidetake.com/docs).
 
@@ -12,7 +12,7 @@ The built app is a single HTML file, [`dist/index.html`](dist/index.html): open 
 |---|---|
 | **slidetake.com** | write in the editor, view a deck from a GitHub file, gist or URL, and share a link with the deck inside it |
 | **Your computer** | the same with `npx slidetake deck.md`: your files and the images beside them, offline, reloading as you save, so an AI agent can write `deck.md` while you watch ([llms.txt](https://slidetake.com/llms.txt) tells it how) |
-| **Your website** | `slidetake.js` on your pages ([below](#embed-in-a-site)): users view, and `?obs` makes the page your recorder; the hugo-continuum theme does it for `engine: slidetake` |
+| **Your website** | `slidetake.js` on your pages ([below](#embed-in-a-site)): a viewer for your readers, in your site's colours; the hugo-continuum theme does it for `engine: slidetake` |
 
 ### On your computer
 
@@ -59,16 +59,18 @@ For AI tools: the guide is plain markdown at [slidetake.com/docs.md](https://sli
 
 ## Recording
 
-The bottom bar always has **Camera** (C), **● Record** (R) and **Fullscreen** (F). The camera is off until someone turns it on, and until then the deck's camera settings are ignored, so the same deck works for readers.
+**● Studio** (R), beside ✎ Editor in the header, opens Slidetake Studio: record in the browser or with OBS, review the takes, download the video. The bottom bar has **Keys** (K), **Camera** (C) and **Fullscreen** (F), each lit while it's on. The camera is off until someone turns it on, and until then the deck's camera settings are ignored, so the same deck works for readers.
 
-**● Record** asks where OBS is, or fill it in from the address (the same format the reveal.js slides use):
+For OBS, Studio's ⚙ Setup asks where OBS is, or fill it in from the address (the same format the reveal.js slides use):
 
 ```
 ?obs=localhost:4455
 ?obs=192.168.1.10:4455:password
 ```
 
-**Recording needs [OBS Studio](https://obsproject.com)** (free) with its WebSocket server on; OBS records and Slidetake drives it. The Record dialog checks the screen: if it isn't 16:9, present on a screen that is, physical or virtual (say 1920×1080), so the video fits YouTube without bars.
+In Chrome, Edge and other Chromium browsers the deck records itself, nothing to install: slides and camera in a 16:9 frame, one file per take, and ↓ Download joins the picked takes into an MP4. In any browser, [OBS Studio](https://obsproject.com) (free, with its WebSocket server on) can record while Slidetake drives it; Setup checks the screen is 16:9, so the video fits YouTube without bars.
+
+Recording is on slidetake.com and `npx slidetake`; decks embedded with `slidetake.js` are view-only.
 
 From https://slidetake.com, OBS must run on the same computer (`localhost`): browsers block secure pages from plain `ws://` connections to other machines. To record with OBS on another machine, use `npx slidetake`, which serves over http.
 
@@ -93,20 +95,18 @@ window.SLIDETAKE = {
     light: {accent: "#7a5c12", line: "#f5c542", header: "linear-gradient(135deg,#f5c542,#d4af37)", headerText: "#1a1408"},
     dark:  {accent: "#e0b024", line: "#966f04"}
   }
-  // recording: true                                 // optional: always show Camera and Record
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/slidetake@0.3.1/dist/slidetake.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/slidetake@0.4.0/dist/slidetake.js"></script>
 ```
 
 `colors` takes any CSS colour per token, for both modes or under `light` / `dark`: `accent` (text and the current slide), `accentSoft` (smaller headings), `line` (borders and the active path), `ring` (the current slide's outline), `header` and `headerText` (a band of colour behind the header). A deck can also set its own with `accent:` in its top block.
 
 Load it from npm through a CDN (pin the version, as above), or copy `dist/slidetake.js` into your site, or `npm install slidetake` and serve `node_modules/slidetake/dist/slidetake.js`.
 
-The page then shows that deck, read-only, in one of two modes:
+The page then shows that deck as a viewer: read-only, with no editor, camera or Studio, and no bottom bar. The header carries Slidetake, the layouts, light/dark, Keys and Fullscreen. See [examples/embed.html](examples/embed.html); the [hugo-continuum](https://github.com/sakthipriyan/hugo-continuum) theme uses it for slide pages with `engine: slidetake`.
 
-- **Viewer** (the default): no bottom bar. The header carries Slidetake, the layouts, light/dark, Keys and Fullscreen.
-- **Record** (`?obs=` in the address, or `recording: true`): the bottom bar as on slidetake.com, with Keys, Camera, Record and Fullscreen. See [examples/embed.html](examples/embed.html). The [hugo-continuum](https://github.com/sakthipriyan/hugo-continuum) theme uses it for slide pages with `engine: slidetake`.
+To record a video of an embedded deck, open its markdown on slidetake.com or with `npx slidetake`. `accent:`, `brand:` and `logo:` in its top block give the video your site's look.
 
 ## Develop
 

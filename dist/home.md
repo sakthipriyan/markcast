@@ -1,5 +1,5 @@
 ---
-title: Slidetake — write in markdown, record without timeline editing
+title: Slidetake — write in markdown with AI, record without timeline editing
 brand: slidetake
 pip: bottom-right
 ---
@@ -8,29 +8,25 @@ pip: bottom-right
 
 # ![](/favicon.svg) Slide<span class="st-take">take</span>
 
-**Write in markdown. Present on a spatial canvas. Record without timeline editing.**
+**Write in markdown, with AI. Present on a spatial canvas. Record without timeline editing.**
 
-For developers and technical educators who explain things on video. You're inside a Slidetake deck right now. Press → to walk it, **O** for the map.
+Any AI writes the deck for you: it's plain markdown. For developers and technical educators who explain things on video. You're inside a Slidetake deck right now. Press → to walk it, **O** for the map.
+
+## ⏱️ Hours, not days
+
+A video that takes two or three days to script, record and edit takes a couple of hours: an AI writes the deck, you record it slide by slide, and pick the best take of each in Studio. What comes out is ready to upload.
 
 ## ✂️ Record without timeline editing
 
-**Retake by slide.** The slide is the timeline marker, so a fumbled line costs one press, not an editing session.
+**Every slide is a take.** Stumbled on a slide? Press ← and say it again: every attempt is kept, and recording carries on. The slide is the timeline marker, so a fumbled line costs one press, not an editing session.
 
-### OBS records, the deck drives it
+### Record right here, nothing to install
 
-**[OBS Studio](https://obsproject.com)** records at full quality. Press **<span class="st-rec">● Record</span>** and Slidetake starts it, moves through your slides and stops it at the end. No scenes to switch, no recording to watch.
+Press **● Studio**, then **<span class="st-rec">● Record</span>**, and the deck records itself, in Chrome, Edge or another Chromium browser: your slides and camera in one 16:9 frame, at 1080p. Or let **[OBS Studio](https://obsproject.com)** record while the deck drives it, from any browser. No scenes to switch, no recording to watch.
 
-### Every slide is a take
+### Pick the best take
 
-Stumbled on a slide? Press ← and say it again. Every attempt is kept, and recording carries on.
-
-### Pick, don't scrub
-
-Choose the best take of each slide. Slidetake writes the frame-exact **[ffmpeg](https://ffmpeg.org)** cut, the YouTube **chapters** and the description.
-
-### One session, one finished video
-
-Write, present and record in one sitting. What comes out is ready to upload.
+Choose the best take of each slide in **● Studio**. It joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), at YouTube's loudness, with the **chapters** to paste.
 
 ## 🗺️ A map, not a stack
 
@@ -52,20 +48,9 @@ Your headings are the hierarchy: zoom out for the whole system, zoom in for one 
 
 A comment in a slide moves you: corner, full screen, or off. Turn on **Camera** and watch this slide do it.
 
-### Camera moves, step by step
-
-<!-- camera: 40%, full, on -->
-
-With **Camera** on, press →: this slide puts you large in the corner, then full screen, then back to the corner. One comment, one press per move:
-
-```md
-### Camera moves, step by step
-<!-- camera: 40%, full, on -->
-```
-
-Combine `on`, `off`, `full`, a size like `40%`, a corner, `flip` or `circle`.
-
 ## ✍️ Plain markdown in
+
+**Pure text, so an AI iterates fast.** Ask for a change and the whole deck is rewritten in seconds: no layouts to drag, no files to export.
 
 Markdown you already know: headings, lists, tables, code, steps, diagrams (Graphviz, D2, SVG), charts, images and YouTube links. [See them all in the showcase →](/showcase)
 
@@ -74,10 +59,10 @@ Markdown you already know: headings, lists, tables, code, steps, diagrams (Graph
 Markdown has no word for "reveal one at a time" or "move the camera", so a handful of HTML comments say it. They stay invisible anywhere else markdown is read:
 
 ```md
-<!-- steps -->             ← the rest, one press each
-<!-- camera: full, on -->  ← move the camera
-<!-- view: overview -->    ← the map first
-<!-- view: full -->        ← a big-image card
+<!-- steps -->            ← one press each
+<!-- camera: full, on --> ← move the camera
+<!-- view: overview -->   ← the map first
+<!-- view: full -->       ← a big image
 ```
 
 ## 🎨 Your colours
@@ -90,9 +75,9 @@ One line, `accent: "#3b82f6"`, gives a deck its own colour, shaded for dark and 
 
 Three places, one deck format: a markdown file.
 
-### slidetake.com: write, view, share
+### slidetake.com: write, record, share
 
-Write a deck in the **✎ Editor**, or view one straight from a link: a GitHub file, a gist or any markdown URL. **Share** a link with the deck inside it. Nothing to install.
+Write a deck in the **✎ Editor**, or view one straight from a link: a GitHub file, a gist or any markdown URL. Record it and cut the video in **● Studio**, in the same tab. **Share** a link with the deck inside it. Nothing to install.
 
 ### Your computer: all that, plus AI
 
@@ -104,9 +89,9 @@ npx slidetake deck.md
 
 Images next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. So an AI agent can write `deck.md` while you watch it take shape.
 
-### Your website: users view, you record
+### Your website: a viewer for your readers
 
-`slidetake.js` puts decks inside your own pages, in your site's colours. Users get a clean viewer; add `?obs` to the address and the same page records your video.
+`slidetake.js` puts decks inside your own pages, in your site's colours: a clean viewer, nothing else to set up. Record the same markdown here or with `npx slidetake`.
 
 ## <span class="st-heart" aria-hidden="true"></span> Open source
 

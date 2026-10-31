@@ -43,6 +43,10 @@ def take(slide):
     return slide.best_attempt()
 ```
 
+### Links between cards
+
+`{#charts}` at the end of a heading gives its card an id, and a link to `#charts` flies there: [see the charts](#charts).
+
 ## 📐 Diagrams
 
 Write the diagram in a fenced block named after its language.
@@ -80,7 +84,21 @@ Drawn inline, so `currentColor` and `var(--accent)` follow the deck's colours. P
 </svg>
 ```
 
-## 📊 Charts
+### One at a time
+
+Diagrams or charts in a row after `<!-- steps -->` become a carousel: one per press.
+
+<!-- steps -->
+
+```dot
+digraph { rankdir=LR; node [shape=box style=rounded]; Idea -> Markdown -> Deck -> Takes }
+```
+
+```dot
+digraph { rankdir=LR; node [shape=box style=rounded]; Takes -> Studio -> Video -> YouTube }
+```
+
+## 📊 Charts {#charts}
 
 ECharts, as a fenced `echarts` block of JSON options.
 
@@ -111,6 +129,10 @@ The layout comes from what's on the slide; the alt text is the caption.
 
 ![An image alone fills the card edge to edge](https://slidetake.com/og.jpg)
 
+### A tall image
+
+![A square or tall image sits beside its heading](https://slidetake.com/apple-touch-icon.png)
+
 ### Image and text
 
 ![Written first, so it sits on the left](https://slidetake.com/og.jpg)
@@ -140,9 +162,9 @@ Several images in one paragraph sit side by side, up to four a row:
 
 ## ▶️ YouTube
 
-A YouTube link alone on a line becomes the video. The next press plays it; leaving the slide pauses it.
-
 https://www.youtube.com/watch?v=jNQXAC9IVRw
+
+A YouTube link alone on a line becomes the video: the next press plays it, leaving the slide pauses it.
 
 ## 🎥 Camera
 
@@ -156,6 +178,10 @@ Try it: press **C** to turn on your camera, then →. This card puts you in the 
 
 This card began by pulling back to the whole map: `<!-- view: overview -->` does that. Try it: press **1** to **4** for focus, path (the default), radial and tree, and **O** to zoom out and back.
 
+### Progress and timer
+
+Press **F**: in fullscreen a thin bar along the bottom fills as you go. This deck says `duration: 10m`, so a lighter clock layer grows behind it; if it shows past the fill, you're behind.
+
 ## 🎨 Colours
 
 Try it: press **L** now. Dark and light switch, charts and diagrams included.
@@ -164,7 +190,7 @@ A deck sets its own colour with one line, `accent: "#3b82f6"`, shaded for both m
 
 ## ✂️ Record a video
 
-Try it with [OBS](https://obsproject.com) open and its WebSocket server on: press **● Record**. This deck records slide by slide; stumble, press ←, say it again. At the end the review hands you the cut and the YouTube chapters. Step by step: [Docs → Record a video](/docs#4-record-a-video).
+Try it: press **● Studio** (top right), then **● Record**. Stumble on a slide, press ←, say it again; then pick the best take of each. Step by step: [Docs → Record a video](/docs#4-record-a-video).
 
 ## 🌐 Open from anywhere
 

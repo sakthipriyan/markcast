@@ -23,6 +23,19 @@ test('takes run from one event to the next', ()=>{
   assert.deepEqual(t.get('b1').takes, [{no: 1, start: 50000, end: 80000}]);
 });
 
+test('a take that was retaken ends where ← was pressed, before the deck went back to replay the entry', ()=>{
+  const s = session();
+  s.events[2].lead = 800;               // ← at 29.2 s; the retake (entry included) starts at 30 s
+  const t = takesOf(s).get('a2').takes;
+  assert.deepEqual(t, [{no: 1, start: 20000, end: 29200}, {no: 2, start: 30000, end: 50000}]);
+});
+
+test('with OBS a retake starts inside its hold, so an early or late cut point still joins', ()=>{
+  const s = session();
+  s.events[2].lead = 800; s.events[2].skip = 300;
+  assert.deepEqual(takesOf(s).get('a2').takes, [{no: 1, start: 20000, end: 29200}, {no: 2, start: 30300, end: 50000}]);
+});
+
 test('default pick is the last take; the retake drops the first attempt', ()=>{
   const r = pickedRanges(session());
   assert.deepEqual(r.map(x=>[x.id, x.f0, x.f1]), [['a1', 0, 1200], ['a2', 1800, 3000], ['b1', 3000, 4800]]);
@@ -78,4 +91,13 @@ test('a rehearsal renders nothing', ()=>{
 test('file names with quotes are shell-safe', ()=>{
   const cmd = ffmpegScript(session(), 'x264', {input: "/m/it's.mov", outputName: 'o.mp4', sectionOf});
   assert.match(cmd, /-i '\/m\/it'\\''s\.mov'/);
+});
+
+test('loudness: re-encoding commands bring the sound to -14 LUFS at 48 kHz; the copy command cannot', ()=>{
+  const opts = {input: '/m/raw.mov', outputName: 'out.mp4', sectionOf, loudness: true};
+  const cmd = ffmpegScript(session(), 'x264', opts);
+  assert.match(cmd, /asetpts=N\/SR\/TB,loudnorm=I=-14:TP=-1:LRA=11"/);
+  assert.match(cmd, / -ar 48000 /);
+  assert.doesNotMatch(ffmpegScript(session(), 'x264', {...opts, loudness: false}), /loudnorm/);
+  assert.doesNotMatch(ffmpegScript(session(), 'copy', opts), /loudnorm/);
 });

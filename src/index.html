@@ -69,6 +69,7 @@
     <button class="btn icon" id="btn-analytics" title="Privacy &amp; analytics" aria-label="Privacy &amp; analytics" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></button>
     <button class="btn icon" id="btn-mode" title="Light / dark (L)" aria-label="Light / dark"></button>
     <button class="btn" id="btn-edit-toggle" title="Editor: write, open, share (E)">✎ Editor</button>
+    <button class="btn" id="btn-studio" title="Slidetake Studio: record, review, download (R)"><span class="rec-dot" aria-hidden="true">●</span> Studio</button>
   </div>
 </header>
 
@@ -81,13 +82,11 @@
     </div>
     <div id="breadcrumbs"></div>
     <div id="navbar">
-      <button id="btn-keys" title="Keyboard shortcuts (K)">⌨<span class="lbl"> Keys</span></button>
+      <button id="btn-keys" title="Keyboard shortcuts (K)" aria-pressed="false">⌨<span class="lbl"> Keys</span></button>
       <button id="nav-prev" class="touch-only" title="Previous (←)" aria-label="Previous">←</button>
       <button id="nav-next" class="touch-only" title="Next (→)" aria-label="Next">→</button>
-      <div class="divider"></div>
       <button id="btn-camera" title="Camera (C)" aria-pressed="false"></button>
-      <button id="btn-record" title="Record a take with OBS (R)">●<span class="lbl"> Record</span></button>
-      <button id="btn-present" title="Fullscreen (F)">⛶<span class="lbl"> Fullscreen</span></button>
+      <button id="btn-present" title="Fullscreen (F)" aria-pressed="false">⛶<span class="lbl"> Fullscreen</span></button>
     </div>
     <div id="progress" aria-hidden="true"></div>
     <div id="minimap"><div class="mm-label" id="mm-label">map</div><svg id="mm-svg" width="180" height="130"></svg></div>
@@ -115,7 +114,7 @@
 
 <div id="help">
   <div class="panel">
-    <button class="close" id="help-close" aria-label="Close">✕</button>
+    <button class="btn close" id="help-close">✕ Close</button>
     <h2>Keys</h2>
     <table class="keys">
       <tr><td><kbd>→</kbd> <kbd>←</kbd> <kbd>Space</kbd></td><td>next / previous step</td></tr>
@@ -126,7 +125,7 @@
       <tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>bigger / smaller slides</td></tr>
       <tr><td><kbd>E</kbd></td><td>editor: write, open, share</td></tr>
       <tr><td><kbd>L</kbd></td><td>light / dark</td></tr>
-      <tr class="rec"><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, record</td></tr>
+      <tr class="rec"><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, Studio (record)</td></tr>
       <tr><td><kbd>K</kbd> <kbd>?</kbd></td><td>this card; again or <kbd>Esc</kbd> closes it</td></tr>
     </table>
     <p>Drag to pan, scroll or pinch to zoom, click a card to fly to it.</p>
@@ -136,7 +135,7 @@
 
 <div id="analytics-dialog" class="modal" role="dialog" aria-labelledby="analytics-title">
   <div class="panel">
-    <button class="close" data-close aria-label="Close">✕</button>
+    <button class="btn close" data-close>✕ Close</button>
     <h2 id="analytics-title">Privacy &amp; analytics</h2>
     <p>Your decks, copies and recordings never leave this browser. This is only about counting visits to slidetake.com.</p>
     <div class="choices" role="radiogroup" aria-label="Privacy &amp; analytics">
@@ -155,7 +154,7 @@
 
 <div id="new-dialog" class="modal" role="dialog" aria-labelledby="new-title">
   <div class="panel">
-    <button class="close" data-close aria-label="Close">✕</button>
+    <button class="btn close" data-close>✕ Close</button>
     <h2 id="new-title">Start a new deck</h2>
     <p>Pick a template. It opens as it is; start typing and it becomes your own copy at <code>/edit</code>.</p>
     <ul class="templates">
@@ -170,7 +169,7 @@
 
 <div id="open-dialog" class="modal" role="dialog" aria-labelledby="open-title">
   <div class="panel">
-    <button class="close" data-close aria-label="Close">✕</button>
+    <button class="btn close" data-close>✕ Close</button>
     <h2 id="open-title">Load a deck from a link</h2>
     <p>Paste a link to a markdown file: a GitHub file or folder, a gist, or any URL that allows other sites to read it.</p>
     <form id="open-form" class="row">
@@ -189,48 +188,102 @@
   </div>
 </div>
 
-<div id="rec-dialog" class="modal" role="dialog" aria-labelledby="rec-title">
-  <div class="panel">
-    <button class="close" data-close aria-label="Close">✕</button>
-    <h2 id="rec-title">Record a take</h2>
-    <p id="rec-deck-info"></p>
-    <p id="rec-screen"></p>
-    <h3>OBS</h3>
-    <div class="fields">
-      <label>Host<input type="text" id="obs-host" value="localhost" spellcheck="false"></label>
-      <label>Port<input type="text" id="obs-port" value="4455" inputmode="numeric"></label>
-      <label>Password<input type="password" id="obs-pass" autocomplete="off"></label>
-    </div>
-    <label class="check"><input type="checkbox" id="obs-remember"> Remember these on this computer</label>
-    <div class="row"><button class="btn" id="obs-connect">Connect</button><span id="obs-status">Not connected</span></div>
-    <p>In OBS: Tools → WebSocket Server Settings → enable it; the port and password are shown there. Point OBS at this browser window plus your microphone. No scenes are needed: the deck switches the camera itself.</p>
-    <h3>During the take</h3>
-    <ul>
-      <li><kbd>→</kbd> / clicker next: the next step. One more press after the last step ends the take and stops OBS.</li>
-      <li><kbd>←</kbd> / clicker back: <strong>take this slide again</strong>. Every attempt is kept; you pick the best one afterwards.</li>
-      <li><kbd>B</kbd> / clicker blank: pause and resume the recording.</li>
-      <li><kbd>Esc</kbd>: stop the take early.</li>
-    </ul>
-    <label style="margin-top:14px">Layout for this take
-      <select id="rec-layout">
-        <option value="path">Path: short, one-direction moves (recommended)</option>
-        <option value="focus">Focus: no travel, slides fade in</option>
-        <option value="current">Keep the current layout</option>
-      </select>
-    </label>
-    <div id="rec-sessions"></div>
-    <div class="row end">
-      <button class="btn" id="rec-rehearse">Rehearse (no recording)</button>
-      <button class="btn primary" id="rec-start" disabled>● Start recording</button>
-    </div>
-  </div>
-</div>
-
 <div id="review" class="modal" role="dialog" aria-labelledby="rv-title">
   <div class="panel xwide">
-    <button class="close" data-close aria-label="Close">✕</button>
-    <h2 id="rv-title">Review the take</h2>
-    <p id="rv-info"></p>
+    <div class="panel-actions">
+      <span class="rv-using" id="rv-using"></span>
+      <button class="btn rv-setup-btn" id="rv-setup-btn" aria-expanded="false" aria-controls="rv-setup">⚙ Setup</button>
+      <button class="btn close" data-close>✕ Close</button>
+    </div>
+    <h2 id="rv-title" class="rv-brand"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M 10 8 H 38 C 41.3 8 44 10.7 44 14 V 18 H 22 C 16.5 18 12 22.5 12 28 V 36 H 10 C 6.7 36 4 33.3 4 30 V 14 C 4 10.7 6.7 8 10 8 Z" opacity="0.4"/><path fill-rule="evenodd" d="M 22 22 H 54 C 57.3 22 60 24.7 60 28 V 50 C 60 53.3 57.3 56 54 56 H 22 C 18.7 56 16 53.3 16 50 V 28 C 16 24.7 18.7 22 22 22 Z M 26 34 C 28.2 34 30 32.2 30 30 C 30 27.8 28.2 26 26 26 C 23.8 26 22 27.8 22 30 C 22 32.2 23.8 34 26 34 Z M 38 40 C 36.9 40 36 40.9 36 42 V 48 C 36 49.1 36.9 50 38 50 H 50 C 51.1 50 52 49.1 52 48 V 42 C 52 40.9 51.1 40 50 40 H 38 Z"/></svg><span class="word">Slide<span>take</span></span> Studio</h2>
+    <details id="rv-setup">
+      <summary>Recording setup</summary>
+      <div class="rv-setup-head">
+        <h4 class="for-browser">Easy mode: record in <span class="browser-name">this browser</span></h4><h4 class="for-obs">Pro mode: record with OBS</h4>
+        <button class="btn small for-browser" id="rv-use-obs" title="Record with OBS instead of in this browser">Use pro mode (OBS)</button>
+        <button class="btn small for-obs" id="rv-use-browser" title="Record in this browser instead of with OBS"><span>Use easy mode (<span class="browser-name">this browser</span>)</span></button>
+      </div>
+      <div class="rv-setup-cols">
+        <section class="for-obs">
+          <h4>OBS</h4>
+          <div class="rv-obs-fields">
+            <input type="text" id="obs-host" value="localhost" spellcheck="false" aria-label="Host" title="Host">
+            <input type="text" id="obs-port" value="4455" inputmode="numeric" aria-label="Port" title="Port">
+            <input type="password" id="obs-pass" autocomplete="off" placeholder="Password" aria-label="Password">
+          </div>
+          <div class="rv-setup-row">
+            <button class="btn small" id="obs-connect">Connect</button>
+            <label class="check rv-setup-label"><input type="checkbox" id="obs-remember"> Remember</label>
+            <span class="rv-setup-gap"></span>
+            <span id="obs-status">Not connected</span>
+          </div>
+          <p class="rv-setup-note" id="obs-detail" hidden></p>
+          <p class="rv-setup-note">In OBS: Tools → WebSocket Server Settings → enable it (the port and password are there). Point OBS at this browser window plus your microphone; no scenes needed.</p>
+        </section>
+        <section>
+          <h4>Camera</h4>
+          <select id="rec-cam" aria-label="Camera"></select>
+          <p class="rv-setup-note">Turns on by itself when recording starts. Choose No camera for slides only.</p>
+        </section>
+        <section class="for-browser">
+          <h4>Microphone</h4>
+          <select id="rec-mic" aria-label="Microphone"></select>
+          <meter id="rec-meter" min="0" max="1" low="0.1" high="0.8" optimum="0.5" value="0" aria-label="Mic level"></meter>
+          <div class="rv-setup-row">
+            <span class="rv-setup-label">Sound</span>
+            <div class="seg small" role="radiogroup" aria-label="Sound">
+              <button class="seg-btn" data-sound="raw" role="radio" title="No processing: best for a good mic in a quiet room">Raw</button>
+              <button class="seg-btn" data-sound="voice" role="radio" title="Chrome's noise suppression: takes out fans, hum and other steady noise">Voice</button>
+            </div>
+            <span class="rv-setup-gap"></span>
+            <button class="btn small toggle rv-loud" id="rv-loud" aria-pressed="true" title="Raises the video towards YouTube's volume (-14 LUFS), stopping before the loudest peak would clip"><span class="ico" aria-hidden="true">🔊</span> Volume boost</button>
+            <button class="btn small toggle" id="rv-limiter" aria-pressed="false" title="Catches the few peaks (a click, a plosive) that would pass -1.5 dB, so Volume boost can reach -14 LUFS">Peak limiter</button>
+          </div>
+        </section>
+        <section class="for-browser">
+          <h4>Video</h4>
+          <select id="rec-quality" aria-label="Quality"></select>
+          <p class="rv-setup-note" id="rec-browser-check"></p>
+        </section>
+        <section class="for-obs">
+          <h4>Video</h4>
+          <select id="rv-mode" aria-label="How ffmpeg cuts">
+            <option value="accurate">Frame-accurate (x264)</option>
+            <option value="mac">Frame-accurate, Mac hardware encoder (faster)</option>
+            <option value="copy">No re-encode (only when nothing is cut out)</option>
+          </select>
+          <div class="rv-setup-row">
+            <select id="rv-fps" aria-label="Frame rate" title="Recording frame rate: cut points snap to its frames">
+              <option value="24">24 fps</option><option value="25">25 fps</option><option value="30">30 fps</option>
+              <option value="50">50 fps</option><option value="60">60 fps</option>
+              <option value="23.976">23.976 fps</option><option value="29.97">29.97 fps</option><option value="59.94">59.94 fps</option>
+            </select>
+            <span class="rv-setup-gap"></span>
+            <button class="btn small toggle rv-loud" id="rv-loud-obs" aria-pressed="true" title="Adds loudnorm to the ffmpeg command: YouTube's volume (-14 LUFS), peaks held below -1 dB"><span class="ico" aria-hidden="true">🔊</span> Volume boost</button>
+          </div>
+          <p class="rv-setup-note" id="rec-screen"></p>
+        </section>
+      </div>
+      <div class="rv-setup-foot">
+        <label class="rv-setup-label">Layout
+          <select id="rec-layout">
+            <option value="path">Path: short, one-direction moves</option>
+            <option value="focus">Focus: no travel, slides fade in</option>
+            <option value="current">Keep the current layout</option>
+          </select>
+        </label>
+        <span class="rv-setup-note">During a take: → next · ← take this slide again · B pause · Esc stop</span>
+        <div class="rv-setup-row rv-files for-browser">
+          <span class="rv-setup-label">Files</span>
+          <button class="btn small" id="rv-folder-change" title="Where Download saves videos">Download folder…</button>
+          <details class="rv-purge">
+            <summary class="btn small" title="Delete takes from this browser">🗑 Purge takes</summary>
+            <div class="rv-menu"><button class="btn small" id="rv-clean-unused">Unused takes</button><button class="btn small" id="rv-clean">All takes</button><button class="btn small" id="rv-clean-every" title="Every take Slidetake keeps in this browser, of every deck">Every deck's takes…</button></div>
+          </details>
+        </div>
+      </div>
+      <p class="rv-setup-note for-browser">When Chrome asks, share <strong>this tab</strong>. Only the slides and your camera are recorded, in a 16:9 frame; nothing else on the screen is.</p>
+    </details>
     <div class="rv-grid">
       <div>
         <div class="rv-video">
@@ -243,39 +296,19 @@
             <p>Pick the file OBS saved<span id="rv-file"></span> (.mov, .mp4 or .mkv) to preview takes. Or choose your OBS recordings folder once, and later takes load by themselves.</p>
           </div>
         </div>
-        <div class="row"><button class="btn small" id="rv-play-final">▶ Play the final cut</button><span id="rv-now"></span></div>
+        <div class="rv-bar">
+          <button class="btn rec" id="rv-rec" title="Records the whole deck, or only the ticked slides (shift-click ticks a range)">● Record</button>
+          <span id="rv-now"></span>
+          <button class="btn rv-preview" id="rv-play-final" title="Plays the picked takes back to back">▶ Preview</button>
+        </div>
       </div>
       <div class="rv-list" id="rv-list"></div>
-    </div>
-    <div class="rv-out">
-      <h3>ffmpeg
-        <select id="rv-mode">
-          <option value="accurate">Frame-accurate (x264)</option>
-          <option value="mac">Frame-accurate, Mac hardware encoder (faster)</option>
-          <option value="copy">No re-encode (only when nothing is cut out)</option>
-        </select>
-        <select id="rv-fps" title="Recording frame rate: cut points snap to its frames">
-          <option value="24">24 fps</option><option value="25">25 fps</option><option value="30">30 fps</option>
-          <option value="50">50 fps</option><option value="60">60 fps</option>
-          <option value="23.976">23.976 fps</option><option value="29.97">29.97 fps</option><option value="59.94">59.94 fps</option>
-        </select>
-        <button class="btn small" data-copy="rv-ffmpeg">Copy</button>
-      </h3>
-      <textarea id="rv-ffmpeg" rows="4" readonly spellcheck="false"></textarea>
-      <h3>YouTube</h3>
-      <div class="two">
-        <label>Title<input type="text" id="rv-yt-title"></label>
-        <label>Slides link (goes in the description)<input type="text" id="rv-link" placeholder="https://…/slides/…/" spellcheck="false"></label>
+      <div class="rv-dl">
+        <button class="btn" id="rv-chapters" title="Copies the chapters, to paste into the YouTube description">⧉ Chapters</button>
+        <span class="rv-final" id="rv-final"></span>
+        <button class="btn for-browser" id="rv-render-btn" title="Saves the video: the picked takes joined into one file">↓ Download</button>
+        <button class="btn for-obs" id="rv-ffmpeg-copy" title="Copies the ffmpeg command that cuts the picked takes from the OBS file">⧉ ffmpeg</button>
       </div>
-      <h3>Description <button class="btn small" data-copy="rv-yt-desc">Copy</button></h3>
-      <textarea id="rv-yt-desc" rows="10" spellcheck="false"></textarea>
-      <p id="rv-chapters-note"></p>
-      <h3>Tags <button class="btn small" data-copy="rv-yt-tags">Copy</button></h3>
-      <input type="text" id="rv-yt-tags" spellcheck="false" style="width:100%">
-    </div>
-    <div class="row end">
-      <button class="btn" id="rv-download">↓ Download script + publish pack</button>
-      <button class="btn primary" data-close>Done</button>
     </div>
   </div>
 </div>

@@ -12,6 +12,102 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-31
+
+### Added
+
+- **Easy mode: record in the browser**, with nothing to install. In Chrome,
+  Edge and other Chromium browsers on a computer, the deck records itself:
+  only its 16:9 frame (slides and camera), at 1080p or 720p, with your
+  microphone, each take its own file in the browser's private storage.
+- **Slidetake Studio**, one screen for both modes, opened by **● Studio**
+  beside ✎ Editor (or R). Every slide with every take from every recording,
+  the newest picked; click one to preview it. **▶ Preview** plays the final
+  cut, **⧉ Chapters** copies the YouTube chapters, and in easy mode
+  **↓ Download** joins the picked takes into one MP4 without re-encoding the
+  video, in a folder picked once. A line beside **⚙ Setup** shows what a take
+  uses (`Easy · Chrome · 1080p · camera · mic`).
+- **Retake any slide later**: tick slides (shift-click for a range) and
+  ● Record records just those. A take starts with the entry from the slide
+  before it, so editing a slide, or the one before it, marks its takes
+  outdated, and every final cut stays seamless.
+- **Pro mode: OBS**, for Safari, Firefox or any browser, in the same Studio:
+  the deck's latest OBS recording, and **⧉ ffmpeg** copies the command that
+  cuts it. ⚙ Setup switches modes; Studio opens in the one used last.
+- **Purge takes** in ⚙ Setup → Files: unused takes, all of this deck's, or
+  every deck's (it says the total size first).
+- The bottom bar is Keys, Camera and Fullscreen, each in the accent colour
+  while it's on; Studio is hidden on phones and tablets.
+- Recording turns the camera on by itself: the camera chosen for the deck in
+  Setup (or **No camera**), on before the countdown and back to how it was
+  afterwards, so a forgotten **C** no longer costs a take. If fullscreen
+  doesn't stick (a share prompt can take it away), the countdown asks for **F**.
+- The microphone list shows each microphone once, the system default marked
+  "(system default)", rather than listing it twice.
+- The microphone's sound, in Setup: **Sound: Raw** (no processing, the
+  default) or **Voice** (Chrome's noise suppression). **🔊 Volume boost** (on
+  by default) measures the final cut the way YouTube does (ITU-R BS.1770
+  integrated loudness) and raises it towards -14 LUFS, stopping where its
+  loudest peak would reach -1.5 dB and saying so. **Peak limiter** (off by
+  default) catches those few peaks (a click, a plosive) with a look-ahead
+  limiter so the boost reaches -14, measured again so it lands there. Only the
+  sound is re-encoded; the ffmpeg command gets `loudnorm`.
+
+### Changed
+
+- A retake (←) replays the slide's entry: the deck goes back to where the slide
+  before ended and flies in again, camera moves included, so every take starts
+  with the entry and picking a retake no longer cuts straight to the slide
+  already in place. The take that was redone ends where ← was pressed. The
+  jump back shows that slide exactly as it ended (no entrance replayed, nothing
+  easing into place), so a retake joins without a flicker.
+- Studio's player is larger, with the takes beside it at the same height and
+  every take labelled (Take 1 included); the final length and expected size
+  sit under it, and lengths read as `1m 09s`, not `1:09`.
+- Device names drop their USB ids (`(1377:1100)`).
+- A card widens for its code, as it does for a table, so a code block only
+  scrolls when it's wider than the widest card.
+- Graphviz diagrams are drawn in the deck's own colours for dark and light,
+  as D2 is, instead of on a light panel; colours a diagram sets itself still win.
+- Slidetake's own decks write the name as in the header, the logo and
+  Slide*take* in two colours, wherever it appears in a card's text.
+
+### Fixed
+
+- An image (or video) with text beside it is a split card again, the image on
+  the side it was written on; it had been laid out above the text.
+- Image cards use one heading and caption size: a square or tall image's card
+  no longer has larger text than the rest.
+- An image card for a square or tall image no longer pushes its caption past
+  the bottom of the card.
+- A full-screen card (`view: full`) with an image nearly 16:9, such as a
+  1200×630 link preview, fills the frame instead of showing grey bars above and
+  below it in light mode; images further from 16:9 sit on black.
+- Closing Studio (a click outside it, ✕ or Esc) stops a preview that is
+  playing, instead of leaving its sound running.
+- With OBS, a retake's cut no longer starts with a moment of the attempt
+  before it and the jump back. OBS reports its time as encoded, a few hundred
+  ms behind the screen; a retake now holds still for 0.6 s before its entry,
+  and the cut starts inside that hold.
+- With OBS, the last slide's cut ends where Stop was pressed, so the browser
+  leaving full screen and the Studio opening are no longer at the end.
+- In Safari and Firefox, the “Use my OBS recordings folder…” button (which
+  they can't use) is hidden, and it no longer warns when the file isn't in the
+  chosen folder.
+
+### Removed
+
+- The Record dialog: its OBS connection, camera choice and take layout moved
+  into Studio's ⚙ Setup.
+- The review's YouTube section (title, description, tags) and the publish
+  pack download; ⧉ Chapters copies the chapters. The deck keys `summary`,
+  `related`, `tags` and `permalink` are no longer read for it.
+- The list of earlier OBS recordings: Studio shows the latest one.
+- Recording from embedded decks: `slidetake.js` is now only a viewer, and
+  `?obs` and `recording: true` no longer bring Camera and Studio to a site's
+  page. Record the deck's markdown on slidetake.com or with `npx slidetake`
+  (`?obs=host:port` still connects OBS there).
+
 ## [0.3.4] - 2026-10-28
 
 ### Fixed

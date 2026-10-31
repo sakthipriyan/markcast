@@ -1,5 +1,5 @@
 // @ts-check
-// Small text helpers shared by the parser, the app and the publish pack. No DOM needed.
+// Small text helpers shared by the parser, the app and the recording tools. No DOM needed.
 
 /** @param {string} s */
 export function slugify(s){
@@ -72,4 +72,9 @@ export function parseDuration(v){
 export function fmtTime(ms){
   const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
   return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sec).padStart(2, '0');
+}
+/** A length in words, so it can't be read as a time of day: 45s, 2m 46s, 1h 02m. @param {number} ms */
+export function fmtLength(ms){
+  const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
+  return h ? h + 'h ' + String(m).padStart(2, '0') + 'm' : m ? m + 'm ' + String(sec).padStart(2, '0') + 's' : sec + 's';
 }
