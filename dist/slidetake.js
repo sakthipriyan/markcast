@@ -475,10 +475,10 @@ Two modes, the same takes: **easy** in the browser, **pro** with OBS.
 |---|---|
 | **Takes per slide** (\u2190) | every attempt kept; recording never stops |
 | **Pause and resume** (B) | step away without a gap to cut |
-| **Clicker support** | any Bluetooth presenter remote moves the deck |
 | **Slidetake Studio** | every slide's takes, Preview and Chapters, the same in both modes |
 | **Volume boost** | your voice at YouTube's loudness (\u221214 LUFS), never clipped |
 | **YouTube chapters** | one click copies them, one per section |
+| **Clicker support** | any Bluetooth presenter remote moves the deck |
 
 ### Easy mode: in the browser
 
