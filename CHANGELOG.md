@@ -16,6 +16,8 @@ package can notice. Tests, CI and tooling do not belong here.
 
 - The privacy page link in the Privacy & analytics dialog is in the accent
   colour, readable in dark mode (it was the browser's default dark blue).
+- The Privacy & analytics dialog's ✕ Close is the small button, in scale
+  with its heading.
 
 ## [0.4.1] - 2026-10-31
 

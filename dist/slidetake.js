@@ -1806,7 +1806,7 @@ EOF
 
 <div id="analytics-dialog" class="modal" role="dialog" aria-labelledby="analytics-title">
   <div class="panel">
-    <button class="btn close" data-close>\u2715 Close</button>
+    <button class="btn small close" data-close>\u2715 Close</button>
     <h2 id="analytics-title">Privacy &amp; analytics</h2>
     <p>Your decks, copies and recordings never leave this browser. This is only about counting visits to slidetake.com.</p>
     <div class="choices" role="radiogroup" aria-label="Privacy &amp; analytics">
