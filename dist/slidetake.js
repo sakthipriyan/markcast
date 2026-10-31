@@ -1,4 +1,4 @@
-/* Slidetake 0.3.4 · https://slidetake.com · Apache-2.0 */
+/* Slidetake 0.4.0 · https://slidetake.com · Apache-2.0 */
 "use strict";(()=>{var G=(e,t)=>()=>(e&&(t=e(e=0)),t);var Qa,xn=G(()=>{Qa=`---
 title: Slidetake \u2014 write in markdown with AI, record without timeline editing
 brand: slidetake
