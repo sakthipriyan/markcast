@@ -1313,7 +1313,7 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
   .rv-chip.outdated{opacity:.6;text-decoration:line-through;}
   .rv-none{font-size:12px;color:var(--text-muted);font-style:italic;}
   /* Recording setup: opened from the \u2699 Setup button at the top right, shown under the title */
-  .modal .rv-setup-btn{position:absolute;top:12px;right:48px;}
+  .modal .rv-setup-btn{position:absolute;top:10px;right:46px;}
   .modal .rv-setup-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   #rv-setup{margin:4px 0 12px;border:1px solid var(--panel-line);border-radius:8px;padding:10px 14px;}
   #rv-setup > summary{display:none;}
@@ -1813,7 +1813,7 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
 <div id="review" class="modal" role="dialog" aria-labelledby="rv-title">
   <div class="panel xwide">
     <button class="close" data-close aria-label="Close">\u2715</button>
-    <button class="btn small rv-setup-btn rv-board-only" id="rv-setup-btn" aria-expanded="false" aria-controls="rv-setup">\u2699 Setup</button>
+    <button class="btn rv-setup-btn rv-board-only" id="rv-setup-btn" aria-expanded="false" aria-controls="rv-setup">\u2699 Setup</button>
     <h2 id="rv-title">Review the take</h2>
     <p id="rv-info"></p>
     <details id="rv-setup" class="rv-board-only">
