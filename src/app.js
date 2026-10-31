@@ -474,7 +474,8 @@ function applyElementComments(root){
 // ---------- images and YouTube in plain markdown ----------
 // A card's media decides its layout, with no classes to write (the alt text is the caption):
 //   one image or video alone        → media card: the image fills the card, caption below
-//   one image or video + text       → split: media on one side (the side it was written on), text on the other
+//   one image + text                → split: the image on one side (the side it was written on), text on the other;
+//                                     a YouTube video stays full width with its text above or below
 //   a list of images or diagrams    → gallery; under <!-- steps --> a carousel, one per press
 //   (under <!-- steps -->, two or more images or diagrams in a row are such a list)
 //   several images in one paragraph → grid
@@ -596,10 +597,10 @@ function applyMedia(el, body){
   // <!-- view: full --> makes the card a 16:9 frame for its image, placed like any other slide
   const walker = document.createTreeWalker(body, NodeFilter.SHOW_COMMENT);
   while (walker.nextNode()) if (/^\s*view\s*:\s*full\s*$/i.test(walker.currentNode.data)) el.classList.add('card-full');
-  // an image or a carousel alone runs edge to edge, the heading and caption laid over it; one image or
-  // video with text beside it makes a split card
+  // an image or a carousel alone runs edge to edge, the heading and caption laid over it; one image with
+  // text beside it makes a split card (a YouTube video stays full width, under its text)
   if (parts.length === 1 && (parts[0].matches('figure.media:not(.yt)') || parts[0].matches('.gallery.carousel:not(.diagrams)'))) el.classList.add('card-bleed');
-  else if (media.length === 1 && parts.length > 1){
+  else if (media.length === 1 && parts.length > 1 && !media[0].matches('.yt')){
     el.classList.add('card-split', parts.indexOf(media[0]) === 0 ? 'media-first' : 'media-last');
     const text = document.createElement('div');
     text.className = 'split-text';

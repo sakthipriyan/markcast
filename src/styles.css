@@ -497,6 +497,7 @@
   /* ---------- media from plain markdown (see applyMedia) ---------- */
   .node .body figure.media{margin:0;}
   .node .body figure.media img{display:block;width:100%;height:auto;max-height:70vh;object-fit:contain;border-radius:8px;}
+  .node .body figure.media.yt + *{margin-top:10px;}
   /* one caption size on every kind of image card: the size of the text (.node .body p) */
   .node .body figure.media figcaption{margin-top:8px;font-size:13px;color:var(--text-muted);line-height:1.45;}
   .node .body figure.yt .frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#000;}

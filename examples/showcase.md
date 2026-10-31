@@ -162,9 +162,9 @@ Several images in one paragraph sit side by side, up to four a row:
 
 ## ▶️ YouTube
 
-A YouTube link alone on a line becomes the video. The next press plays it; leaving the slide pauses it.
-
 https://www.youtube.com/watch?v=jNQXAC9IVRw
+
+A YouTube link alone on a line becomes the video: the next press plays it, leaving the slide pauses it.
 
 ## 🎥 Camera
 
