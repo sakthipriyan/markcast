@@ -20,12 +20,14 @@ package can notice. Tests, CI and tooling do not belong here.
   with your microphone, each take its own file in the browser's private
   storage. ● Record opens the deck's **take board**: every slide with every take
   from every recording, the newest picked. **● Record** records the deck, or
-  only the ticked slides (shift-click for a range), and says so. A take starts
+  exactly the ticked slides (shift-click for a range; slides between them are
+  jumped over and keep their takes), and says so. A take starts
   with the entry from the slide before it, so editing a slide, deleting it, or
   editing the one before marks its takes outdated: every final cut stays
   seamless. There is no Leave out; delete the slide from the deck instead.
-  Recording setup (browser and screen check, camera, microphone, level, 1080p
-  or 720p) folds into the board, with **🔊 Auto volume** and **🗑 Purge takes**.
+  **⚙ Setup** (top right of the board) holds the browser and screen check,
+  camera, microphone, level, 1080p or 720p, **🔊 Auto volume** and **🗑 Purge
+  takes**. To rehearse, present with F: nothing is recorded.
   Under the player, **▶ Preview** plays the final cut and **↓ Download** joins
   the picked takes into one MP4 without re-encoding, saving it like OBS (a new
   date-stamped file in a folder picked once) and saying where; pressed again

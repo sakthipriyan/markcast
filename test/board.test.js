@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {fingerprint, deckSlides, takesFromRun, boardRows, boardSession, selectionSpan, rangeOf} from '../src/core/board.js';
+import {fingerprint, deckSlides, takesFromRun, boardRows, boardSession, selectedInOrder, rangeOf} from '../src/core/board.js';
 import {clipPlan} from '../src/core/record.js';
 import {finalChapters} from '../src/core/cut.js';
 
@@ -66,10 +66,10 @@ test('the final cut plays the picked takes in deck order, with chapters and clip
   assert.equal(finalChapters(s, (id, title)=>({sec: id, title})).length, 21000);
 });
 
-test('recording a selection spans the first to the last selected slide; shift-click selects a range', ()=>{
+test('recording a selection records exactly the ticked slides, in deck order; shift-click ticks a range', ()=>{
   const order = ['a', 'b', 'c', 'd', 'e'];
-  assert.deepEqual(selectionSpan(order, ['d', 'b']), {from: 'b', to: 'd'});
-  assert.equal(selectionSpan(order, []), null);
+  assert.deepEqual(selectedInOrder(order, ['d', 'b']), ['b', 'd']);     // c, between them, is not recorded
+  assert.deepEqual(selectedInOrder(order, []), []);
   assert.deepEqual(rangeOf(order, 'b', 'd'), ['b', 'c', 'd']);
   assert.deepEqual(rangeOf(order, 'd', 'b'), ['b', 'c', 'd']);
   assert.deepEqual(rangeOf(order, null, 'c'), ['c']);

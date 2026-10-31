@@ -15,7 +15,7 @@ import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from
 import {youtubeVideo, embedUrl} from './core/media.js';
 import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious} from './core/record.js';
 import {loudnessMeter, gainToTarget, dbToGain} from './core/loudness.js';
-import {fingerprint, deckSlides, takesFromRun, boardRows, boardSession, selectionSpan, rangeOf} from './core/board.js';
+import {fingerprint, deckSlides, takesFromRun, boardRows, boardSession, selectedInOrder, rangeOf} from './core/board.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
 
@@ -1897,7 +1897,6 @@ function openRecordDialog(){
 }
 document.getElementById('btn-record').onclick = openRecordDialog;
 recStartBtn.onclick = ()=>startTake('obs');
-document.getElementById('rec-rehearse').onclick = ()=>{ stopMeter(); startTake('rehearse'); };
 
 // the takes of each session live in the browser's private storage, in a folder named after the session
 async function takesDir(id, create){
@@ -1907,6 +1906,22 @@ async function takesDir(id, create){
 }
 async function deleteTakes(id){
   try { const root = await navigator.storage.getDirectory(); await (await root.getDirectoryHandle('slidetake-takes')).removeEntry(id, {recursive:true}); } catch(e){}
+}
+// The recorded size. The 16:9 shape is asked for outright: Chrome keeps the shape of the page as it measured it
+// when the tab was shared, and the page can still be mid-layout then (going fullscreen), which came out
+// 1828×1080 instead of 1920×1080. With the shape fixed, Chrome crops to it and the size is exact.
+const outputSize = q=>({width:q.w, height:q.h, aspectRatio:16 / 9, frameRate:FPS, resizeMode:'crop-and-scale'});
+async function attachCapture(track){
+  if (window.RestrictionTarget && track.restrictTo) await track.restrictTo(await RestrictionTarget.fromElement(stageWrap));
+  else await track.cropTo(await CropTarget.fromElement(stageWrap));
+}
+async function reattachCapture(b){
+  try {
+    if (window.RestrictionTarget && b.track.restrictTo) await b.track.restrictTo(null); else await b.track.cropTo(null);
+    await attachCapture(b.track);
+  } catch(e){}
+  await b.track.applyConstraints(outputSize(b.quality)).catch(()=>{});
+  await nextFrame();
 }
 // called from the Start click, before anything else: sharing the tab needs that click
 async function beginBrowserCapture(){
@@ -1919,11 +1934,9 @@ async function beginBrowserCapture(){
   const track = display.getVideoTracks()[0];
   const stopAll = ()=>display.getTracks().forEach(t=>t.stop());
   if (!track.restrictTo && !track.cropTo){ stopAll(); throw new Error('Share “this tab” to record the slides.'); }
-  try {
-    if (window.RestrictionTarget && track.restrictTo) await track.restrictTo(await RestrictionTarget.fromElement(stageWrap));
-    else await track.cropTo(await CropTarget.fromElement(stageWrap));
-  } catch(e){ stopAll(); throw new Error('Chrome could not record just the slides (' + (e.message || e.name) + ').'); }
-  await track.applyConstraints({width:quality.w, height:quality.h, frameRate:FPS, resizeMode:'crop-and-scale'}).catch(()=>{});
+  try { await attachCapture(track); }
+  catch(e){ stopAll(); throw new Error('Chrome could not record just the slides (' + (e.message || e.name) + ').'); }
+  await track.applyConstraints(outputSize(quality)).catch(()=>{});
   let mic;
   try {
     const id = load('slidetake:mic');
@@ -1966,8 +1979,8 @@ function startClip(ev){
 }
 
 // kind: 'obs' (OBS records), 'browser' (this tab records itself) or 'rehearse' (nothing is recorded)
-// span: {from, to} records just those slides (the slides ticked on the board); without it, the whole deck
-async function startTake(kind, span){
+// only: the slides to record (ticked on the board), in deck order; without it, the whole deck
+async function startTake(kind, only){
   if (rec.active || !order.length) return;
   const withObs = kind === 'obs';
   stopMeter();
@@ -1983,10 +1996,11 @@ async function startTake(kind, span){
     }
   }
   closeModals();
-  const firstId = span && order.includes(span.from) ? span.from : order[0];
-  const beforeId = order[order.indexOf(firstId) - 1] || null;   // a span starts with its entry from the slide before
+  const pick = only && only.length ? only.filter(id=>order.includes(id)) : null;
+  const firstId = pick ? pick[0] : order[0];
+  const beforeId = order[order.indexOf(firstId) - 1] || null;   // a selection starts with its entry from the slide before
   Object.assign(rec, {active:true, withObs, counting:true, paused:false, finishing:false, t0:0, pausedMs:0, events:[], outputPath:null,
-    until:span ? span.to : null});
+    only:pick ? new Set(pick) : null});
   if (kind !== 'browser') rec.browser = null;
   document.body.classList.add('recording');
   hidePipMsg();
@@ -2027,6 +2041,10 @@ async function startTake(kind, span){
     await started;
     if (!rec.active) return;
   }
+  // the frame has settled (fullscreen, 16:9): attach the capture to it again. Chrome takes the frame's place and
+  // size when the capture is attached and doesn't follow it after; attached while the page was still going
+  // fullscreen, the video showed part of the frame, enlarged and cut off (and 1828×1080 instead of 1920×1080).
+  if (rec.browser) await reattachCapture(rec.browser);
   rec.counting = false;
   rec.t0 = performance.now();
   const first = nodes.get(firstId);
@@ -2094,8 +2112,14 @@ function takeKey(e){
 function takeForward(){
   const steps = slideSteps(nodes.get(currentId));
   const lastStep = Math.min(stepPos, steps.length - 1) >= steps.length - 1;
-  if (lastStep && (order.indexOf(currentId) === order.length - 1 || currentId === rec.until)) finishTake();
-  else step(1);
+  const i = order.indexOf(currentId);
+  if (!lastStep){ step(1); return; }
+  if (!rec.only){ if (i === order.length - 1) finishTake(); else step(1); return; }
+  // recording ticked slides: the next ticked one, jumping over any in between as a retake jumps back
+  const next = order.slice(i + 1).find(id=>rec.only.has(id));
+  if (!next) finishTake();
+  else if (order[i + 1] === next) step(1);
+  else enterFresh(order[order.indexOf(next) - 1], next, 'slide');
 }
 // ← during a take: the slide starts over as a new take, its entry included. The deck goes back to where the
 // slide before it ended, instantly and outside any take; then the new take starts and the entry (the flight,
@@ -2107,6 +2131,14 @@ async function retake(){
   if (!n || retaking) return;
   const target = currentId, from = arrivedFrom;
   if (!from || from === target || !nodes.has(from)){ restartSlide(n); return; }   // the first slide has no entry
+  enterFresh(from, target, 'retake');
+}
+// The deck goes to `from` exactly as it ended, outside any take; then a new take of `target` starts and its
+// entry plays. A retake does this from the slide before; recording ticked slides, from the slide before the
+// next ticked one, so the slides in between are skipped without a seam.
+async function enterFresh(from, target, kind){
+  const n = nodes.get(target);
+  if (!n || retaking) return;
   retaking = true;
   const cutAt = recNow();
   // the slide before, exactly as it ended: finished, its entrance not played again, nothing easing into place
@@ -2119,7 +2151,7 @@ async function retake(){
   quietArrival = false;
   await nextFrame();
   document.body.classList.remove('no-anim');
-  logTake('retake', target, cutAt);
+  logTake(kind, target, cutAt);
   if (rec.browser) await rec.browser.chain;      // its recorder is running before the entry plays
   resetEntrances(n);
   quietArrival = true;
@@ -2365,7 +2397,7 @@ let finalSizeToken = 0;
 async function showFinalSize(sess){
   const el = document.getElementById('rv-final'), token = ++finalSizeToken;
   const ms = pickedRanges(sess).reduce((a, r)=>a + r.end - r.start, 0);
-  const line = bytes=>'Final cut ' + fmtTime(ms) + (bytes == null ? '' : ' · about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB'));
+  const line = bytes=>'Final cut ' + fmtTime(ms) + (!bytes ? '' : ' · about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB'));
   if (!sess.inBrowser || sess.cleaned){ el.textContent = line(null); return; }
   try {
     let bytes = 0;
@@ -2524,6 +2556,7 @@ async function downloadVideo(force){
       }
     }
     const reencode = gain !== 1;
+    await checkJoinable(MB, plan);
     let vSrc = null, aSrc = null, offset = 0, lastV = -1, lastA = -1;
     for (const [i, part] of plan.entries()){
       renderStatus.textContent = 'Joining take ' + (i + 1) + ' of ' + plan.length + '…';
@@ -2588,6 +2621,22 @@ async function downloadVideo(force){
     if (file) file.abort().catch(()=>{});
   } finally { btn.disabled = !!sess.cleaned; }
 }
+// Takes join without re-encoding only when they share the picture size and encoder settings. The odd ones
+// out (against the most common) are named, to be recorded again, rather than written into a broken file.
+async function checkJoinable(MB, plan){
+  const keys = [];
+  for (const part of plan){
+    const vt = await new MB.Input({source:new MB.BlobSource(await clipFile(part.clip)), formats:MB.ALL_FORMATS}).getPrimaryVideoTrack();
+    const c = vt && await vt.getDecoderConfig();
+    keys.push(c ? c.codec + ' ' + c.codedWidth + '×' + c.codedHeight + ' ' + (c.description ? [...new Uint8Array(c.description)].join('.') : '') : 'none');
+  }
+  const count = new Map();
+  keys.forEach(k=>count.set(k, (count.get(k) || 0) + 1));
+  const main = [...count.entries()].sort((a, b)=>b[1] - a[1])[0][0];
+  const odd = plan.filter((_, i)=>keys[i] !== main);
+  if (odd.length) throw new Error(odd.map(p=>p.title).join(', ') + (odd.length === 1 ? ' was' : ' were') +
+    ' recorded at a different size (' + keys[plan.indexOf(odd[0])].split(' ')[1] + ', not ' + main.split(' ')[1] + '). Tick ' + (odd.length === 1 ? 'it' : 'them') + ' and record again');
+}
 // 2026-10-30 20-04-49, as OBS names its recordings
 const fileStamp = d=>{ const p2 = n=>String(n).padStart(2, '0'); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' + p2(d.getHours()) + '-' + p2(d.getMinutes()) + '-' + p2(d.getSeconds()); };
 // where videos are saved: a folder picked once (starting in Movies / Videos) and remembered. null where the
@@ -2647,7 +2696,12 @@ function boardReview(){
 }
 const setupEl = document.getElementById('rv-setup');
 setupEl.insertBefore(document.getElementById('rec-browser'), setupEl.querySelector('.rv-setup-more'));
-setupEl.addEventListener('toggle', ()=>{ if (setupEl.open) refreshSetup(); else stopMeter(); });
+const setupBtn = document.getElementById('rv-setup-btn');
+setupEl.addEventListener('toggle', ()=>{
+  setupBtn.setAttribute('aria-expanded', String(setupEl.open));
+  if (setupEl.open) refreshSetup(); else stopMeter();
+});
+setupBtn.onclick = ()=>{ setupEl.open = !setupEl.open; };
 reviewDialog.addEventListener('click', e=>{ if (e.target === reviewDialog || e.target.closest('[data-close]')) stopMeter(); });
 function refreshSetup(){
   recCheck.innerHTML = '';
@@ -2656,8 +2710,9 @@ function refreshSetup(){
 function setupSummary(){
   const mic = recMic.selectedOptions[0], b = browserRecording();
   const cam = recCam.selectedOptions[0];
-  document.getElementById('rv-setup-sum').textContent = b.ok
-    ? [recQuality.value, cam ? cam.textContent : camChoice() === 'none' ? 'No camera' : 'Camera', mic && mic.textContent].filter(Boolean).join(' · ') : 'not ready';
+  const text = b.ok ? [recQuality.value, cam ? cam.textContent : camChoice() === 'none' ? 'No camera' : 'Camera', mic && mic.textContent].filter(Boolean).join(' · ') : 'not ready';
+  document.getElementById('rv-setup-sum').textContent = text;
+  setupBtn.title = 'Recording setup: ' + text;
 }
 function openBoard(opts = {}){
   if (!RECORDING_UI) return;
@@ -2708,14 +2763,10 @@ function renderBoard(){
     selAnchor = c.dataset.id;
     renderBoard();
   }));
-  const span = selectionSpan(order, selected), ready = browserRecording().ok;
+  const ticked = selectedInOrder(order, selected), ready = browserRecording().ok;
   document.getElementById('rv-rec').disabled = !ready;
-  const note = document.getElementById('rv-sel-note');
-  if (span){
-    const n = order.indexOf(span.to) - order.indexOf(span.from) + 1;
-    note.textContent = n + '/' + order.length + ' selected slide' + (n === 1 ? '' : 's') + ' will be recorded' +
-      (n > 1 ? ' (' + nodes.get(span.from).title + ' → ' + nodes.get(span.to).title + ')' : '');
-  } else note.textContent = '';
+  document.getElementById('rv-sel-note').textContent = ticked.length
+    ? ticked.length + '/' + order.length + ' slide' + (ticked.length === 1 ? '' : 's') + ' up for a take' : '';
   document.getElementById('rv-render-btn').disabled = document.getElementById('rv-play-final').disabled = !sess.events.length;
   const recorded = rows.filter(r=>r.pick).length, outdated = rows.filter(r=>r.takes.length && !r.pick).length;
   document.getElementById('rv-info').textContent = board.takes.length
@@ -2725,8 +2776,7 @@ function renderBoard(){
   describe(sess);
   showFinalSize(sess);
 }
-document.getElementById('rv-rec').onclick = ()=>startTake('browser', selectionSpan(order, selected));
-document.getElementById('rv-rehearse').onclick = ()=>startTake('rehearse');
+document.getElementById('rv-rec').onclick = ()=>startTake('browser', selectedInOrder(order, selected));
 document.getElementById('rv-use-obs').onclick = ()=>{ closeModals(); setRecMode('obs'); openRecordDialog(); };
 // deleting takes: the ones no slide plays, or all of them
 async function deleteClips(takes){

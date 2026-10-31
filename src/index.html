@@ -235,7 +235,6 @@
     </label>
     <div id="rec-sessions"></div>
     <div class="row end">
-      <button class="btn" id="rec-rehearse">Rehearse (no recording)</button>
       <button class="btn primary" id="rec-start" disabled>● Start recording</button>
     </div>
   </div>
@@ -244,8 +243,22 @@
 <div id="review" class="modal" role="dialog" aria-labelledby="rv-title">
   <div class="panel xwide">
     <button class="close" data-close aria-label="Close">✕</button>
+    <button class="btn small rv-setup-btn rv-board-only" id="rv-setup-btn" aria-expanded="false" aria-controls="rv-setup">⚙ Setup</button>
     <h2 id="rv-title">Review the take</h2>
     <p id="rv-info"></p>
+    <details id="rv-setup" class="rv-board-only">
+      <summary>Recording setup</summary>
+      <p class="rv-setup-sum" id="rv-setup-sum"></p>
+      <div class="row rv-setup-more">
+        <button class="btn small toggle rv-loud" id="rv-loud" aria-pressed="true" title="Brings the video to YouTube's volume (-14 LUFS) with one gain, never past -1.5 dB peaks"><span class="ico" aria-hidden="true">🔊</span> Auto volume</button>
+        <button class="btn small" id="rv-folder-change" title="Where Download saves videos">Change the download folder…</button>
+        <details class="rv-purge">
+          <summary class="btn small" title="Delete takes from this browser">🗑 Purge takes</summary>
+          <div class="rv-menu"><button class="btn small" id="rv-clean-unused">Unused takes</button><button class="btn small" id="rv-clean">All takes</button></div>
+        </details>
+        <button class="btn small" id="rv-use-obs">Record with OBS instead…</button>
+      </div>
+    </details>
     <div class="rv-grid">
       <div>
         <div class="rv-video">
@@ -271,19 +284,6 @@
       </div>
       <div class="rv-list" id="rv-list"></div>
     </div>
-    <details id="rv-setup" class="rv-board-only">
-      <summary>⚙ Recording setup <span id="rv-setup-sum"></span></summary>
-      <div class="row rv-setup-more">
-        <button class="btn small toggle rv-loud" id="rv-loud" aria-pressed="true" title="Brings the video to YouTube's volume (-14 LUFS) with one gain, never past -1.5 dB peaks"><span class="ico" aria-hidden="true">🔊</span> Auto volume</button>
-        <button class="btn small" id="rv-folder-change" title="Where Download saves videos">Change the download folder…</button>
-        <details class="rv-purge">
-          <summary class="btn small" title="Delete takes from this browser">🗑 Purge takes</summary>
-          <div class="rv-menu"><button class="btn small" id="rv-clean-unused">Unused takes</button><button class="btn small" id="rv-clean">All takes</button></div>
-        </details>
-        <button class="btn small" id="rv-rehearse">Rehearse (no recording)</button>
-        <button class="btn small" id="rv-use-obs">Record with OBS instead…</button>
-      </div>
-    </details>
     <div class="rv-out">
       <div id="rv-render">
         <p id="rv-render-status"></p>

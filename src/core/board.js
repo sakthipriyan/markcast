@@ -107,14 +107,13 @@ export function boardSession(rows){
 }
 
 /**
- * What "Record selected" records: from the first selected slide to the last, in deck order.
+ * What a recording of ticked slides records: exactly those, in deck order. Between two that aren't next to
+ * each other the deck jumps, as a retake does, so the slides in between keep their takes.
  * @param {string[]} order @param {Iterable<string>} selected
- * @returns {{from: string, to: string} | null}
  */
-export function selectionSpan(order, selected){
+export function selectedInOrder(order, selected){
   const set = new Set(selected);
-  const idx = order.map((id, i)=>set.has(id) ? i : -1).filter(i=>i >= 0);
-  return idx.length ? {from: order[idx[0]], to: order[idx[idx.length - 1]]} : null;
+  return order.filter(id=>set.has(id));
 }
 
 /**
