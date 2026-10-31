@@ -187,8 +187,8 @@ Two modes, both slide by slide, so there's no timeline to edit afterwards. **●
 
 | | Easy mode: in the browser | Pro mode: with OBS |
 |---|---|---|
-| Install | nothing | [OBS Studio](https://obsproject.com) (free) |
-| Browser | Chrome, Edge or another Chromium browser, on a computer (Safari and Firefox open with OBS) | any |
+| Install | nothing | [OBS Studio](https://obsproject.com) and [ffmpeg](https://ffmpeg.org), both free; a virtual display if your screen isn't 16:9 |
+| Browser | Chrome, Edge or another Chromium browser | any: Safari and Firefox too |
 | Screen | any shape: the deck is recorded in a 16:9 frame | a 16:9 screen, physical or virtual |
 | Quality | 1080p, or 720p on a smaller screen | whatever OBS records |
 | Final video | **Download** joins the picked takes, in the browser | an ffmpeg command |
@@ -227,6 +227,18 @@ Each take is a file in this browser's private storage until you purge it, in ⚙
 3. Present on a 16:9 screen, physical or virtual (say 1920×1080). Setup checks it.
 
 Studio opens in the mode you used last. The line beside ⚙ Setup shows what a take uses: `Pro · OBS · 1080p · camera`.
+
+### A 16:9 screen
+
+YouTube is 16:9. If your screen isn't (a MacBook is 16:10, an ultrawide 21:9), add a virtual 1920×1080 display, present there with **F**, and point OBS at it:
+
+| System | Virtual display |
+|---|---|
+| macOS | [BetterDisplay](https://github.com/waydabber/BetterDisplay) |
+| Windows | [Virtual Display Driver](https://github.com/VirtualDrivers/Virtual-Display-Driver) |
+| Linux | `xrandr` (X11), or a dummy HDMI plug |
+
+A dummy HDMI plug works on any system.
 
 ### OBS on another computer
 
