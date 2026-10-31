@@ -30,6 +30,12 @@ test('a take that was retaken ends where ← was pressed, before the deck went b
   assert.deepEqual(t, [{no: 1, start: 20000, end: 29200}, {no: 2, start: 30000, end: 50000}]);
 });
 
+test('with OBS a retake starts inside its hold, so an early or late cut point still joins', ()=>{
+  const s = session();
+  s.events[2].lead = 800; s.events[2].skip = 300;
+  assert.deepEqual(takesOf(s).get('a2').takes, [{no: 1, start: 20000, end: 29200}, {no: 2, start: 30300, end: 50000}]);
+});
+
 test('default pick is the last take; the retake drops the first attempt', ()=>{
   const r = pickedRanges(session());
   assert.deepEqual(r.map(x=>[x.id, x.f0, x.f1]), [['a1', 0, 1200], ['a2', 1800, 3000], ['b1', 3000, 4800]]);

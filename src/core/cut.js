@@ -11,6 +11,9 @@ import {fmtTime} from './text.js';
  * @property {number} [obsT]     ms on OBS's own recording clock, when OBS was connected
  * @property {number} [lead]     for a retake: ms from the ← press to this take's start, while the deck went back
  *                               to replay the slide's entry. Neither take keeps it: the one retaken ends at the press.
+ * @property {number} [skip]     ms this take's start is moved in: with OBS a retake holds still a moment before its
+ *                               entry, and the cut starts inside that hold, so a cut point a little early or late
+ *                               (OBS reports time as encoded, a few hundred ms behind the screen) still joins.
  *
  * @typedef {object} Session
  * @property {TakeEvent[]} events
@@ -45,7 +48,7 @@ export function takesOf(sess){
     if (!out.has(e.id)) out.set(e.id, {id: e.id, title: e.title, takes: []});
     const slide = /** @type {SlideTakes} */ (out.get(e.id));
     const next = sess.events[i + 1];
-    slide.takes.push({no: slide.takes.length + 1, start: evTime(e), end: next ? evTime(next) - (next.lead || 0) : end});
+    slide.takes.push({no: slide.takes.length + 1, start: evTime(e) + (e.skip || 0), end: next ? evTime(next) - (next.lead || 0) : end});
   });
   return out;   // in the order slides were first reached
 }

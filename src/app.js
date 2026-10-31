@@ -2159,6 +2159,7 @@ async function enterFresh(from, target, kind){
   document.body.classList.remove('no-anim');
   logTake(kind, target, cutAt);
   if (rec.browser) await rec.browser.chain;      // its recorder is running before the entry plays
+  if (rec.withObs) await obsHold();
   resetEntrances(n);
   quietArrival = true;
   navigate(target);
@@ -2166,13 +2167,25 @@ async function enterFresh(from, target, kind){
   if (!cameraStream && !pipEl.hidden && pipState.used) startWebcam();
   retaking = false;
 }
-function restartSlide(n){
-  logTake('retake', currentId);
+// With OBS, where a take starts is known only to within a few hundred ms (OBS reports its time as encoded,
+// behind the screen). So a new take holds still for a moment, the cut starting halfway into it: early or
+// late, the first frame is the same still picture the take before ended on.
+const OBS_HOLD = 600;
+async function obsHold(){
+  const ev = rec.events[rec.events.length - 1];
+  if (ev) ev.skip = OBS_HOLD / 2;
+  await wait(OBS_HOLD);
+}
+async function restartSlide(n){
+  retaking = true;
   stepPos = 0; camManual = null; camCycle = -1;
   resetEntrances(n);
   applyStepState(true);
   if (!cameraStream && !pipEl.hidden && pipState.used) startWebcam(); else refocus();
   updateActivePath();
+  logTake('retake', currentId);
+  if (rec.withObs) await obsHold();
+  retaking = false;
 }
 async function togglePause(){
   if (!rec.t0) return;
@@ -2225,7 +2238,7 @@ async function finishTake(reason){
     key:sessionKey(), deckTitle:deck.title || nodes.get(order[0]).title, date:new Date().toISOString(),
     withObs:rec.withObs, outputPath:rec.outputPath, reason:reason || '', total, totalObs, fps:b ? FPS : obsFps,
     ...(b ? {inBrowser:true, takesId:b.id, quality:b.quality.name, type:b.type} : {}),
-    events:rec.events.map(e=>({id:e.id, title:e.title, retake:e.retake, t:e.t, obsT:e.obsT, ...(e.lead ? {lead:e.lead} : {}), ...(e.clip ? {clip:e.clip} : {})})), picks:{}
+    events:rec.events.map(e=>({id:e.id, title:e.title, retake:e.retake, t:e.t, obsT:e.obsT, ...(e.lead ? {lead:e.lead} : {}), ...(e.skip ? {skip:e.skip} : {}), ...(e.clip ? {clip:e.clip} : {})})), picks:{}
   };
   if (session.inBrowser){ addToBoard(session); return; }
   saveSession(session);

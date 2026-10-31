@@ -1687,7 +1687,7 @@
         out.get(e.id)
       );
       const next = sess.events[i + 1];
-      slide.takes.push({ no: slide.takes.length + 1, start: evTime(e), end: next ? evTime(next) - (next.lead || 0) : end });
+      slide.takes.push({ no: slide.takes.length + 1, start: evTime(e) + (e.skip || 0), end: next ? evTime(next) - (next.lead || 0) : end });
     });
     return out;
   }
@@ -4421,6 +4421,7 @@
     document.body.classList.remove("no-anim");
     logTake(kind, target, cutAt);
     if (rec.browser) await rec.browser.chain;
+    if (rec.withObs) await obsHold();
     resetEntrances(n);
     quietArrival = true;
     navigate(target);
@@ -4428,8 +4429,14 @@
     if (!cameraStream && !pipEl.hidden && pipState.used) startWebcam();
     retaking = false;
   }
-  function restartSlide(n) {
-    logTake("retake", currentId);
+  var OBS_HOLD = 600;
+  async function obsHold() {
+    const ev = rec.events[rec.events.length - 1];
+    if (ev) ev.skip = OBS_HOLD / 2;
+    await wait(OBS_HOLD);
+  }
+  async function restartSlide(n) {
+    retaking = true;
     stepPos = 0;
     camManual = null;
     camCycle = -1;
@@ -4438,6 +4445,9 @@
     if (!cameraStream && !pipEl.hidden && pipState.used) startWebcam();
     else refocus();
     updateActivePath();
+    logTake("retake", currentId);
+    if (rec.withObs) await obsHold();
+    retaking = false;
   }
   async function togglePause() {
     if (!rec.t0) return;
@@ -4526,7 +4536,7 @@
       totalObs,
       fps: b ? FPS : obsFps,
       ...b ? { inBrowser: true, takesId: b.id, quality: b.quality.name, type: b.type } : {},
-      events: rec.events.map((e) => ({ id: e.id, title: e.title, retake: e.retake, t: e.t, obsT: e.obsT, ...e.lead ? { lead: e.lead } : {}, ...e.clip ? { clip: e.clip } : {} })),
+      events: rec.events.map((e) => ({ id: e.id, title: e.title, retake: e.retake, t: e.t, obsT: e.obsT, ...e.lead ? { lead: e.lead } : {}, ...e.skip ? { skip: e.skip } : {}, ...e.clip ? { clip: e.clip } : {} })),
       picks: {}
     };
     if (session.inBrowser) {

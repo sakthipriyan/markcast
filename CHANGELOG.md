@@ -75,6 +75,13 @@ package can notice. Tests, CI and tooling do not belong here.
   in the accent. The slides link fills in from the page the deck is on when the
   deck names no permalink or site; the Record dialog is wider.
 
+### Fixed
+
+- With OBS, a retake's cut no longer starts with a moment of the attempt
+  before it and the jump back. OBS reports its time as encoded, a few hundred
+  ms behind the screen; a retake now holds still for 0.6 s before its entry,
+  and the cut starts inside that hold.
+
 ### Removed
 
 - The Record dialog: its OBS connection, camera choice and take layout moved
