@@ -1290,13 +1290,13 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
   .modal .panel, .rv-list, .modal textarea{scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--accent) 45%, transparent) transparent;}
   /* the player and the take list side by side, the list exactly as tall as the player (it scrolls inside that);
      play and download under both */
-  .rv-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(280px,3fr);grid-template-areas:"video list" "bar list" "now now";
+  .rv-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(280px,3fr);grid-template-areas:"video list" "bar dl";
     column-gap:18px;margin-top:12px;}
   .rv-grid > div:first-child{display:contents;}
   .rv-video{grid-area:video;}
   .rv-list{grid-area:list;contain:size;}
   .rv-bar{grid-area:bar;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;}
-  .rv-sel-note{font-size:12px;color:var(--text-muted);text-align:right;}
+  .rv-sel-note{font-size:12px;color:var(--text-muted);}
   .rv-purge{position:relative;}
   .rv-purge summary{list-style:none;font-family:var(--mono);}
   .rv-purge summary::-webkit-details-marker{display:none;}
@@ -1320,18 +1320,21 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
   #rv-setup:not([open]){display:none;}
   .rv-setup-sum{margin:0 0 8px;color:var(--text-muted);font-size:12px;}
   .rv-final{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
-  .rv-actions{margin-left:auto;display:flex;align-items:center;gap:10px;}
-  #rv-now{grid-area:now;}
+  /* under the takes: the final cut's size, and Download */
+  .rv-dl{grid-area:dl;display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:12px;}
+  /* Preview and Pause: one width, so the button doesn't change size as it switches */
+  .btn.rv-preview{min-width:104px;}
   #review:not(.in-browser) #rv-render-btn{display:none;}
   @media (max-width:900px){
-    .rv-grid{grid-template-columns:1fr;grid-template-areas:"video" "bar" "now" "list";}
-    .rv-list{contain:none;max-height:50vh;}
+    .rv-grid{grid-template-columns:1fr;grid-template-areas:"video" "bar" "list" "dl";}
+    .rv-list{contain:none;max-height:50vh;margin-top:12px;}
   }
   .rv-video{position:relative;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;}
   .rv-video video{width:100%;height:100%;display:block;}
   #rv-novideo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;}
   #rv-novideo[hidden]{display:none;}
-  #rv-now{font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:8px;min-height:1.4em;}
+  /* the preview's message, right before Preview */
+  #rv-now{margin-left:auto;text-align:right;font-family:var(--mono);font-size:12px;color:var(--text-muted);}
   .rv-list{overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
   .rv-row{padding:9px 12px;border-bottom:1px solid var(--panel-line);}
   .rv-row:last-child{border-bottom:none;}
@@ -1839,17 +1842,17 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
           </div>
         </div>
         <div class="rv-bar">
-          <button class="btn" id="rv-render-btn" title="Saves the video: the picked takes joined into one file">\u2193 Download</button>
-          <span class="rv-final" id="rv-final"></span>
-          <div class="rv-actions">
-            <span class="rv-sel-note rv-board-only" id="rv-sel-note"></span>
-            <button class="btn rec rv-board-only" id="rv-rec" title="Records the whole deck, or only the ticked slides (shift-click ticks a range)">\u25CF Record</button>
-            <button class="btn" id="rv-play-final" title="Plays the picked takes back to back">\u25B6 Preview</button>
-          </div>
+          <button class="btn rec rv-board-only" id="rv-rec" title="Records the whole deck, or only the ticked slides (shift-click ticks a range)">\u25CF Record</button>
+          <span class="rv-sel-note rv-board-only" id="rv-sel-note"></span>
+          <span id="rv-now"></span>
+          <button class="btn rv-preview" id="rv-play-final" title="Plays the picked takes back to back">\u25B6 Preview</button>
         </div>
-        <div id="rv-now"></div>
       </div>
       <div class="rv-list" id="rv-list"></div>
+      <div class="rv-dl">
+        <span class="rv-final" id="rv-final"></span>
+        <button class="btn" id="rv-render-btn" title="Saves the video: the picked takes joined into one file">\u2193 Download</button>
+      </div>
     </div>
     <div class="rv-out">
       <div id="rv-render">
