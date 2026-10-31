@@ -12,6 +12,11 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+### Fixed
+
+- The privacy page link in the Privacy & analytics dialog is in the accent
+  colour, readable in dark mode (it was the browser's default dark blue).
+
 ## [0.4.1] - 2026-10-31
 
 ### Added
