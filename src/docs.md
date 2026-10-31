@@ -196,7 +196,7 @@ Two ways to record, both slide by slide, so there's no timeline to edit afterwar
 3. To redo part of it later, tick slides (shift-click ticks a range): **● Record** then records exactly those, each with its entry, and stops by itself after the last. Between ticked slides that aren't next to each other the deck jumps, as a retake does, so the slides in between keep their takes.
 4. Every take starts with the move in from the slide before it, so it depends on both. Edit a slide and its takes and the next slide's are marked *outdated*: kept, but no longer picked, until you record them again (or pick one yourself). To drop a slide, delete it from the deck, then record the slide that followed it again.
 
-Every take is its own file, kept in this browser's private storage until you purge it: **🗑 Purge takes → Unused takes** keeps only the ones the video uses.
+Every take is its own file, kept in this browser's private storage until you purge it: **🗑 Purge takes → Unused takes** keeps only the ones the video uses, **All takes** clears this deck, and **Every deck's takes…** clears everything Slidetake keeps in this browser (it says how much first), including takes of decks since renamed or deleted.
 
 In fullscreen, the frame must be at least 1280×720 real pixels for 720p, 1920×1080 for 1080p: a Retina laptop makes 1080p, a 1366×768 screen 720p. Below that, use OBS.
 

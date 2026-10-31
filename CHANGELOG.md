@@ -42,7 +42,7 @@ package can notice. Tests, CI and tooling do not belong here.
   copies the YouTube chapters. Messages share one line beside Preview (in
   full on hover) and Download shows its progress in its own label, so the
   board never changes height. **🗑 Purge takes** removes
-  unused takes or all of them. OBS stays for any other browser or screen, with
+  unused takes, all of this deck's, or every deck's (with the total size first). OBS stays for any other browser or screen, with
   its own review.
 - Recording turns the camera on by itself: the camera chosen for the deck in
   the setup (or **No camera**), on before the countdown and back to how it was

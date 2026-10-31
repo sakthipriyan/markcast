@@ -2917,6 +2917,38 @@ document.getElementById('rv-clean').onclick = async ()=>{
   say('All takes purged.');
   renderBoard();
 };
+// every deck's takes: the whole takes folder, and every deck's board, including takes no deck shows any more
+// (a deck since renamed or deleted)
+document.getElementById('rv-clean-every').onclick = async ()=>{
+  let root, bytes = 0, files = 0;
+  try { root = await navigator.storage.getDirectory(); } catch(e){ return; }
+  /** @param {FileSystemDirectoryHandle} dir */
+  const walk = async dir=>{
+    for await (const h of dir.values()){
+      if (h.kind === 'directory') await walk(h); else { files++; bytes += (await h.getFile()).size; }
+    }
+  };
+  try { await walk(await root.getDirectoryHandle('slidetake-takes')); } catch(e){}
+  const boards = [];
+  try { for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && k.startsWith('slidetake:board:')) boards.push(k); } } catch(e){}
+  const decks = boards.filter(k=>{ try { return JSON.parse(localStorage.getItem(k) || '{}').takes.length > 0; } catch(e){ return false; } }).length;
+  if (!files){ say('No takes are kept in this browser.'); return; }
+  const size = bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB';
+  if (!confirm('Purge ' + size + ' of takes (' + files + ' file' + (files === 1 ? '' : 's') + ') from ' + (decks || 'no') + ' deck' + (decks === 1 ? '' : 's') +
+    ' and any left behind? Every deck loses its takes; download the videos you need first.')) return;
+  try { await root.removeEntry('slidetake-takes', {recursive:true}); } catch(e){}
+  boards.forEach(k=>{ try { localStorage.removeItem(k); } catch(e){} });
+  // older recordings kept as sessions lose their takes too
+  save('slidetake:sessions', JSON.stringify(loadSessions().map(x=>x.inBrowser ? {...x, cleaned:true} : x)));
+  board = null; boardKey = '';
+  loadBoard();
+  clipSizes.clear();
+  if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
+  clipList = null;
+  resetPreview();
+  renderBoard();
+  say('Purged ' + size + ' of takes from every deck.');
+};
 
 // the recording: from the remembered OBS folder when the browser allows it, otherwise picked by hand
 function idb(name){
