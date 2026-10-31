@@ -1216,6 +1216,7 @@ EOF
   #rec-screen a{color:inherit;text-decoration:underline;}
   #obs-status.err{color:var(--danger);}
   .modal .warn{color:var(--accent);}
+  #rv-setup .warn{color:var(--danger);}
   @media (max-width:560px){ .modal .fields{grid-template-columns:1fr;} }
   #navbar #btn-record{color:#f87171;}
   #navbar #btn-record:hover{color:#fff;background:#b91c1c;}
