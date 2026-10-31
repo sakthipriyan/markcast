@@ -251,7 +251,17 @@
           <h4>Microphone</h4>
           <select id="rec-mic" aria-label="Microphone"></select>
           <meter id="rec-meter" min="0" max="1" low="0.1" high="0.8" optimum="0.5" value="0" aria-label="Mic level"></meter>
-          <div class="rv-setup-row"><button class="btn small toggle rv-loud" id="rv-loud" aria-pressed="true" title="Brings the video to YouTube's volume (-14 LUFS); a limiter catches the few peaks that would pass -1.5 dB"><span class="ico" aria-hidden="true">🔊</span> Auto volume</button></div>
+          <div class="rv-setup-row">
+            <span class="rv-setup-label">Sound</span>
+            <div class="seg small" role="radiogroup" aria-label="Sound">
+              <button class="seg-btn" data-sound="raw" role="radio" title="No processing: best for a good mic in a quiet room">Raw</button>
+              <button class="seg-btn" data-sound="voice" role="radio" title="Chrome's noise suppression: takes out fans, hum and other steady noise">Voice</button>
+            </div>
+          </div>
+          <div class="rv-setup-row">
+            <button class="btn small toggle rv-loud" id="rv-loud" aria-pressed="true" title="Raises the video towards YouTube's volume (-14 LUFS), stopping before the loudest peak would clip"><span class="ico" aria-hidden="true">🔊</span> Volume boost</button>
+            <button class="btn small toggle" id="rv-limiter" aria-pressed="false" title="Catches the few peaks (a click, a plosive) that would pass -1.5 dB, so Volume boost can reach -14 LUFS">Peak limiter</button>
+          </div>
         </section>
         <section>
           <h4>Video</h4>
@@ -310,7 +320,7 @@
           <option value="50">50 fps</option><option value="60">60 fps</option>
           <option value="23.976">23.976 fps</option><option value="29.97">29.97 fps</option><option value="59.94">59.94 fps</option>
         </select>
-        <button class="btn small toggle rv-loud" id="rv-loud-obs" aria-pressed="true" title="Adds loudnorm: YouTube's volume (-14 LUFS)">🔊 Auto volume</button>
+        <button class="btn small toggle rv-loud" id="rv-loud-obs" aria-pressed="true" title="Adds loudnorm: YouTube's volume (-14 LUFS)">🔊 Volume boost</button>
         <button class="btn small" data-copy="rv-ffmpeg">Copy</button>
       </h3>
       <textarea id="rv-ffmpeg" rows="4" readonly spellcheck="false"></textarea>

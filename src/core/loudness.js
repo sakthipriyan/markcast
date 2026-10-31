@@ -86,14 +86,18 @@ export const MAX_BOOST_DB = 20;
 
 /**
  * The gain, in dB, that brings a recording to the target loudness: up for a quiet one (at most MAX_BOOST_DB),
- * down for a loud one. The few peaks the gain would push past the ceiling are the limiter's job, so one loud
- * click doesn't hold the whole video back. 0 for silence.
- * @param {{integrated: number}} measured
- * @param {number} [target]
+ * down for a loud one. 0 for silence.
+ * With the limiter (limit), the few peaks the gain pushes past the ceiling are its job, so one loud click
+ * doesn't hold the whole video back. Without it, raising stops where the loudest peak reaches the ceiling, so
+ * the gain alone never clips, and never turns into a cut (peaks that already clip are left as they are).
+ * @param {{integrated: number, peakDb?: number}} measured
+ * @param {{limit?: boolean, target?: number, ceiling?: number}} [opts]
  */
-export function gainToTarget(measured, target = YOUTUBE_LUFS){
+export function gainToTarget(measured, {limit = false, target = YOUTUBE_LUFS, ceiling = PEAK_CEILING_DB} = {}){
   if (!isFinite(measured.integrated)) return 0;
-  return Math.min(target - measured.integrated, MAX_BOOST_DB);
+  const g = Math.min(target - measured.integrated, MAX_BOOST_DB);
+  if (g <= 0 || limit || measured.peakDb == null || !isFinite(measured.peakDb)) return g;
+  return Math.max(0, Math.min(g, ceiling - measured.peakDb));
 }
 /** @param {number} db */
 export const dbToGain = db=>Math.pow(10, db / 20);

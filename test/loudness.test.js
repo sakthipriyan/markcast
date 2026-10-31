@@ -36,11 +36,18 @@ test('pure silence has no loudness and gets no gain', ()=>{
 
 test('the peak is the largest sample', ()=>near(measure([[2, -6]]).peakDb, -6, 0.01));
 
-test('gain brings a recording to -14 LUFS: up for a quiet one (at most +20 dB), down for a loud one', ()=>{
-  near(gainToTarget({integrated: -25.5}), 11.5, 1e-9);     // a quiet voice: all the way, peaks are the limiter's job
-  near(gainToTarget({integrated: -10}), -4, 1e-9);         // too loud: turned down
-  near(gainToTarget({integrated: -60}), MAX_BOOST_DB, 1e-9);
+test('with the limiter, gain brings a recording to -14 LUFS: up (at most +20 dB) or down', ()=>{
+  near(gainToTarget({integrated: -25.5, peakDb: -0.5}, {limit: true}), 11.5, 1e-9);   // all the way: the limiter takes the peaks
+  near(gainToTarget({integrated: -10, peakDb: -1}, {limit: true}), -4, 1e-9);         // too loud: turned down
+  near(gainToTarget({integrated: -60, peakDb: -40}, {limit: true}), MAX_BOOST_DB, 1e-9);
   near(dbToGain(6.0206), 2, 1e-4);
+});
+
+test('without the limiter, raising stops where the loudest peak reaches -1.5 dB, and never lowers a quiet one', ()=>{
+  near(gainToTarget({integrated: -22, peakDb: -12}), 8, 1e-9);        // room to spare: all the way
+  near(gainToTarget({integrated: -24, peakDb: -6}), 4.5, 1e-9);        // the peaks stop it at -1.5 dB
+  assert.equal(gainToTarget({integrated: -25.5, peakDb: -0.5}), 0);     // one loud click: held back entirely
+  near(gainToTarget({integrated: -10, peakDb: -1}), -4, 1e-9);         // too loud: still turned down
 });
 
 // the limiter, fed in pieces of 1024 frames like decoded audio, all of its output taken

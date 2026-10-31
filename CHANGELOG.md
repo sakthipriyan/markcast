@@ -26,7 +26,7 @@ package can notice. Tests, CI and tooling do not belong here.
   editing the one before marks its takes outdated: every final cut stays
   seamless. There is no Leave out; delete the slide from the deck instead.
   **⚙ Setup** (top right of the board) holds the browser and screen check,
-  camera, microphone, level, 1080p or 720p, **🔊 Auto volume** and **🗑 Purge
+  camera, microphone, level, 1080p or 720p, the sound settings and **🗑 Purge
   takes**. To rehearse, present with F: nothing is recorded.
   Under the player, **▶ Preview** plays the final cut and **↓ Download** joins
   the picked takes into one MP4 without re-encoding, saving it like OBS (a new
@@ -40,13 +40,16 @@ package can notice. Tests, CI and tooling do not belong here.
   camera when the deck has a camera box or camera moves; the OBS dialog has the
   same choice as a checkbox. If fullscreen doesn't stick (a share prompt can
   take it away), the countdown asks for **F**.
-- **🔊 Auto volume** in the review, selected by default: the final cut
-  is measured the way YouTube measures it (ITU-R BS.1770 integrated loudness)
-  and given one gain to reach -14 LUFS; a look-ahead limiter catches the few
-  peaks (a click, a plosive) that would pass -1.5 dB, so a single loud moment
-  no longer holds the whole video back, and the result is measured again so
-  it lands on -14. In the browser only the sound is
-  re-encoded; the ffmpeg command gets `loudnorm`.
+- The microphone list shows each microphone once, the system default marked
+  "(system default)", rather than listing it twice.
+- The microphone's sound, in Setup: **Sound: Raw** (no processing, the
+  default) or **Voice** (Chrome's noise suppression). **🔊 Volume boost** (on
+  by default) measures the final cut the way YouTube does (ITU-R BS.1770
+  integrated loudness) and raises it towards -14 LUFS, stopping where its
+  loudest peak would reach -1.5 dB and saying so. **Peak limiter** (off by
+  default) catches those few peaks (a click, a plosive) with a look-ahead
+  limiter so the boost reaches -14, measured again so it lands there. Only the
+  sound is re-encoded; the ffmpeg command gets `loudnorm`.
 
 ### Changed
 

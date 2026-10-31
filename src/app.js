@@ -1790,7 +1790,7 @@ async function startMeter(){
   const token = meterToken;
   try {
     const id = recMic.value;
-    const stream = await navigator.mediaDevices.getUserMedia({audio:id ? {deviceId:{exact:id}} : true});
+    const stream = await navigator.mediaDevices.getUserMedia({audio:micConstraints(id)});   // the meter hears what the recording will
     if (token !== meterToken){ stream.getTracks().forEach(t=>t.stop()); return; }
     const ctx = new AudioContext(), an = ctx.createAnalyser();
     an.fftSize = 512;
@@ -1812,11 +1812,19 @@ async function fillDevices(){
     // labels are only listed once the page may use a device, so ask for the mic first
     if (!meter) await startMeter();
     const devs = await navigator.mediaDevices.enumerateDevices();
-    const opts = (kind, saved)=>devs.filter(d=>d.kind === kind).map((d, i)=>'<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === saved ? ' selected' : '') + '>' +
-      escapeHtml(d.label || (kind === 'audioinput' ? 'Microphone ' : 'Camera ') + (i + 1)) + '</option>').join('');
+    // Chrome lists the system default (and on Windows the communications device) again as extra entries:
+    // drop them, and mark the device they stand for instead
+    const opts = (kind, saved)=>{
+      const all = devs.filter(d=>d.kind === kind), def = all.find(d=>d.deviceId === 'default');
+      const defLabel = def ? def.label.replace(/^Default - /, '') : '';
+      const list = all.filter(d=>d.deviceId !== 'default' && d.deviceId !== 'communications');
+      const isDef = d=>!!def && (d.label === defLabel || (!!def.groupId && d.groupId === def.groupId && !list.some(x=>x !== d && x.label === defLabel)));
+      const pick = list.some(d=>d.deviceId === saved) || saved === 'none' ? saved : (list.find(isDef) || list[0] || {}).deviceId;
+      return list.map((d, i)=>'<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === pick ? ' selected' : '') + '>' +
+        escapeHtml((d.label || (kind === 'audioinput' ? 'Microphone ' : 'Camera ') + (i + 1)) + (isDef(d) ? ' (system default)' : '')) + '</option>').join('');
+    };
     const cam = camChoice();
     recCam.innerHTML = '<option value="none"' + (cam === 'none' ? ' selected' : '') + '>No camera</option>' + opts('videoinput', cam);
-    if (cam !== 'none' && recCam.value === 'none' && recCam.options.length > 1) recCam.selectedIndex = 1;   // 'default': the first camera
     const mic = load('slidetake:mic') || '';
     recMic.innerHTML = opts('audioinput', mic);
     if (mic && recMic.value === mic && meter && meter.stream.getAudioTracks()[0].getSettings().deviceId !== mic) startMeter();
@@ -1940,7 +1948,7 @@ async function beginBrowserCapture(){
   let mic;
   try {
     const id = load('slidetake:mic');
-    mic = await navigator.mediaDevices.getUserMedia({audio:{...(id ? {deviceId:{ideal:id}} : {}), echoCancellation:false, autoGainControl:false, noiseSuppression:false}});
+    mic = await navigator.mediaDevices.getUserMedia({audio:micConstraints(id)});
   } catch(e){ stopAll(); throw new Error('The microphone isn’t available (' + (e.message || e.name) + ').'); }
   const id = new Date().toISOString().replace(/[:.]/g, '-');
   rec.browser = {id, display, mic, track, quality, type:b.type, stream:new MediaStream([track, ...mic.getAudioTracks()]),
@@ -2273,6 +2281,19 @@ const ffmpegScript = (sess, mode)=>ffmpegScriptCore(sess, mode, {
 const loudBtns = document.querySelectorAll('.rv-loud');   // in the board's setup, and by the ffmpeg command
 const loudOn = ()=>load('slidetake:loudness') !== 'off';
 const showLoud = ()=>loudBtns.forEach(b=>{ b.setAttribute('aria-pressed', String(loudOn())); b.classList.toggle('on', loudOn()); });
+// the peak limiter, off unless chosen: with it, Volume boost goes all the way to -14 LUFS
+const limiterBtn = document.getElementById('rv-limiter');
+const limiterOn = ()=>load('slidetake:limiter') === 'on';
+const showLimiter = ()=>{ limiterBtn.setAttribute('aria-pressed', String(limiterOn())); limiterBtn.classList.toggle('on', limiterOn()); };
+showLimiter();
+limiterBtn.onclick = ()=>{ save('slidetake:limiter', limiterOn() ? 'off' : 'on'); showLimiter(); };
+// the mic's sound: raw (no processing), or voice (the browser's noise suppression)
+const micSound = ()=>load('slidetake:mic-sound') === 'voice' ? 'voice' : 'raw';
+const micConstraints = id=>({...(id ? {deviceId:{ideal:id}} : {}), echoCancellation:false, autoGainControl:false, noiseSuppression:micSound() === 'voice'});
+const soundBtns = document.querySelectorAll('[data-sound]');
+const showSound = ()=>soundBtns.forEach(b=>{ const on = b.dataset.sound === micSound(); b.classList.toggle('active', on); b.setAttribute('aria-checked', String(on)); });
+showSound();
+soundBtns.forEach(b=>b.onclick = ()=>{ save('slidetake:mic-sound', b.dataset.sound); showSound(); if (meter) startMeter(); });
 showLoud();
 loudBtns.forEach(b=>b.onclick = ()=>{ save('slidetake:loudness', loudOn() ? 'off' : 'on'); showLoud(); if (reviewing) renderReview(); });
 
@@ -2551,10 +2572,10 @@ async function downloadVideo(force){
   const plan = clipPlan(sess);
   if (!plan.length){ renderStatus.textContent = 'No slide has a take yet: nothing to save.'; return; }
   // the same final cut as last time: nothing to make again
-  const sig = JSON.stringify([plan.map(c=>[c.clip, Math.round(c.keep * 1000)]), loudOn(), sess.type]);
+  const sig = JSON.stringify([plan.map(c=>[c.clip, Math.round(c.keep * 1000)]), loudOn(), limiterOn(), sess.type]);
   const last = sess.board && board.lastDownload;
   if (!force && last && last.sig === sig && await stillSaved(last)){
-    renderStatus.innerHTML = 'Already saved in ' + escapeHtml(savedWhere(last)) + '. A new video is made only when a take or Auto volume changes. <button class="btn small" id="rv-save-again">Save another copy</button>';
+    renderStatus.innerHTML = 'Already saved in ' + escapeHtml(savedWhere(last)) + '. A new video is made only when a take or the sound settings change. <button class="btn small" id="rv-save-again">Save another copy</button>';
     document.getElementById('rv-save-again').onclick = ()=>downloadVideo(true);
     return;
   }
@@ -2576,21 +2597,26 @@ async function downloadVideo(force){
     // loudness: measure the final cut, gain it to YouTube's level, then measure what that gain and the limiter
     // actually give and correct for it. A few loud clicks carry much of the energy the first measure counts,
     // and once the limiter tames them the voice would come out short of the target.
+    // Without the peak limiter the boost stops where the loudest peak would clip, and says so when that holds it
+    // back from -14.
     let gain = 1, loudNote = '';
+    const useLimiter = loudOn() && limiterOn();
     if (loudOn()){
-      const first = await measureCut(MB, plan, 1, 'Measuring the volume');
+      const first = await measureCut(MB, plan, 1, false, 'Measuring the volume');
       if (first && isFinite(first.integrated)){
-        let db = gainToTarget(first);
-        if (Math.abs(db) >= 0.05){
-          const then = await measureCut(MB, plan, dbToGain(db), 'Checking the volume');
+        let db = gainToTarget(first, {limit:useLimiter});
+        if (useLimiter && Math.abs(db) >= 0.05){
+          const then = await measureCut(MB, plan, dbToGain(db), true, 'Checking the volume');
           if (then && isFinite(then.integrated)) db = Math.min(db + (YOUTUBE_LUFS - then.integrated), MAX_BOOST_DB);
         }
         gain = dbToGain(db);
-        loudNote = Math.abs(db) < 0.05 ? ' · loudness ' + first.integrated.toFixed(1) + ' LUFS, left as is'
-          : ' · loudness ' + first.integrated.toFixed(1) + ' → ' + YOUTUBE_LUFS.toFixed(1) + ' LUFS';
+        const reached = useLimiter ? YOUTUBE_LUFS : first.integrated + db;
+        const heldBack = !useLimiter && gainToTarget(first, {limit:true}) - db > 0.5;
+        loudNote = ' · loudness ' + first.integrated.toFixed(1) + (Math.abs(db) < 0.05 ? ' LUFS, left as is' : ' → ' + reached.toFixed(1) + ' LUFS') +
+          (heldBack ? '; a loud peak held it back, turn on Peak limiter to reach ' + YOUTUBE_LUFS : '');
       }
     }
-    const reencode = gain !== 1;
+    const reencode = gain !== 1 || useLimiter;
     await checkJoinable(MB, plan);
     let vSrc = null, aSrc = null, offset = 0, lastV = -1, lastA = -1, limiter = null;
     const limited = [];   // pieces of sound waiting for the limiter: their time and length
@@ -2632,13 +2658,20 @@ async function downloadVideo(force){
           lastA = afterPrevious(lastA, offset + smp.timestamp);
           const planes = planesOf(smp);
           planes.forEach(p=>{ for (let k = 0; k < p.length; k++) p[k] *= gain; });
-          // the limiter catches the peaks the gain pushes past the ceiling; its output runs a few ms behind, so
-          // each piece waits until its frames are ready and keeps its own time
-          limiter = limiter || peakLimiter(smp.sampleRate, planes.length);
-          limiter.push(planes);
-          limited.push({t:lastA, n:smp.numberOfFrames, rate:smp.sampleRate, ch:planes.length});
-          smp.close();
-          await sendLimited();
+          if (useLimiter){
+            // the limiter catches the peaks the gain pushes past the ceiling; its output runs a few ms behind,
+            // so each piece waits until its frames are ready and keeps its own time
+            limiter = limiter || peakLimiter(smp.sampleRate, planes.length);
+            limiter.push(planes);
+            limited.push({t:lastA, n:smp.numberOfFrames, rate:smp.sampleRate, ch:planes.length});
+            smp.close();
+            await sendLimited();
+          } else {
+            const n = smp.numberOfFrames, data = new Float32Array(n * planes.length);
+            planes.forEach((p, c)=>data.set(p, c * n));
+            await aSrc.add(new MB.AudioSample({data, format:'f32-planar', numberOfChannels:planes.length, sampleRate:smp.sampleRate, timestamp:lastA}));
+            smp.close();
+          }
         }
       } else if (at && aSrc){
         const aMeta = {decoderConfig:await at.getDecoderConfig()};
@@ -2674,9 +2707,9 @@ async function downloadVideo(force){
     if (file) file.abort().catch(()=>{});
   } finally { btn.disabled = !!sess.cleaned; }
 }
-// How loud the final cut is with a gain (and, above 1, the limiter after it): its takes' sound, as it will be
-// joined. null when there is no sound.
-async function measureCut(MB, plan, gain, label){
+// How loud the final cut is, as it will be joined: as recorded, or with a gain and the limiter after it.
+// null when there is no sound.
+async function measureCut(MB, plan, gain, limit, label){
   let meter = null, limiter = null;
   for (const [i, part] of plan.entries()){
     renderStatus.textContent = label + ' ' + (i + 1) + ' of ' + plan.length + '…';
@@ -2685,7 +2718,7 @@ async function measureCut(MB, plan, gain, label){
     for await (const smp of new MB.AudioSampleSink(at).samples(0, part.keep)){
       const planes = planesOf(smp);
       meter = meter || loudnessMeter(smp.sampleRate, planes.length);
-      if (gain !== 1){
+      if (gain !== 1 && limit){
         planes.forEach(p=>{ for (let k = 0; k < p.length; k++) p[k] *= gain; });
         limiter = limiter || peakLimiter(smp.sampleRate, planes.length);
         limiter.push(planes);
