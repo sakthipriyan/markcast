@@ -63,3 +63,8 @@ test('joined timestamps always move forward', ()=>{
   assert.equal(afterPrevious(1.5, 1.5), 1.501);
   assert.equal(afterPrevious(1.5, 1.2), 1.501);
 });
+
+test('a length reads in words: 45s, 1m 09s, 1h 02m', async ()=>{
+  const {fmtLength} = await import('../src/core/text.js');
+  assert.deepEqual([45e3, 69e3, 166e3, 3725e3].map(fmtLength), ['45s', '1m 09s', '2m 46s', '1h 02m']);
+});

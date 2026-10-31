@@ -6,7 +6,7 @@ import BLANK_MD from '../examples/blank.md';
 import TALK_MD from '../examples/talk.md';
 import RECORDING_MD from '../examples/recording.md';
 import SHOWCASE_MD from '../examples/showcase.md';
-import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime} from './core/text.js';
+import {slugify, escapeHtml, attrsOf, parseDuration, fmtTime, fmtLength} from './core/text.js';
 import {parseDeck as parseDeckCore, cameraDirective, mapDirective, settingsBlock} from './core/parse.js';
 import {CORNERS, clampPipSize, applyPreset, cameraPresets, stepsFor} from './core/steps.js';
 import {normalizeSource, shortLink} from './core/source.js';
@@ -2249,7 +2249,7 @@ function renderSessionList(){
   const mine = loadSessions().filter(x=>x.key === sessionKey() && !x.inBrowser);
   box.innerHTML = mine.length ? '<h3>Earlier takes of this deck</h3>' + mine.map((x, i)=>
     '<div class="row"><button class="btn small" data-session="' + i + '">Review</button><span>' +
-    escapeHtml(new Date(x.date).toLocaleString()) + ' · ' + fmtTime(x.totalObs ?? x.total) + (x.inBrowser ? ' · in this browser' + (x.cleaned ? ' (takes deleted)' : '') : x.withObs ? '' : ' · rehearsal') +
+    escapeHtml(new Date(x.date).toLocaleString()) + ' · ' + fmtLength(x.totalObs ?? x.total) + (x.inBrowser ? ' · in this browser' + (x.cleaned ? ' (takes deleted)' : '') : x.withObs ? '' : ' · rehearsal') +
     (x.outputPath ? ' · ' + escapeHtml(baseName(x.outputPath)) : '') + '</span></div>').join('') : '';
   box.querySelectorAll('[data-session]').forEach(b=>b.onclick = ()=>{ closeModals(); openReview(mine[+b.dataset.session]); });
 }
@@ -2343,7 +2343,7 @@ function describe(sess){
   document.getElementById('rv-chapters-note').textContent =
     (ch.dropped ? ch.dropped + ' section' + (ch.dropped > 1 ? 's were' : ' was') + ' under 10 seconds and folded into the chapter before, as YouTube requires. ' : '') +
     (ch.lines.length < 3 ? 'YouTube needs at least three chapters, so none are listed. ' : '') +
-    'Final length ' + fmtTime(ch.length) + '.';
+    'Final length ' + fmtLength(ch.length) + '.';
 }
 
 // ---------- the review screen ----------
@@ -2362,7 +2362,7 @@ function openReview(sess){
   document.getElementById('rv-info').textContent = [
     sess.reason,
     new Date(sess.date).toLocaleString(),
-    (recorded ? 'recorded ' : 'ran ') + fmtTime(sess.totalObs ?? sess.total),
+    (recorded ? 'recorded ' : 'ran ') + fmtLength(sess.totalObs ?? sess.total),
     slides.size + ' slides',
     retakes ? retakes + ' retake' + (retakes > 1 ? 's' : '') : 'no retakes',
     sess.inBrowser ? sess.quality + ', in this browser' : sess.outputPath ? 'saved to ' + sess.outputPath : (sess.withObs ? '' : 'nothing was recorded')
@@ -2391,7 +2391,7 @@ function renderReview(){
     const pick = sess.picks[slide.id] ?? slide.takes.length, sec = sectionOf(slide.id);
     const isSec = sec !== lastSec; lastSec = sec;
     const chips = slide.takes.map(t=>'<button class="rv-chip' + (pick === t.no ? ' on' : '') + '" data-id="' + escapeHtml(slide.id) + '" data-take="' + t.no + '">' +
-      'Take ' + t.no + ' · ' + fmtTime(t.end - t.start) + '</button>').join('');
+      'Take ' + t.no + ' · ' + fmtLength(t.end - t.start) + '</button>').join('');
     return '<div class="rv-row' + (isSec ? ' sec' : '') + '"><div class="t">' + escapeHtml(slide.title) +
       '<small>' + fmtTime(slide.takes[0].start) + '</small></div><div class="rv-chips">' + chips + '</div></div>';
   }).join('');
@@ -2418,7 +2418,7 @@ let finalSizeToken = 0;
 async function showFinalSize(sess){
   const el = document.getElementById('rv-final'), token = ++finalSizeToken;
   const ms = pickedRanges(sess).reduce((a, r)=>a + r.end - r.start, 0);
-  const line = bytes=>(!bytes ? 'Final cut ' : 'about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB') + ' · ') + fmtTime(ms);
+  const line = bytes=>(!bytes ? 'Final cut ' : 'about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB') + ' · ') + fmtLength(ms);
   if (!sess.inBrowser || sess.cleaned){ el.textContent = line(null); return; }
   try {
     let bytes = 0;
@@ -2701,7 +2701,7 @@ async function downloadVideo(force){
     }
     const saved = {sig, name, where};
     if (sess.board){ board.lastDownload = saved; saveBoard(); }
-    renderStatus.textContent = 'Saved in ' + savedWhere(saved) + ' (' + fmtTime(offset * 1000) + loudNote + ').';
+    renderStatus.textContent = 'Saved in ' + savedWhere(saved) + ' (' + fmtLength(offset * 1000) + loudNote + ').';
   } catch(e){
     renderStatus.textContent = 'Could not save the video: ' + ((e && e.message) || e);
     if (file) file.abort().catch(()=>{});
@@ -2852,7 +2852,7 @@ function renderBoard(){
     const id = escapeHtml(r.id);
     const why = {slide:'Recorded before this slide changed', before:'Starts with the entry from the slide before, which has changed or is gone: record this slide again'};
     const chips = r.takes.length ? r.takes.map(t=>'<button class="rv-chip' + (r.pick === t.uid ? ' on' : '') + (t.outdated ? ' outdated" title="' + why[t.outdated] : '') +
-      '" data-id="' + id + '" data-uid="' + escapeHtml(t.uid) + '">Take ' + t.no + ' · ' + fmtTime(t.ms) + '</button>').join('') +
+      '" data-id="' + id + '" data-uid="' + escapeHtml(t.uid) + '">Take ' + t.no + ' · ' + fmtLength(t.ms) + '</button>').join('') +
       (r.pick ? '' : '<span class="rv-none">' + (r.takes.some(t=>t.outdated === 'before') && !r.takes.some(t=>t.outdated === 'slide') ? 'The slide before changed: record again' : 'Changed since: record again') + '</span>')
       : '<span class="rv-none">No take yet</span>';
     return '<div class="rv-row with-sel' + (isSec ? ' sec' : '') + (selected.has(r.id) ? ' selected' : '') + '" data-id="' + id + '">' +
@@ -3042,7 +3042,7 @@ document.getElementById('rv-download').onclick = ()=>{
   if (!reviewing) return;
   const sess = reviewing, ch = finalChapters(sess);
   const text = '# ' + document.getElementById('rv-yt-title').value + '\n\n' +
-    'Recorded ' + new Date(sess.date).toLocaleString() + (sess.outputPath ? ' · ' + sess.outputPath : '') + ' · final length ' + fmtTime(ch.length) + '\n\n' +
+    'Recorded ' + new Date(sess.date).toLocaleString() + (sess.outputPath ? ' · ' + sess.outputPath : '') + ' · final length ' + fmtLength(ch.length) + '\n\n' +
     '## Render\n\n```sh\n' + document.getElementById('rv-ffmpeg').value + '\n```\n\n' +
     '## YouTube title\n\n' + document.getElementById('rv-yt-title').value + '\n\n' +
     '## YouTube description\n\n' + document.getElementById('rv-yt-desc').value + '\n\n' +
