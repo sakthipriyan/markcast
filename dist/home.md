@@ -18,7 +18,7 @@ For developers and technical educators who explain things on video. You're insid
 
 ### Record right here, nothing to install
 
-Press **<span class="st-rec">● Record</span>** and the deck records itself, in Chrome, Edge or another Chromium browser: your slides and camera in one 16:9 frame, at 1080p. Or let **[OBS Studio](https://obsproject.com)** record while the deck drives it, from any browser. No scenes to switch, no recording to watch.
+Press **<span class="st-rec">●</span> Studio**, then **<span class="st-rec">● Record</span>**, and the deck records itself, in Chrome, Edge or another Chromium browser: your slides and camera in one 16:9 frame, at 1080p. Or let **[OBS Studio](https://obsproject.com)** record while the deck drives it, from any browser. No scenes to switch, no recording to watch.
 
 ### Every slide is a take
 

@@ -164,7 +164,7 @@ A deck sets its own colour with one line, `accent: "#3b82f6"`, shaded for both m
 
 ## ✂️ Record a video
 
-Try it: press **● Record**. In Chrome or Edge the deck records itself, nothing to install; in any browser, [OBS](https://obsproject.com) can record while the deck drives it. It records slide by slide: stumble, press ←, say it again. **Slidetake Studio** then plays the picked takes and hands you the final video and the YouTube chapters. Step by step: [Docs → Record a video](/docs#4-record-a-video).
+Try it: press **● Studio** (top right), then **● Record**. In Chrome or Edge the deck records itself, nothing to install; in any browser, [OBS](https://obsproject.com) can record while the deck drives it. It records slide by slide: stumble, press ←, say it again. **Slidetake Studio** then plays the picked takes and hands you the final video and the YouTube chapters. Step by step: [Docs → Record a video](/docs#4-record-a-video).
 
 ## 🌐 Open from anywhere
 

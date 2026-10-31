@@ -1605,6 +1605,7 @@ document.getElementById('btn-mode').onclick = toggleMode;
 function setPresent(on){
   presenting = on;
   document.body.classList.toggle('presenting', on);
+  lightUp(document.getElementById('btn-present'), on);
   markActive();
   const de = document.documentElement;
   if (on && de.requestFullscreen && !document.fullscreenElement) de.requestFullscreen().catch(()=>{});
@@ -1906,7 +1907,7 @@ function openObsTakes(opts = {}){
   openReview(last || {key:sessionKey(), deckTitle:deck.title || (order[0] ? nodes.get(order[0]).title : 'Deck'), date:new Date().toISOString(),
     withObs:true, outputPath:null, reason:'', total:0, totalObs:null, fps:obsFps, events:[], picks:{}, empty:true}, opts);
 }
-document.getElementById('btn-record').onclick = ()=>openTakes();
+document.getElementById('btn-studio').onclick = ()=>openTakes();
 
 // the takes of each session live in the browser's private storage, in a folder named after the session
 async function takesDir(id, create){
@@ -3149,6 +3150,8 @@ async function startWebcam(){
   refocus();
 }
 const CAMERA_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10.5 22 7v10l-6-3.5z"/></svg>';
+/** a bottom-bar button that is on: in the accent @param {HTMLElement} btn @param {boolean} on */
+function lightUp(btn, on){ btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', String(on)); }
 function updateCamBtn(){
   if (!camBtn.querySelector('svg')) camBtn.innerHTML = CAMERA_ICON + '<span class="lbl"> Camera</span>';
   camBtn.classList.toggle('on', !cameraOff);
@@ -3186,6 +3189,10 @@ document.addEventListener('fullscreenchange', ()=>{
 });
 
 const help = document.getElementById('help');
+// Keys is lit while the keys are open, Studio while it is open, as the Editor is
+new MutationObserver(()=>lightUp(document.getElementById('btn-keys'), help.classList.contains('open'))).observe(help, {attributes:true, attributeFilter:['class']});
+new MutationObserver(()=>document.getElementById('btn-studio').classList.toggle('active', reviewDialog.classList.contains('open')))
+  .observe(reviewDialog, {attributes:true, attributeFilter:['class']});
 // ? or K shows the keys; Docs (a link in the header) opens the full guide, itself a deck, in a new tab
 document.getElementById('btn-keys').onclick = ()=>help.classList.add('open');
 document.getElementById('help-close').onclick = ()=>help.classList.remove('open');

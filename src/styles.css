@@ -332,13 +332,14 @@
   .modal .warn{color:var(--accent);}
   #rv-setup .warn{color:var(--danger);}
   @media (max-width:560px){ .modal .fields{grid-template-columns:1fr;} }
-  #navbar #btn-record{color:#f87171;}
-  #navbar #btn-record:hover{color:#fff;background:#b91c1c;}
-  #navbar #btn-present{color:var(--accent);}
-  /* camera: a grey camera when off; green, with a live dot, when on */
+  /* Studio, beside the Editor: the record dot in red; lit (like the Editor) while it is open */
+  #btn-studio .rec-dot{color:#ef4444;}
+  /* phones and tablets can't record */
+  @media (pointer:coarse){ #btn-studio{display:none;} }
+  /* the bottom bar: Keys, Camera, Fullscreen, each in the accent while it is on */
   #btn-camera{display:inline-flex;align-items:center;gap:6px;}
   #btn-camera svg{display:block;}
-  #navbar #btn-camera.on{color:#22c55e;}
+  #navbar button.on{color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent);}
   /* while a take runs nothing but the slides and the camera is on screen */
   body.recording #breadcrumbs, body.recording #navbar, body.recording #minimap, body.recording #pip-msg{display:none !important;}
   body.recording, body.recording *{cursor:none !important;}
@@ -634,7 +635,7 @@
     html.embed.no-record #navbar{display:flex;}
     html.embed.no-record #navbar > :not(.touch-only){display:none !important;}
   }
-  html.no-record #btn-camera, html.no-record #btn-record, html.no-record #navbar .divider, html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
+  html.no-record #btn-camera, html.no-record #btn-studio, html.no-record #pip, html.no-record #help tr.rec{display:none !important;}
   /* the logo written into a heading: # ![](/favicon.svg) Slidetake */
   .node .body :is(h1,h2) img[src$="favicon.svg"]{height:1em;width:auto;vertical-align:-.12em;margin-right:.25em;display:inline;}
   #brand .st-mark{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--text);}

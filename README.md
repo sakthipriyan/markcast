@@ -59,9 +59,9 @@ For AI tools: the guide is plain markdown at [slidetake.com/docs.md](https://sli
 
 ## Recording
 
-The bottom bar always has **Camera** (C), **● Record** (R) and **Fullscreen** (F). The camera is off until someone turns it on, and until then the deck's camera settings are ignored, so the same deck works for readers.
+**● Studio** (R), beside ✎ Editor in the header, opens Slidetake Studio: record in the browser or with OBS, review the takes, download the video. The bottom bar has **Keys** (K), **Camera** (C) and **Fullscreen** (F), each lit while it's on. The camera is off until someone turns it on, and until then the deck's camera settings are ignored, so the same deck works for readers.
 
-**● Record** asks where OBS is, or fill it in from the address (the same format the reveal.js slides use):
+For OBS, Studio's ⚙ Setup asks where OBS is, or fill it in from the address (the same format the reveal.js slides use):
 
 ```
 ?obs=localhost:4455

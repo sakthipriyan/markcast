@@ -151,7 +151,7 @@ Click a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch scre
 | 1 2 3 4 | focus, path, radial, tree |
 | + − | bigger / smaller slides (remembered) |
 | E · L | editor · light / dark |
-| C · V · R | camera · camera layouts · record |
+| C · V · R | camera · camera layouts · Studio (record) |
 
 ### Layouts
 
@@ -177,7 +177,7 @@ With `duration: 10m` (or `90s`, `1h`, `12:30`), a lighter layer of the same colo
 
 ## 4️⃣ Record a video
 
-Two ways to record, both slide by slide, so there's no timeline to edit afterwards. **● Record** (or **R**) opens **Slidetake Studio** in the way you used last; ⚙ Setup switches between them:
+Two ways to record, both slide by slide, so there's no timeline to edit afterwards. **● Studio** (beside ✎ Editor, or **R**) opens **Slidetake Studio** in the way you used last; ⚙ Setup switches between them:
 
 | | In this browser | OBS |
 |---|---|---|
@@ -189,7 +189,7 @@ Two ways to record, both slide by slide, so there's no timeline to edit afterwar
 
 ### Record in the browser
 
-**● Record** opens **Slidetake Studio** with the deck's takes: every slide, in order, with every take recorded of it, from every recording.
+**● Studio** opens with the deck's takes: every slide, in order, with every take recorded of it, from every recording.
 
 1. The first time, **⚙ Setup** (top right) checks the browser and screen and lists your cameras and microphones with a level meter. The camera you pick there (or **No camera**) is remembered for the deck, and **● Record turns it on by itself**, before the countdown so you can check your framing, then back off afterwards. It defaults to your camera when the deck has a camera box or camera moves. **C** is for presenting live.
 2. **● Record** under the player, and when the browser asks, share **this tab**. The deck goes fullscreen in a 16:9 frame; only the frame (slides and camera) is recorded, never the rest of the screen.
@@ -203,7 +203,7 @@ In fullscreen, the frame must be at least 1280×720 real pixels for 720p, 1920×
 ### Set up OBS
 
 1. In OBS, turn on Tools → WebSocket Server Settings.
-2. In Slidetake, press **● Record**, then **⚙ Setup → Use OBS**, enter OBS's host, port and password, and **Connect**. Tick *Remember* to skip this next time. Studio opens in the mode you used last; **Use Chrome** (or Edge, Brave…: your browser's name) switches back. Beside ⚙ Setup, a line shows what a take will use: `In Chrome · 1080p · camera · microphone`, or `OBS · 1080p · camera`.
+2. In Slidetake, press **● Studio**, then **⚙ Setup → Use OBS**, enter OBS's host, port and password, and **Connect**. Tick *Remember* to skip this next time. Studio opens in the mode you used last; **Use Chrome** (or Edge, Brave…: your browser's name) switches back. Beside ⚙ Setup, a line shows what a take will use: `In Chrome · 1080p · camera · microphone`, or `OBS · 1080p · camera`.
 3. Use a 16:9 screen (YouTube is 16:9): Setup checks yours. If it isn't, move the window to one that is, physical or virtual (say 1920×1080), and press **F** there.
 
 `?obs=localhost:4455` (or `?obs=host:port:password`) in the address fills this in and connects as the page opens.

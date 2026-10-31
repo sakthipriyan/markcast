@@ -69,6 +69,7 @@
     <button class="btn icon" id="btn-analytics" title="Privacy &amp; analytics" aria-label="Privacy &amp; analytics" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></button>
     <button class="btn icon" id="btn-mode" title="Light / dark (L)" aria-label="Light / dark"></button>
     <button class="btn" id="btn-edit-toggle" title="Editor: write, open, share (E)">✎ Editor</button>
+    <button class="btn" id="btn-studio" title="Slidetake Studio: record, review, download (R)"><span class="rec-dot" aria-hidden="true">●</span> Studio</button>
   </div>
 </header>
 
@@ -81,13 +82,11 @@
     </div>
     <div id="breadcrumbs"></div>
     <div id="navbar">
-      <button id="btn-keys" title="Keyboard shortcuts (K)">⌨<span class="lbl"> Keys</span></button>
+      <button id="btn-keys" title="Keyboard shortcuts (K)" aria-pressed="false">⌨<span class="lbl"> Keys</span></button>
       <button id="nav-prev" class="touch-only" title="Previous (←)" aria-label="Previous">←</button>
       <button id="nav-next" class="touch-only" title="Next (→)" aria-label="Next">→</button>
-      <div class="divider"></div>
       <button id="btn-camera" title="Camera (C)" aria-pressed="false"></button>
-      <button id="btn-record" title="Record a take with OBS (R)">●<span class="lbl"> Record</span></button>
-      <button id="btn-present" title="Fullscreen (F)">⛶<span class="lbl"> Fullscreen</span></button>
+      <button id="btn-present" title="Fullscreen (F)" aria-pressed="false">⛶<span class="lbl"> Fullscreen</span></button>
     </div>
     <div id="progress" aria-hidden="true"></div>
     <div id="minimap"><div class="mm-label" id="mm-label">map</div><svg id="mm-svg" width="180" height="130"></svg></div>
@@ -126,7 +125,7 @@
       <tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>bigger / smaller slides</td></tr>
       <tr><td><kbd>E</kbd></td><td>editor: write, open, share</td></tr>
       <tr><td><kbd>L</kbd></td><td>light / dark</td></tr>
-      <tr class="rec"><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, record</td></tr>
+      <tr class="rec"><td><kbd>C</kbd> <kbd>V</kbd> <kbd>R</kbd></td><td>camera, camera layouts, Studio (record)</td></tr>
       <tr><td><kbd>K</kbd> <kbd>?</kbd></td><td>this card; again or <kbd>Esc</kbd> closes it</td></tr>
     </table>
     <p>Drag to pan, scroll or pinch to zoom, click a card to fly to it.</p>
