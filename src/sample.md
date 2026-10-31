@@ -12,9 +12,9 @@ pip: bottom-right
 
 Any AI writes the deck for you: it's plain markdown. For developers and technical educators who explain things on video. You're inside a Slidetake deck right now. Press → to walk it, **O** for the map.
 
-## ⏱️ An hour, not days
+## ⏱️ Hours, not days
 
-A video that takes two or three days to script, record and edit takes about an hour: an AI writes the deck, you record it slide by slide, and pick the best take of each in Studio. What comes out is ready to upload.
+A video that takes two or three days to script, record and edit takes a couple of hours: an AI writes the deck, you record it slide by slide, and pick the best take of each in Studio. What comes out is ready to upload.
 
 ## ✂️ Record without timeline editing
 
@@ -47,19 +47,6 @@ Your headings are the hierarchy: zoom out for the whole system, zoom in for one 
 <!-- camera: on, full, on -->
 
 A comment in a slide moves you: corner, full screen, or off. Turn on **Camera** and watch this slide do it.
-
-### Camera moves, step by step
-
-<!-- camera: 40%, full, on -->
-
-With **Camera** on, press →: this slide puts you large in the corner, then full screen, then back to the corner. One comment, one press per move:
-
-```md
-### Camera moves, step by step
-<!-- camera: 40%, full, on -->
-```
-
-Combine `on`, `off`, `full`, a size like `40%`, a corner, `flip` or `circle`.
 
 ## ✍️ Plain markdown in
 

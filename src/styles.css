@@ -531,8 +531,9 @@
   .node.img-landscape .body figure.media img{width:100%;height:var(--img-h);object-fit:contain;}
   .node.img-landscape .body figure.media figcaption{padding:10px 18px 14px;}
   /* portrait or near-square: the image on the right at the card's height; the heading and caption share the left */
-  div.node.img-portrait{height:540px;padding:20px calc(var(--img-w) + 26px) 22px 24px;}
-  .node.img-portrait .body{display:flex;flex-direction:column;height:100%;}
+  div.node.img-portrait{height:540px;padding:20px calc(var(--img-w) + 26px) 22px 24px;display:flex;flex-direction:column;}
+  /* the text column takes what the breadcrumb leaves, so the caption ends inside the card */
+  .node.img-portrait .body{display:flex;flex-direction:column;flex:1;min-height:0;}
   .node.img-portrait .crumb{margin-bottom:10px;}
   .node.img-portrait .body > :is(h1,h2,h3,h4,h5,h6):first-child{font-size:22px;}
   .node.img-portrait .body > .gallery, .node.img-portrait .body > figure.media{margin-top:auto;}

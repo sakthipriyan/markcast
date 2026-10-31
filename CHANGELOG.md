@@ -86,6 +86,8 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ### Fixed
 
+- An image card for a square or tall image no longer pushes its caption past
+  the bottom of the card.
 - A full-screen card (`view: full`) with an image nearly 16:9, such as a
   1200×630 link preview, fills the frame instead of showing grey bars above and
   below it in light mode; images further from 16:9 sit on black.

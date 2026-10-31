@@ -43,6 +43,10 @@ def take(slide):
     return slide.best_attempt()
 ```
 
+### Links between cards
+
+`{#charts}` at the end of a heading gives its card an id, and a link to `#charts` flies there: [see the charts](#charts).
+
 ## 📐 Diagrams
 
 Write the diagram in a fenced block named after its language.
@@ -80,7 +84,21 @@ Drawn inline, so `currentColor` and `var(--accent)` follow the deck's colours. P
 </svg>
 ```
 
-## 📊 Charts
+### One at a time
+
+Diagrams or charts in a row after `<!-- steps -->` become a carousel: one per press.
+
+<!-- steps -->
+
+```dot
+digraph { rankdir=LR; node [shape=box style=rounded]; Idea -> Markdown -> Deck -> Takes }
+```
+
+```dot
+digraph { rankdir=LR; node [shape=box style=rounded]; Takes -> Studio -> Video -> YouTube }
+```
+
+## 📊 Charts {#charts}
 
 ECharts, as a fenced `echarts` block of JSON options.
 
@@ -110,6 +128,10 @@ The layout comes from what's on the slide; the alt text is the caption.
 ### One image
 
 ![An image alone fills the card edge to edge](https://slidetake.com/og.jpg)
+
+### A tall image
+
+![A square or tall image sits beside its heading](https://slidetake.com/apple-touch-icon.png)
 
 ### Image and text
 
@@ -155,6 +177,10 @@ Try it: press **C** to turn on your camera, then →. This card puts you in the 
 <!-- view: overview -->
 
 This card began by pulling back to the whole map: `<!-- view: overview -->` does that. Try it: press **1** to **4** for focus, path (the default), radial and tree, and **O** to zoom out and back.
+
+### Progress and timer
+
+Press **F**: in fullscreen a thin bar along the bottom fills as you go. This deck says `duration: 10m`, so a lighter clock layer grows behind it; if it shows past the fill, you're behind.
 
 ## 🎨 Colours
 

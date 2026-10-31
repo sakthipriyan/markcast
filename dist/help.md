@@ -129,9 +129,12 @@ An optional block at the top of the file:
 title: My talk        ← page and video title
 duration: 10m         ← for the timer
 accent: "#3b82f6"     ← the deck's colour
+mode: light           ← open in light mode
 brand: example.com    ← top-right corner text
+brand_style: chip     ← the brand as a pill
 logo: https://…/l.png ← image beside it
 base: https://…/deck/ ← where images live
+site: https://…/      ← where /images live
 ---
 ```
 
@@ -149,7 +152,8 @@ Click a card to fly to it. Drag to pan; scroll or pinch to zoom. On a touch scre
 
 | Key | Does |
 |---|---|
-| → ← Space | next / previous step, in document order |
+| → ← Space | next / previous step, in document order (PgDn and PgUp too: what clickers send) |
+| Home End | first / last slide |
 | ↓ ↑ | first child / parent |
 | O | the whole map; **O** again or Esc goes back |
 | F | fullscreen; **F** again or Esc leaves |
@@ -283,7 +287,7 @@ Words you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`,
 **● Record** counts down and starts. From then on → drives everything: slides, reveals and camera moves (a Bluetooth clicker works).
 
 - **←** takes the slide again. The deck goes back and replays the slide's entry, so whichever take you pick joins smoothly
-- **B** pauses and resumes
+- **B** (or **.**, a clicker's blank-screen key) pauses and resumes
 - one press past the last step ends the take; **Esc** ends it early
 
 ### Slidetake Studio
@@ -335,7 +339,7 @@ Every deck you open is **read-only**: Slidetake's own decks, templates, files on
 
 ### Save and share
 
-**Save** downloads the markdown. **Share** copies a link: the short link while your copy still matches an online original, otherwise a `/share#deflate:…` link with the whole deck compressed inside it. That part of a link never reaches a server. **Open** loads a markdown file from your computer into your copy.
+**Save** downloads the markdown. **Share** copies a link: the short link while your copy still matches an online original, otherwise a `/share#deflate:…` link with the whole deck compressed inside it. That part of a link never reaches a server. **Open** loads a markdown file from your computer into your copy, and **⇣ Load** a deck from a link: a GitHub file, a gist or any markdown URL.
 
 ### Address options
 
