@@ -3895,6 +3895,7 @@
       setObsStatus("Connected", "ok", "");
       obsStatus.title = "Connected" + (info && info.obsWebSocketVersion ? " \xB7 OBS WebSocket " + info.obsWebSocketVersion : "");
       saveObsSettings();
+      if (reviewDialog.classList.contains("open") && obsMode()) say("Connected to OBS. Press \u25CF Record.");
     } catch (e) {
       obsConnected = false;
       const why = e && e.message && e.message !== "Error" ? e.message + "." : "Nothing answered at " + url + ".";
@@ -4062,7 +4063,7 @@
   var obsMode = () => reviewDialog.classList.contains("obs");
   function openTakes(opts = {}) {
     if (!RECORDING_UI) return;
-    if ((recMode || (browserRecording().ok ? "browser" : "obs")) === "browser") openBoard(opts);
+    if (browserRecording().ok && (recMode || "browser") === "browser") openBoard(opts);
     else openObsTakes(opts);
   }
   function openObsTakes(opts = {}) {
@@ -4630,7 +4631,10 @@
     const about = sess.empty ? "" : takesOf(sess).size + " slides, " + (retakes ? retakes + " retake" + (retakes > 1 ? "s" : "") : "no retakes") + ", recorded " + fmtLength(sess.totalObs ?? sess.total) + ". ";
     reviewDialog.classList.remove("in-browser", "board");
     reviewDialog.classList.add("obs");
-    document.getElementById("rv-rec").title = "Records the deck with OBS: a new video in place of this one";
+    const recBtn = document.getElementById("rv-rec");
+    recBtn.title = "Records the deck with OBS: a new video in place of this one";
+    recBtn.disabled = false;
+    document.getElementById("rv-use-browser").style.display = browserRecording().ok ? "" : "none";
     document.getElementById("rv-render-btn").disabled = document.getElementById("rv-clean").disabled = !!sess.cleaned;
     document.getElementById("rv-file").textContent = sess.outputPath ? " (" + baseName(sess.outputPath) + ")" : "";
     const fps = sessionFps(sess);

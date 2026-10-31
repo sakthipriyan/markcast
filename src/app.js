@@ -1732,6 +1732,7 @@ async function connectObs(){
     setObsStatus('Connected', 'ok', '');
     obsStatus.title = 'Connected' + (info && info.obsWebSocketVersion ? ' · OBS WebSocket ' + info.obsWebSocketVersion : '');
     saveObsSettings();
+    if (reviewDialog.classList.contains('open') && obsMode()) say('Connected to OBS. Press ● Record.');
   } catch(e){
     obsConnected = false;
     const why = e && e.message && e.message !== 'Error' ? e.message + '.' : 'Nothing answered at ' + url + '.';
@@ -1891,7 +1892,8 @@ function setRecMode(mode){
 const obsMode = ()=>reviewDialog.classList.contains('obs');
 function openTakes(opts = {}){
   if (!RECORDING_UI) return;
-  if ((recMode || (browserRecording().ok ? 'browser' : 'obs')) === 'browser') openBoard(opts);
+  // a browser that can't record itself (Safari, Firefox) always opens with OBS
+  if (browserRecording().ok && (recMode || 'browser') === 'browser') openBoard(opts);
   else openObsTakes(opts);
 }
 // OBS: the deck's latest recording, the one video being edited; a new recording takes its place
@@ -2311,7 +2313,10 @@ function openReview(sess, opts = {}){
     ', recorded ' + fmtLength(sess.totalObs ?? sess.total) + '. ';
   reviewDialog.classList.remove('in-browser', 'board');
   reviewDialog.classList.add('obs');
-  document.getElementById('rv-rec').title = 'Records the deck with OBS: a new video in place of this one';
+  const recBtn = document.getElementById('rv-rec');
+  recBtn.title = 'Records the deck with OBS: a new video in place of this one';
+  recBtn.disabled = false;   // OBS records, whatever this browser can do (the board turns it off where it can't)
+  document.getElementById('rv-use-browser').style.display = browserRecording().ok ? '' : 'none';
   document.getElementById('rv-render-btn').disabled = document.getElementById('rv-clean').disabled = !!sess.cleaned;
   document.getElementById('rv-file').textContent = sess.outputPath ? ' (' + baseName(sess.outputPath) + ')' : '';
   // pick the listed rate nearest to the take's (OBS reports e.g. 60000/1001 for 59.94)
