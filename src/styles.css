@@ -337,8 +337,8 @@
   .modal .warn{color:var(--accent);}
   #rv-setup .warn{color:var(--danger);}
   @media (max-width:560px){ .modal .fields{grid-template-columns:1fr;} }
-  /* Studio, beside the Editor: the record dot in red; lit (like the Editor) while it is open */
-  #btn-studio .rec-dot{color:#ef4444;}
+  /* Studio, beside the Editor: an accent dot (red is for ● Record itself); lit, like the Editor, while open */
+  #btn-studio .rec-dot{color:var(--accent);}
   /* phones and tablets can't record */
   @media (pointer:coarse){ #btn-studio{display:none;} }
   /* the bottom bar: Keys, Camera, Fullscreen, each in the accent while it is on */
