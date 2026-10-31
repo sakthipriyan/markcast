@@ -623,7 +623,7 @@
   }
   #brand[hidden]{display:none;}
   /* embedded in a site page: one read-only deck, so no editor, links or copies */
-  html.embed #btn-edit-toggle, html.embed #continue, html.embed #editor-pane, html.embed #editor-resizer{display:none !important;}
+  html.embed #btn-edit-toggle, html.embed #continue, html.embed #editor-pane, html.embed #editor-resizer, html.embed #help tr.edit{display:none !important;}
   html.embed .brand .trail{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:600;font-size:15px;min-width:0;}
   html.embed .brand .trail a{color:var(--text);text-decoration:none;white-space:nowrap;}
   /* the header wears the site's colours, so an accent-coloured link can vanish into it (gold on gold):

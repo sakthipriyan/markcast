@@ -12,6 +12,11 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+### Fixed
+
+- On a site's page (read-only, no editor) the keys panel no longer lists
+  **E** for the editor.
+
 ## [0.4.2] - 2026-10-31
 
 ### Fixed
