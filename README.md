@@ -127,7 +127,7 @@ npm run check      # type check, tests, build
 
 `dist/index.html` is committed so the app works straight from the repo; rebuild it with `npm run build` before committing.
 
-Two workflows. **Check PR** runs on every pull request: the changelog check, `npm run check` and `wrangler deploy --dry-run`. **Publish** runs on a version tag on `main` (`v0.4.0`, matching `package.json`, with a `## [0.4.0]` changelog section): it publishes the package to npm, waits until npm serves it, then deploys [slidetake.com](https://slidetake.com) as an assets-only Cloudflare Worker (`wrangler.jsonc`) with the app taken from that npm release, and creates the GitHub release. Merging to `main` deploys nothing, so the site and the package are always the same release.
+Two workflows. **Check PR** runs on every pull request: the changelog check, `npm run check` and `wrangler deploy --dry-run`. **Publish** runs on a version tag on `main` (`v0.4.0`, matching `package.json`, with a `## [0.4.0]` changelog section): it publishes the package to npm, waits until npm serves it, then deploys [slidetake.com](https://slidetake.com) as an assets-only Cloudflare Worker (`wrangler.jsonc`) with the app taken from that npm release, and creates the GitHub release. Merging to `main` deploys nothing, so the site and the package are always the same release. Run **Publish** by hand (Actions → Publish → Run workflow) to only redeploy the site for a released version, the latest on npm unless you give one: to retry a deploy or roll back. Nothing is published then.
 
 ## Status
 
