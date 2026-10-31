@@ -1302,7 +1302,6 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
   .rv-purge summary::-webkit-details-marker{display:none;}
   .rv-purge .rv-menu{position:absolute;left:0;top:calc(100% + 6px);display:flex;flex-direction:column;gap:6px;padding:8px;z-index:3;
     background:var(--panel);border:1px solid var(--panel-line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:nowrap;}
-  .rv-help{font-size:12.5px;color:var(--text-muted);}
   #rv-render-status:empty{display:none;}
   /* the take board: every slide, a box to select it for recording, its takes */
   #review:not(.board) .rv-board-only{display:none !important;}
@@ -1857,7 +1856,6 @@ Recorded `+new Date(e.date).toLocaleString()+(e.outputPath?" \xB7 "+e.outputPath
     <div class="rv-out">
       <div id="rv-render">
         <p id="rv-render-status"></p>
-        <p class="rv-help">Download joins the picked takes into one video without re-encoding, and saves it in your videos folder with the date in its name; it only makes a new one when a take or Auto volume changes. Takes stay in this browser until you purge them.</p>
       </div>
       <div id="rv-ffmpeg-box">
       <h3>ffmpeg
