@@ -177,33 +177,33 @@ With `duration: 10m` (or `90s`, `1h`, `12:30`), a lighter layer of the same colo
 
 ## 4️⃣ Record a video
 
-Two ways to record, both slide by slide, so there's no timeline to edit afterwards. Press **● Record** and pick one:
+Two ways to record, both slide by slide, so there's no timeline to edit afterwards. **● Record** (or **R**) opens **Slidetake Studio** in the way you used last; ⚙ Setup switches between them:
 
 | | In this browser | OBS |
 |---|---|---|
 | Install | nothing | [OBS Studio](https://obsproject.com) (free) |
-| Browser | Chrome, Edge or another Chromium browser, on a computer | any |
+| Browser | Chrome, Edge or another Chromium browser, on a computer (Safari and Firefox open with OBS) | any |
 | Screen | any shape: the deck is recorded in a 16:9 frame | a 16:9 screen, physical or virtual |
 | Quality | 1080p, or 720p on a smaller screen | whatever OBS records |
 | Final video | **Download** joins the picked takes, in the browser | an ffmpeg command |
 
 ### Record in the browser
 
-**● Record** opens the deck's **take board**: every slide, in order, with every take recorded of it, from every recording.
+**● Record** opens **Slidetake Studio** with the deck's takes: every slide, in order, with every take recorded of it, from every recording.
 
-1. The first time, **⚙ Setup** (top right of the board) checks the browser and screen and lists your cameras and microphones with a level meter. The camera you pick there (or **No camera**) is remembered for the deck, and **● Record turns it on by itself**, before the countdown so you can check your framing, then back off afterwards. It defaults to your camera when the deck has a camera box or camera moves. **C** is for presenting live.
-2. **● Record**, and when Chrome asks, share **this tab**. The deck goes fullscreen in a 16:9 frame; only the frame (slides and camera) is recorded, never the rest of the screen.
+1. The first time, **⚙ Setup** (top right) checks the browser and screen and lists your cameras and microphones with a level meter. The camera you pick there (or **No camera**) is remembered for the deck, and **● Record turns it on by itself**, before the countdown so you can check your framing, then back off afterwards. It defaults to your camera when the deck has a camera box or camera moves. **C** is for presenting live.
+2. **● Record** under the player, and when the browser asks, share **this tab**. The deck goes fullscreen in a 16:9 frame; only the frame (slides and camera) is recorded, never the rest of the screen.
 3. To redo part of it later, tick slides (shift-click ticks a range): **● Record** then records exactly those, each with its entry, and stops by itself after the last. Between ticked slides that aren't next to each other the deck jumps, as a retake does, so the slides in between keep their takes.
 4. Every take starts with the move in from the slide before it, so it depends on both. Edit a slide and its takes and the next slide's are marked *outdated*: kept, but no longer picked, until you record them again (or pick one yourself). To drop a slide, delete it from the deck, then record the slide that followed it again.
 
-Every take is its own file, kept in this browser's private storage until you purge it: **🗑 Purge takes → Unused takes** keeps only the ones the video uses, **All takes** clears this deck, and **Every deck's takes…** clears everything Slidetake keeps in this browser (it says how much first), including takes of decks since renamed or deleted.
+Every take is its own file, kept in this browser's private storage until you purge it: in ⚙ Setup → Files, **Purge takes → Unused takes** keeps only the ones the video uses, **All takes** clears this deck, and **Every deck's takes…** clears everything Slidetake keeps in this browser (it says how much first), including takes of decks since renamed or deleted.
 
 In fullscreen, the frame must be at least 1280×720 real pixels for 720p, 1920×1080 for 1080p: a Retina laptop makes 1080p, a 1366×768 screen 720p. Below that, use OBS.
 
 ### Set up OBS
 
 1. In OBS, turn on Tools → WebSocket Server Settings.
-2. In Slidetake, press **● Record**, then **⚙ Setup → Use OBS**, and enter OBS's host, port and password. Tick *Remember* to skip this next time. ● Record opens in the mode you used last; **Use Chrome** (or Edge, Brave…: your browser's name) switches back. Beside ⚙ Setup, a line shows what a take will use: `In Chrome · 1080p · camera · microphone`, or `OBS · 1080p · camera`.
+2. In Slidetake, press **● Record**, then **⚙ Setup → Use OBS**, enter OBS's host, port and password, and **Connect**. Tick *Remember* to skip this next time. Studio opens in the mode you used last; **Use Chrome** (or Edge, Brave…: your browser's name) switches back. Beside ⚙ Setup, a line shows what a take will use: `In Chrome · 1080p · camera · microphone`, or `OBS · 1080p · camera`.
 3. Use a 16:9 screen (YouTube is 16:9): Setup checks yours. If it isn't, move the window to one that is, physical or virtual (say 1920×1080), and press **F** there.
 
 `?obs=localhost:4455` (or `?obs=host:port:password`) in the address fills this in and connects as the page opens.
@@ -244,7 +244,7 @@ Words you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`,
 
 ### Take by take
 
-**● Record** (or **R**) counts down and starts recording. From then on the deck drives everything: camera layouts, reveals and slides follow → (a Bluetooth clicker works).
+**● Record** in Studio counts down and starts recording. From then on the deck drives everything: camera layouts, reveals and slides follow → (a Bluetooth clicker works).
 
 - **←** takes the current slide again, keeping every attempt. The deck goes back and plays the slide's entry again (the flight, the camera moving), so every take starts with it and whichever you pick joins smoothly
 - **B** pauses and resumes
@@ -252,12 +252,12 @@ Words you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`,
 
 Clicks, dragging and the map are locked so the take only moves forward.
 
-### Review, cut and publish
+### Review and cut
 
-Then **Slidetake Studio** opens, the same in both modes: the player with **● Record** and **▶ Preview** under it, every slide with its takes on the right (click one to preview it), and under them **⧉ Chapters**, which copies the final cut's chapters (`0:00 Intro`, one per section) to paste into the YouTube description; YouTube needs at least three, each 10 seconds or more. Messages share one line beside Preview, in full on hover.
+When the take ends you're back in **Slidetake Studio**, the same in both modes: the player with **● Record** and **▶ Preview** under it, every slide with its takes on the right (click one to preview it), and under them **⧉ Chapters**, which copies the final cut's chapters (`0:00 Intro`, one per section) to paste into the YouTube description; YouTube needs at least three, each 10 seconds or more. Messages share one line beside Preview, in full on hover.
 
 - **Recorded in the browser:** the board is the review. **▶ Preview** plays the picked takes back to back, following along in the take list; right after you play a single take it continues from the next slide (a message says so), otherwise from the start. **↓ Download** joins them into one MP4, in a few seconds, without re-encoding, and saves it like OBS does: a new file named by the date (`deck 2026-10-30 20-04-49.mp4`) in a folder you pick once, starting in your videos folder. Pressing it again without changing a take or the sound settings says where the video already is, rather than making it again.
-- **Recorded with OBS:** one video at a time, the deck's latest recording; recording again replaces it here (the old file stays in your OBS folder). Previews come from the OBS file: open it once, or pick your OBS recordings folder and later recordings load by themselves. **⧉ ffmpeg** copies a ready-to-run **[ffmpeg](https://ffmpeg.org)** command that cuts the picked takes (frame-exact); ⚙ Setup → Video sets how it encodes, the frame rate and Volume boost.
+- **Recorded with OBS:** one video at a time, the deck's latest recording; recording again replaces it here (the old file stays in your OBS folder). Previews come from the OBS file: open it once, or (in Chrome and Edge) pick your OBS recordings folder and later recordings load by themselves. **⧉ ffmpeg** copies a ready-to-run **[ffmpeg](https://ffmpeg.org)** command that cuts the picked takes (frame-exact); ⚙ Setup → Video sets how it encodes, the frame rate and Volume boost.
 - **The microphone's sound**, in ⚙ Setup → Microphone:
   - **Sound: Raw** (the default) records the mic as it is, best for a good mic in a quiet room. **Voice** turns on Chrome's noise suppression, which takes out fans, hum and other steady noise. On a Mac, Control Center → Mic Mode → Voice Isolation does the same for every app, before Chrome hears it.
   - **🔊 Volume boost** (on by default): YouTube plays videos at about −14 LUFS and turns louder ones down, but not quieter ones up, so a voice recorded as it is sounds quiet next to other videos. The final cut is measured the way YouTube measures it and raised towards −14 LUFS, stopping where its loudest peak would reach −1.5 dB, so it never clips. The status line says when a peak held it back.

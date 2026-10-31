@@ -13,14 +13,16 @@ The complete list, one line each. Press → to walk it, **O** for the map.
 | Feature | Advantage |
 |---|---|
 | **Takes per slide** (←) | every attempt kept; recording never stops |
-| **Record in the browser** | nothing to install: the deck records itself in a 16:9 frame, at 1080p |
-| **Or OBS, driven by the deck** | it starts and stops for you; you only talk |
+| **Record in the browser** | nothing to install: the deck records itself in a 16:9 frame, at 1080p (Chrome, Edge and other Chromium browsers) |
+| **Or OBS, driven by the deck** | any browser; it starts and stops for you, you only talk |
 | **Pause and resume** (B) | step away without a gap to cut |
 | **Clicker support** | any Bluetooth presenter remote moves the deck |
 | **16:9 check** | Setup warns before a video with bars |
-| **One takes screen** | every slide's takes, Preview and Chapters, the same in the browser and with OBS |
+| **Slidetake Studio** | every slide's takes, Preview and Chapters, the same in the browser and with OBS |
+| **Retake any slide later** | tick slides and record just those; an edited slide's takes are marked outdated |
 | **Download in the browser** | the picked takes joined into one MP4 in seconds |
 | **Frame-exact [ffmpeg](https://ffmpeg.org) cut** | with OBS: one command, no video editor |
+| **Volume boost** | your voice at YouTube's loudness (−14 LUFS), never clipped |
 | **YouTube chapters** | one click copies them, one per section |
 
 ## 🗺️ A map, not a stack

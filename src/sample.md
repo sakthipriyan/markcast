@@ -18,7 +18,7 @@ For developers and technical educators who explain things on video. You're insid
 
 ### Record right here, nothing to install
 
-Press **<span class="st-rec">● Record</span>** and the deck records itself, in Chrome or Edge: your slides and camera in one 16:9 frame, at 1080p. Or let **[OBS Studio](https://obsproject.com)** record while the deck drives it. No scenes to switch, no recording to watch.
+Press **<span class="st-rec">● Record</span>** and the deck records itself, in Chrome, Edge or another Chromium browser: your slides and camera in one 16:9 frame, at 1080p. Or let **[OBS Studio](https://obsproject.com)** record while the deck drives it, from any browser. No scenes to switch, no recording to watch.
 
 ### Every slide is a take
 
@@ -26,7 +26,7 @@ Stumbled on a slide? Press ← and say it again. Every attempt is kept, and reco
 
 ### Pick, don't scrub
 
-Choose the best take of each slide. Slidetake joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), with the YouTube **chapters**.
+Choose the best take of each slide in **Slidetake Studio**. It joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), at YouTube's loudness, with the **chapters** to paste.
 
 ### One session, one finished video
 
