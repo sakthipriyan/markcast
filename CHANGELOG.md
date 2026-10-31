@@ -16,45 +16,32 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ### Added
 
-- Record in the browser, with nothing to install. ● Record offers **In this
-  browser** next to OBS: in Chrome, Edge and other Chromium browsers on a
-  computer, the deck records itself (only its 16:9 frame: slides and camera)
-  with your microphone, each take its own file in the browser's private
-  storage. ● Record opens the deck's **take board**: every slide with every take
-  from every recording, the newest picked. **● Record** records the deck, or
-  exactly the ticked slides (shift-click for a range; slides between them are
-  jumped over and keep their takes), and says so. A take starts
-  with the entry from the slide before it, so editing a slide, deleting it, or
-  editing the one before marks its takes outdated: every final cut stays
-  seamless. There is no Leave out; delete the slide from the deck instead.
-  **⚙ Setup** (top right of the board) holds the browser and screen check,
-  camera, microphone, level, 1080p or 720p, the sound settings and **🗑 Purge
-  takes**. To rehearse, present with F: nothing is recorded.
-- **● Studio** sits beside ✎ Editor in the header and opens Slidetake Studio (R
-  still does). The bottom bar is Keys, Camera and Fullscreen, each in the
-  accent colour while it's on; Studio is hidden on phones and tablets.
-- OBS uses the same screen, **Slidetake Studio**. ● Record opens it in the mode used last;
-  **⚙ Setup → Use OBS / Use Chrome** (the browser's own name) switches, and a
-  line beside Setup shows the mode, size, camera and microphone. With OBS, Setup holds the
-  connection, the camera and the ffmpeg settings (mode, frame rate, Volume
-  boost), the screen check and the layout for takes; the screen edits one
-  video, the deck's latest OBS recording, and **⧉ ffmpeg** copies the
-  command that cuts it.
-  Under the player, **▶ Preview** plays the final cut and **↓ Download** joins
-  the picked takes into one MP4 without re-encoding, saving it like OBS (a new
-  date-stamped file in a folder picked once) and saying where; pressed again
-  with nothing changed, it doesn't make it again. **⧉ Chapters** beside it
-  copies the YouTube chapters. Messages share one line beside Preview (in
-  full on hover) and Download shows its progress in its own label, so the
-  board never changes height. **🗑 Purge takes** removes
-  unused takes, all of this deck's, or every deck's (with the total size first). OBS stays for any other browser or screen, with
-  its own review.
+- **Easy mode: record in the browser**, with nothing to install. In Chrome,
+  Edge and other Chromium browsers on a computer, the deck records itself:
+  only its 16:9 frame (slides and camera), at 1080p or 720p, with your
+  microphone, each take its own file in the browser's private storage.
+- **Slidetake Studio**, one screen for both modes, opened by **● Studio**
+  beside ✎ Editor (or R). Every slide with every take from every recording,
+  the newest picked; click one to preview it. **▶ Preview** plays the final
+  cut, **⧉ Chapters** copies the YouTube chapters, and in easy mode
+  **↓ Download** joins the picked takes into one MP4 without re-encoding the
+  video, in a folder picked once. A line beside **⚙ Setup** shows what a take
+  uses (`Easy · Chrome · 1080p · camera · mic`).
+- **Retake any slide later**: tick slides (shift-click for a range) and
+  ● Record records just those. A take starts with the entry from the slide
+  before it, so editing a slide, or the one before it, marks its takes
+  outdated, and every final cut stays seamless.
+- **Pro mode: OBS**, for Safari, Firefox or any browser, in the same Studio:
+  the deck's latest OBS recording, and **⧉ ffmpeg** copies the command that
+  cuts it. ⚙ Setup switches modes; Studio opens in the one used last.
+- **Purge takes** in ⚙ Setup → Files: unused takes, all of this deck's, or
+  every deck's (it says the total size first).
+- The bottom bar is Keys, Camera and Fullscreen, each in the accent colour
+  while it's on; Studio is hidden on phones and tablets.
 - Recording turns the camera on by itself: the camera chosen for the deck in
-  the setup (or **No camera**), on before the countdown and back to how it was
-  afterwards, so a forgotten **C** no longer costs a take. It defaults to your
-  camera when the deck has a camera box or camera moves; the OBS dialog has the
-  same choice as a checkbox. If fullscreen doesn't stick (a share prompt can
-  take it away), the countdown asks for **F**.
+  Setup (or **No camera**), on before the countdown and back to how it was
+  afterwards, so a forgotten **C** no longer costs a take. If fullscreen
+  doesn't stick (a share prompt can take it away), the countdown asks for **F**.
 - The microphone list shows each microphone once, the system default marked
   "(system default)", rather than listing it twice.
 - The microphone's sound, in Setup: **Sound: Raw** (no processing, the
@@ -74,11 +61,10 @@ package can notice. Tests, CI and tooling do not belong here.
   already in place. The take that was redone ends where ← was pressed. The
   jump back shows that slide exactly as it ended (no entrance replayed, nothing
   easing into place), so a retake joins without a flicker.
-- The review: a larger player with the takes beside it at the same height,
-  every take labelled (Take 1 included); ▶ Preview, ↓ Download and ● Record
-  under the player, with the final length and expected size; thin scrollbars
-  in the accent. The slides link fills in from the page the deck is on when the
-  deck names no permalink or site; the Record dialog is wider.
+- Studio's player is larger, with the takes beside it at the same height and
+  every take labelled (Take 1 included); the final length and expected size
+  sit under it, and lengths read as `1m 09s`, not `1:09`.
+- Device names drop their USB ids (`(1377:1100)`).
 - A card widens for its code, as it does for a table, so a code block only
   scrolls when it's wider than the widest card.
 - Graphviz diagrams are drawn in the deck's own colours for dark and light,
@@ -112,11 +98,11 @@ package can notice. Tests, CI and tooling do not belong here.
 ### Removed
 
 - The Record dialog: its OBS connection, camera choice and take layout moved
-  into the takes screen's ⚙ Setup.
+  into Studio's ⚙ Setup.
 - The review's YouTube section (title, description, tags) and the publish
   pack download; ⧉ Chapters copies the chapters. The deck keys `summary`,
   `related`, `tags` and `permalink` are no longer read for it.
-- The list of earlier OBS recordings: the takes screen shows the latest one.
+- The list of earlier OBS recordings: Studio shows the latest one.
 - Recording from embedded decks: `slidetake.js` is now only a viewer, and
   `?obs` and `recording: true` no longer bring Camera and Studio to a site's
   page. Record the deck's markdown on slidetake.com or with `npx slidetake`
