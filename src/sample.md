@@ -26,7 +26,7 @@ Press **● Studio**, then **<span class="st-rec">● Record</span>**, and the d
 
 ### Pick the best take
 
-Choose the best take of each slide in **Slidetake Studio**. It joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), at YouTube's loudness, with the **chapters** to paste.
+Choose the best take of each slide in **● Studio**. It joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), at YouTube's loudness, with the **chapters** to paste.
 
 ## 🗺️ A map, not a stack
 

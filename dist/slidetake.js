@@ -27,7 +27,7 @@ Press **\u25CF Studio**, then **<span class="st-rec">\u25CF Record</span>**, and
 
 ### Pick the best take
 
-Choose the best take of each slide in **Slidetake Studio**. It joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), at YouTube's loudness, with the **chapters** to paste.
+Choose the best take of each slide in **\u25CF Studio**. It joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), at YouTube's loudness, with the **chapters** to paste.
 
 ## \u{1F5FA}\uFE0F A map, not a stack
 
