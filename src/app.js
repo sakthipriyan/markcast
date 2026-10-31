@@ -28,9 +28,9 @@ const LOCAL = window.SLIDETAKE_LOCAL || null;
 // the logo, read once from the header (which an embed replaces): the corner mark and the credit reuse it
 const LOGO = document.querySelector('header .mark .logo').outerHTML;
 document.documentElement.classList.toggle('embed', !!EMBED);
-// Camera and Record are for making a video. On slidetake.com they're always there; embedded in a site
-// they'd only puzzle readers, so they appear there with ?obs= in the address (or recording: true).
-const RECORDING_UI = !EMBED || EMBED.recording === true || new URLSearchParams(location.search).has('obs');
+// Camera and Studio are for making a video: on slidetake.com and `npx slidetake`. Embedded in a site,
+// Slidetake is only a viewer; the deck is recorded from its markdown on slidetake.com or locally.
+const RECORDING_UI = !EMBED;
 document.documentElement.classList.toggle('no-record', !RECORDING_UI);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slidetake's own read-only decks
@@ -104,6 +104,22 @@ function renderMd(body){
 
 
 
+
+// Slidetake's own decks (brand: slidetake) write the name as the logo and the two-tone word, as the
+// header does, wherever it appears in a card's text (not in code, or in italics: a quoted prompt)
+const NAME_MARK = '<span class="st-name">' + LOGO + 'Slide<span class="st-take">take</span></span>';
+/** @param {HTMLElement} body */
+function markName(body){
+  const walk = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {acceptNode: t=>
+    /Slidetake/.test(t.nodeValue || '') && !t.parentElement?.closest('code, pre, kbd, svg, em, .st-name') ? 1 : 2});
+  const hits = [];
+  while (walk.nextNode()) hits.push(walk.currentNode);
+  hits.forEach(t=>{
+    const span = document.createElement('span');
+    span.innerHTML = escapeHtml(t.nodeValue || '').replace(/Slidetake/g, NAME_MARK);
+    t.replaceWith(...span.childNodes);
+  });
+}
 
 function applyDeckSettings(){
   const name = deck.brand || '', logo = deck.logo || '';
@@ -949,6 +965,7 @@ function build(){
     applyStepsComments(body);
     groupVisualRuns(body);
     applyMedia(el, body);
+    if (/^slidetake$/i.test(deck.brand || '')) markName(body);
     // a markdown table needs a header row; a blank one (| | |) is only there to satisfy the syntax
     body.querySelectorAll('thead').forEach(h=>{ if (!h.textContent.trim()) h.remove(); });
     unresolved += resolveUrls(body);

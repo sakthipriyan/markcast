@@ -100,9 +100,9 @@ npx slidetake deck.md
 
 Images next to the markdown load as they are. Save in any editor and the deck reloads where you are; type in the browser and it saves to the file. So an AI agent can write `deck.md` while you watch it take shape.
 
-### Your website: users view, you record
+### Your website: a viewer for your readers
 
-`slidetake.js` puts decks inside your own pages, in your site's colours. Users get a clean viewer; add `?obs` to the address and the same page records your video.
+`slidetake.js` puts decks inside your own pages, in your site's colours: a clean viewer, nothing else to set up. Record the same markdown here or with `npx slidetake`.
 
 ## <span class="st-heart" aria-hidden="true"></span> Open source
 

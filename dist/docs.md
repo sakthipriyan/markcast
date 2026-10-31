@@ -60,7 +60,7 @@ window.SLIDETAKE = {
 <script src="https://cdn.jsdelivr.net/npm/slidetake/dist/slidetake.js"></script>
 ```
 
-Users get a viewer with no recording controls; `?obs` on the page's address brings them back for you. The hugo-continuum theme writes this for slide pages with `engine: slidetake`, so a Hugo site previews decks locally with `hugo server`.
+It's a viewer: no editor, camera or Studio, just the deck. To record it, open the same markdown on slidetake.com or with `npx slidetake`; `accent:`, `brand:` and `logo:` give the video your site's look. The hugo-continuum theme writes this for slide pages with `engine: slidetake`, so a Hugo site previews decks locally with `hugo server`.
 
 ### With AI
 

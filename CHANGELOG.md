@@ -78,6 +78,9 @@ package can notice. Tests, CI and tooling do not belong here.
   in the accent. The slides link fills in from the page the deck is on when the
   deck names no permalink or site; the Record dialog is wider.
 
+- Slidetake's own decks write the name as in the header, the logo and
+  Slide*take* in two colours, wherever it appears in a card's text.
+
 ### Fixed
 
 - With OBS, a retake's cut no longer starts with a moment of the attempt
@@ -98,6 +101,10 @@ package can notice. Tests, CI and tooling do not belong here.
   pack download; ⧉ Chapters copies the chapters. The deck keys `summary`,
   `related`, `tags` and `permalink` are no longer read for it.
 - The list of earlier OBS recordings: the takes screen shows the latest one.
+- Recording from embedded decks: `slidetake.js` is now only a viewer, and
+  `?obs` and `recording: true` no longer bring Camera and Studio to a site's
+  page. Record the deck's markdown on slidetake.com or with `npx slidetake`
+  (`?obs=host:port` still connects OBS there).
 
 ## [0.3.4] - 2026-10-28
 
