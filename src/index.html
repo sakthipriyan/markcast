@@ -245,13 +245,6 @@
           <h4>Video</h4>
           <select id="rec-quality" aria-label="Quality"></select>
           <p class="rv-setup-note" id="rec-browser-check"></p>
-          <div class="rv-setup-row">
-            <button class="btn small" id="rv-folder-change" title="Where Download saves videos">Download folder…</button>
-            <details class="rv-purge">
-              <summary class="btn small" title="Delete takes from this browser">🗑 Purge takes</summary>
-              <div class="rv-menu"><button class="btn small" id="rv-clean-unused">Unused takes</button><button class="btn small" id="rv-clean">All takes</button></div>
-            </details>
-          </div>
         </section>
         <section class="for-obs">
           <h4>Video</h4>
@@ -281,6 +274,14 @@
           </select>
         </label>
         <span class="rv-setup-note">During a take: → next · ← take this slide again · B pause · Esc stop</span>
+        <div class="rv-setup-row rv-files for-browser">
+          <span class="rv-setup-label">Files</span>
+          <button class="btn small" id="rv-folder-change" title="Where Download saves videos">Download folder…</button>
+          <details class="rv-purge">
+            <summary class="btn small" title="Delete takes from this browser">🗑 Purge takes</summary>
+            <div class="rv-menu"><button class="btn small" id="rv-clean-unused">Unused takes</button><button class="btn small" id="rv-clean">All takes</button></div>
+          </details>
+        </div>
       </div>
       <p class="rv-setup-note for-browser">When Chrome asks, share <strong>this tab</strong>. Only the slides and your camera are recorded, in a 16:9 frame; nothing else on the screen is.</p>
     </details>

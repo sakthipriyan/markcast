@@ -1293,6 +1293,8 @@ EOF
   .rv-setup-cols meter{width:100%;height:8px;}
   .rv-setup-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
   .rv-setup-gap{flex:1}
+  .rv-files{margin-left:auto;}
+  .rv-files .rv-menu{left:auto;right:0;}
   .rv-obs-fields{display:grid;grid-template-columns:minmax(0,1.2fr) 60px minmax(0,1fr);gap:6px;}
   .modal .rv-obs-fields input{width:100%;min-width:0;font-size:11.5px;padding:4px 8px;}
   .rv-setup-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:14px;padding-top:10px;border-top:1px solid var(--panel-line);}
@@ -1800,13 +1802,6 @@ EOF
           <h4>Video</h4>
           <select id="rec-quality" aria-label="Quality"></select>
           <p class="rv-setup-note" id="rec-browser-check"></p>
-          <div class="rv-setup-row">
-            <button class="btn small" id="rv-folder-change" title="Where Download saves videos">Download folder\u2026</button>
-            <details class="rv-purge">
-              <summary class="btn small" title="Delete takes from this browser">\u{1F5D1} Purge takes</summary>
-              <div class="rv-menu"><button class="btn small" id="rv-clean-unused">Unused takes</button><button class="btn small" id="rv-clean">All takes</button></div>
-            </details>
-          </div>
         </section>
         <section class="for-obs">
           <h4>Video</h4>
@@ -1836,6 +1831,14 @@ EOF
           </select>
         </label>
         <span class="rv-setup-note">During a take: \u2192 next \xB7 \u2190 take this slide again \xB7 B pause \xB7 Esc stop</span>
+        <div class="rv-setup-row rv-files for-browser">
+          <span class="rv-setup-label">Files</span>
+          <button class="btn small" id="rv-folder-change" title="Where Download saves videos">Download folder\u2026</button>
+          <details class="rv-purge">
+            <summary class="btn small" title="Delete takes from this browser">\u{1F5D1} Purge takes</summary>
+            <div class="rv-menu"><button class="btn small" id="rv-clean-unused">Unused takes</button><button class="btn small" id="rv-clean">All takes</button></div>
+          </details>
+        </div>
       </div>
       <p class="rv-setup-note for-browser">When Chrome asks, share <strong>this tab</strong>. Only the slides and your camera are recorded, in a 16:9 frame; nothing else on the screen is.</p>
     </details>
