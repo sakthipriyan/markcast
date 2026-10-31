@@ -157,9 +157,9 @@
   /* the analytics choice: two cards, the chosen one in the accent */
   .modal .choices{display:grid;gap:8px;margin:12px 0;}
   /* a choice card (analytics on or off; recording in the browser or with OBS): the chosen one looks selected */
-  .modal .choice, .rec-mode{padding:10px 12px;border:1px solid var(--panel-line);border-radius:8px;background:transparent;color:var(--text);font:inherit;cursor:pointer;}
-  .modal .choice:hover, .rec-mode:hover{border-color:var(--accent);}
-  .modal .choice[aria-checked="true"], .rec-mode:has(input:checked){border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  .modal .choice{padding:10px 12px;border:1px solid var(--panel-line);border-radius:8px;background:transparent;color:var(--text);font:inherit;cursor:pointer;}
+  .modal .choice:hover{border-color:var(--accent);}
+  .modal .choice[aria-checked="true"]{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   .modal .choice{display:flex;flex-direction:column;gap:4px;text-align:left;}
   .modal .choice strong{font-family:var(--display);font-size:14px;}
   .modal .choice span{font-size:12px;line-height:1.55;color:var(--text-muted);}
@@ -347,11 +347,9 @@
      only while it is its own stacking context, hence the isolation (without it the capture is silently empty). */
   body.rec-frame main{background:#000;}
   body.rec-frame #stage-wrap{flex:none;margin:auto;width:min(100%, calc(100vh * 16 / 9));aspect-ratio:16/9;isolation:isolate;}
-  .rec-modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px;}
-  .rec-mode{display:flex;gap:10px;align-items:flex-start;}
-  .rec-mode input{margin-top:3px;}
-  .rec-mode small{display:block;color:var(--text-muted);font-size:12px;margin-top:2px;}
-  #review.in-browser #rv-novideo, #review.in-browser #rv-ffmpeg-box{display:none !important;}
+  #review.in-browser #rv-novideo{display:none !important;}
+  /* the takes screen records in this browser, or with OBS: each mode's own controls */
+  #review.obs .for-browser, #review:not(.obs) .for-obs{display:none !important;}
   #rec-countdown{
     position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
     background:rgba(4,7,13,.9);font-family:var(--display);color:var(--accent);
@@ -381,7 +379,6 @@
   .rv-purge .rv-menu{position:absolute;left:0;top:calc(100% + 6px);display:flex;flex-direction:column;gap:6px;padding:8px;z-index:3;
     background:var(--panel);border:1px solid var(--panel-line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:nowrap;}
   /* the take board: every slide, a box to select it for recording, its takes */
-  #review:not(.board) .rv-board-only{display:none !important;}
   .rv-row.with-sel{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:start;}
   .rv-row .rv-sel{margin:3px 0 0;accent-color:var(--accent);}
   .rv-row.selected{background:color-mix(in srgb, var(--accent) 7%, transparent);}
@@ -401,9 +398,17 @@
   .rv-setup-cols section{display:flex;flex-direction:column;gap:8px;min-width:0;}
   .rv-setup-cols h4{margin:0;font-family:var(--display);font-size:13px;color:var(--text);}
   .rv-setup-cols select{width:100%;}
+  .rv-setup-cols #rv-fps{width:auto;}
   .rv-setup-cols meter{width:100%;height:8px;}
   .rv-setup-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
   .rv-setup-gap{flex:1}
+  .rv-obs-fields{display:grid;grid-template-columns:minmax(0,1fr) 72px;gap:6px;}
+  .modal .rv-obs-fields input{width:100%;min-width:0;font-size:11.5px;padding:4px 8px;}
+  .rv-obs-fields #obs-pass{grid-column:1 / -1;}
+  .rv-setup-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:14px;padding-top:10px;border-top:1px solid var(--panel-line);}
+  .modal .rv-setup-foot label{flex-direction:row;align-items:center;gap:8px;margin:0;}
+  .rv-setup-foot select{width:auto;}
+  .modal .rv-setup-row label.check{gap:6px;margin:0;}
   .rv-setup-label{font-size:12px;color:var(--text-muted);}
   .seg.small{height:24px;}
   .seg.small .seg-btn{font-size:11px;padding:0 10px;}
@@ -414,10 +419,8 @@
   /* under the takes: the final cut's size, and Download */
   .rv-dl{grid-area:dl;display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:12px;}
   #rv-chapters{margin-right:auto;min-width:112px;}
-  #review.board .rv-yt{display:none !important;}
   /* Preview and Pause: one width, so the button doesn't change size as it switches */
   .btn.rv-preview{min-width:104px;}
-  #review:not(.in-browser) #rv-render-btn{display:none;}
   @media (max-width:900px){
     .rv-grid{grid-template-columns:1fr;grid-template-areas:"video" "bar" "list" "dl";}
     .rv-list{contain:none;max-height:50vh;margin-top:12px;}
@@ -430,7 +433,7 @@
   #rv-now{flex:1;min-width:0;text-align:right;font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #rv-now.warn{color:var(--danger);}
   #rv-now .btn{vertical-align:middle;margin-right:6px;}
-  #rv-render-btn{min-width:120px;}
+  #rv-render-btn, #rv-ffmpeg-copy{min-width:120px;}
   .rv-list{overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
   .rv-row{padding:9px 12px;border-bottom:1px solid var(--panel-line);}
   .rv-row:last-child{border-bottom:none;}
@@ -443,11 +446,7 @@
   .rv-chip:hover{border-color:var(--accent);color:var(--accent);}
   .rv-chip.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   .rv-chip.skip.on{border-color:var(--danger);color:var(--danger);background:rgba(224,100,92,.1);}
-  .rv-out{margin-top:6px;}
-  .rv-out .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  @media (max-width:900px){ .rv-out .two{grid-template-columns:1fr;} }
   .modal select{background:var(--code-bg);border:1px solid var(--node-border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11.5px;padding:4px 8px;}
-  #rec-sessions{margin-top:14px;}
 
   /* ---------- reveal.js compatibility: fragments, stacks, diagrams, charts ---------- */
   .node .fragment{opacity:0;visibility:hidden;transition:opacity .45s ease, transform .45s ease, visibility 0s .45s;}

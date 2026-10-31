@@ -17,12 +17,11 @@ The complete list, one line each. Press → to walk it, **O** for the map.
 | **Or OBS, driven by the deck** | it starts and stops for you; you only talk |
 | **Pause and resume** (B) | step away without a gap to cut |
 | **Clicker support** | any Bluetooth presenter remote moves the deck |
-| **16:9 check** | the Record dialog warns before a video with bars |
-| **Review** | every slide's takes, previewed from the OBS file |
+| **16:9 check** | Setup warns before a video with bars |
+| **One takes screen** | every slide's takes, Preview and Chapters, the same in the browser and with OBS |
 | **Download in the browser** | the picked takes joined into one MP4 in seconds |
 | **Frame-exact [ffmpeg](https://ffmpeg.org) cut** | with OBS: one command, no video editor |
-| **Publish pack** | YouTube title, description, chapters, links and tags from the deck |
-| **Saved sessions** | review a recording again later |
+| **YouTube chapters** | one click copies them, one per section |
 
 ## 🗺️ A map, not a stack
 

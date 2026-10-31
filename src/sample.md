@@ -26,7 +26,7 @@ Stumbled on a slide? Press ← and say it again. Every attempt is kept, and reco
 
 ### Pick, don't scrub
 
-Choose the best take of each slide. Slidetake joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), with the YouTube **chapters** and the description.
+Choose the best take of each slide. Slidetake joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), with the YouTube **chapters**.
 
 ### One session, one finished video
 

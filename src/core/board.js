@@ -89,8 +89,8 @@ export function boardRows(board, slides){
 }
 
 /**
- * The final cut as a recording session: the picked takes back to back, in deck order. Chapters, the clip
- * plan and the publish pack work on it as on any recording.
+ * The final cut as a recording session: the picked takes back to back, in deck order. Chapters and the clip
+ * plan work on it as on any recording.
  * @param {Row[]} rows
  */
 export function boardSession(rows){

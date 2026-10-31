@@ -1,12 +1,12 @@
 # Slidetake
 
-> Write in markdown. Present on a spatial canvas. Record without timeline editing. A markdown file becomes a spatial deck you move through like a map; recording with OBS, every slide is a take, so a fumbled line is retaken on the spot, and Slidetake writes the frame-exact ffmpeg cut, YouTube chapters and description. For developers and technical educators.
+> Write in markdown. Present on a spatial canvas. Record without timeline editing. A markdown file becomes a spatial deck you move through like a map; recording with OBS, every slide is a take, so a fumbled line is retaken on the spot, and Slidetake writes the frame-exact ffmpeg cut and the YouTube chapters. For developers and technical educators.
 
 Slidetake runs in the browser at https://slidetake.com, on your own computer with `npx slidetake deck.md`, and inside other sites with `slidetake.js`. It is open source (Apache 2.0): https://github.com/slidetake/slidetake
 
 ## Docs
 
-- [Docs](https://slidetake.com/docs.md): the full guide as markdown, itself a Slidetake deck (writing decks, opening and sharing, layouts and keys, presenting, recording, camera directives, review and cut, publish pack)
+- [Docs](https://slidetake.com/docs.md): the full guide as markdown, itself a Slidetake deck (writing decks, opening and sharing, layouts and keys, presenting, recording, camera directives, review and cut)
 - [Showcase](https://slidetake.com/showcase.md): every feature in one deck
 - [Features](https://slidetake.com/features.md): every feature and what it's for
 - [Privacy](https://slidetake.com/privacy.md): what slidetake.com collects, what stays in the browser, and which services a deck can reach

@@ -2,7 +2,7 @@
 
 Markdown in, a spatial deck and a finished video out.
 
-Slidetake turns a markdown file into a deck you move through like a map, and, when you are recording, drives the camera and OBS from the deck itself: every slide is a take, a slide spoken badly is retaken on the spot, and at the end you get a frame-exact ffmpeg cut, chapters and a YouTube publish pack.
+Slidetake turns a markdown file into a deck you move through like a map, and, when you are recording, drives the camera and OBS from the deck itself: every slide is a take, a slide spoken badly is retaken on the spot, and at the end you get a frame-exact ffmpeg cut and the YouTube chapters.
 
 The built app is a single HTML file, [`dist/index.html`](dist/index.html): open it, copy it or host it anywhere. Every feature: [slidetake.com/features](https://slidetake.com/features); step by step: [slidetake.com/docs](https://slidetake.com/docs).
 
@@ -68,7 +68,7 @@ The bottom bar always has **Camera** (C), **● Record** (R) and **Fullscreen** 
 ?obs=192.168.1.10:4455:password
 ```
 
-**Recording needs [OBS Studio](https://obsproject.com)** (free) with its WebSocket server on; OBS records and Slidetake drives it. The Record dialog checks the screen: if it isn't 16:9, present on a screen that is, physical or virtual (say 1920×1080), so the video fits YouTube without bars.
+**Recording needs [OBS Studio](https://obsproject.com)** (free) with its WebSocket server on; OBS records and Slidetake drives it. Setup checks the screen: if it isn't 16:9, present on a screen that is, physical or virtual (say 1920×1080), so the video fits YouTube without bars.
 
 From https://slidetake.com, OBS must run on the same computer (`localhost`): browsers block secure pages from plain `ws://` connections to other machines. To record with OBS on another machine, use `npx slidetake`, which serves over http.
 

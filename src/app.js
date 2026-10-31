@@ -1624,11 +1624,10 @@ const OBS_URL = 'https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.5/dist/obs-ws
 const NEXT_KEYS = ['ArrowRight', 'PageDown', ' ', 'ArrowDown', 'Enter'];
 const BACK_KEYS = ['ArrowLeft', 'PageUp', 'ArrowUp', 'r', 'R'];
 const PAUSE_KEYS = ['b', 'B', '.'];
-const recDialog = document.getElementById('rec-dialog'), reviewDialog = document.getElementById('review');
+const reviewDialog = document.getElementById('review');
 const countdownEl = document.getElementById('rec-countdown'), pausedEl = document.getElementById('rec-paused');
 const obsHost = document.getElementById('obs-host'), obsPort = document.getElementById('obs-port'), obsPass = document.getElementById('obs-pass');
 const obsRemember = document.getElementById('obs-remember'), obsStatus = document.getElementById('obs-status');
-const recStartBtn = document.getElementById('rec-start');
 let obs = null, obsConnected = false, recStartResolve = null, obsFps = null;
 // t0/pausedMs give "time into the recording"; log holds slide arrivals and retakes; cuts are the bad parts
 // t0/pausedMs give "time into the recording"; every slide start (first attempt or retake) is an event,
@@ -1671,12 +1670,6 @@ function closeModals(){ document.querySelectorAll('.modal.open').forEach(m=>m.cl
 document.querySelectorAll('.modal').forEach(m=>{
   m.addEventListener('click', e=>{ if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('open'); });
 });
-document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click', ()=>{
-  const ta = document.getElementById(b.dataset.copy);
-  ta.select();
-  (navigator.clipboard ? navigator.clipboard.writeText(ta.value) : Promise.reject()).catch(()=>document.execCommand('copy'));
-  b.textContent = 'Copied'; setTimeout(()=>{ b.textContent = 'Copy'; }, 1500);
-}));
 
 // OBS connection settings: ?obs=host:port[:password], else what was remembered
 function loadObsSettings(){
@@ -1708,7 +1701,7 @@ async function connectObs(){
   const host = obsHost.value.trim() || 'localhost';
   const url = 'ws://' + host + ':' + (obsPort.value.trim() || '4455');
   if (obsBlockedHere(host)){
-    obsConnected = false; recStartBtn.disabled = true;
+    obsConnected = false;
     setObsStatus(OBS_HTTPS_HELP, 'err');
     return;
   }
@@ -1721,7 +1714,6 @@ async function connectObs(){
     obs.on('ConnectionClosed', ()=>{
       obsConnected = false;
       setObsStatus('Disconnected from OBS', 'err');
-      recStartBtn.disabled = true;
     });
     obs.on('RecordStateChanged', e=>{
       if (e.outputState === 'OBS_WEBSOCKET_OUTPUT_STARTED' && recStartResolve){ recStartResolve(); recStartResolve = null; }
@@ -1737,7 +1729,6 @@ async function connectObs(){
     obsConnected = false;
     setObsStatus('Could not connect (' + ((e && e.message) || e) + '). Is OBS running with its WebSocket server on, and is the password right?', 'err');
   }
-  recStartBtn.disabled = !obsConnected;
 }
 document.getElementById('obs-connect').onclick = connectObs;
 obsRemember.addEventListener('change', saveObsSettings);
@@ -1807,10 +1798,10 @@ async function startMeter(){
     loop();
   } catch(e){ recCheck.innerHTML = '<span class="warn">The microphone isn’t available: ' + escapeHtml(e.message || e.name) + '. Allow it in the site settings.</span>'; }
 }
-async function fillDevices(){
+async function fillDevices(withMic = true){
   try {
-    // labels are only listed once the page may use a device, so ask for the mic first
-    if (!meter) await startMeter();
+    // labels are only listed once the page may use a device, so ask for the mic first (OBS records the mic)
+    if (withMic && !meter) await startMeter();
     const devs = await navigator.mediaDevices.enumerateDevices();
     // Chrome lists the system default (and on Windows the communications device) again as extra entries:
     // drop them, and mark the device they stand for instead
@@ -1826,6 +1817,7 @@ async function fillDevices(){
     const cam = camChoice();
     recCam.innerHTML = '<option value="none"' + (cam === 'none' ? ' selected' : '') + '>No camera</option>' + opts('videoinput', cam);
     const mic = load('slidetake:mic') || '';
+    if (!withMic) return;
     recMic.innerHTML = opts('audioinput', mic);
     if (mic && recMic.value === mic && meter && meter.stream.getAudioTracks()[0].getSettings().deviceId !== mic) startMeter();
   } catch(e){}
@@ -1878,33 +1870,26 @@ async function showBrowserCheck(){
   if (!recCheck.querySelector('.warn')) recCheck.innerHTML = '<span class="ok">Ready: this screen records up to ' + b.quality.name + ' in fullscreen.' + escapeHtml(room) + '</span>';
   return b;
 }
-// recording in the browser happens from the take board; the Record dialog is for OBS
+// Record opens the takes screen, in the mode last used: takes recorded in this browser (a board of every take
+// of every slide), or one OBS recording (its takes, cut from the file by ffmpeg)
 function setRecMode(mode){
   recMode = mode;
   save('slidetake:rec-mode', mode);
-  document.querySelectorAll('input[name="rec-mode"]').forEach(r=>{ r.checked = r.value === mode; });
-  document.getElementById('rec-obs').hidden = mode !== 'obs';
-  if (mode === 'browser'){ if (recDialog.classList.contains('open')){ closeModals(); openBoard(); } }
-  else { stopMeter(); recStartBtn.disabled = !obsConnected; }
+  if (reviewDialog.classList.contains('open')) openTakes({setup:true});
 }
-document.querySelectorAll('input[name="rec-mode"]').forEach(r=>r.onchange = ()=>setRecMode(r.value));
-recDialog.addEventListener('click', e=>{ if (e.target === recDialog || e.target.closest('[data-close]')) stopMeter(); });
-
-function openRecordDialog(){
+const obsMode = ()=>reviewDialog.classList.contains('obs');
+function openTakes(opts = {}){
   if (!RECORDING_UI) return;
-  const total = order.reduce((a, id)=>a + slideSteps(nodes.get(id)).length, 0);
-  document.getElementById('rec-deck-info').innerHTML =
-    escapeHtml(deck.title || (roots[0] ? nodes.get(roots[0]).title : 'This deck')) + ' · ' + order.length + ' slides · ' + total + ' presses' +
-    '<br><label class="check"><input type="checkbox" id="rec-cam-on"' + (camChoice() !== 'none' ? ' checked' : '') + '> Include my camera (it turns on when the take starts)</label>';
-  document.getElementById('rec-cam-on').onchange = e=>setCamChoice(e.target.checked ? (load('slidetake:cam') || 'default') : 'none');
-  if ((recMode || (browserRecording().ok ? 'browser' : 'obs')) === 'browser'){ openBoard(); return; }
-  renderSessionList();
-  showScreenAdvice();
-  openModal(recDialog);
-  setRecMode('obs');
+  if ((recMode || (browserRecording().ok ? 'browser' : 'obs')) === 'browser') openBoard(opts);
+  else openObsTakes(opts);
 }
-document.getElementById('btn-record').onclick = openRecordDialog;
-recStartBtn.onclick = ()=>startTake('obs');
+// OBS: the deck's latest recording, the one video being edited; a new recording takes its place
+function openObsTakes(opts = {}){
+  const last = loadSessions().find(x=>x.key === sessionKey() && x.withObs && !x.inBrowser);
+  openReview(last || {key:sessionKey(), deckTitle:deck.title || (order[0] ? nodes.get(order[0]).title : 'Deck'), date:new Date().toISOString(),
+    withObs:true, outputPath:null, reason:'', total:0, totalObs:null, fps:obsFps, events:[], picks:{}, empty:true}, opts);
+}
+document.getElementById('btn-record').onclick = ()=>openTakes();
 
 // the takes of each session live in the browser's private storage, in a folder named after the session
 async function takesDir(id, create){
@@ -2231,7 +2216,7 @@ async function finishTake(reason){
   };
   if (session.inBrowser){ addToBoard(session); return; }
   saveSession(session);
-  openReview(session);
+  openReview(session, {note:(reason ? reason + '. ' : '') + takesOf(session).size + ' slides recorded with OBS.'});
 }
 
 // ---------- sessions: kept in this browser so a take can be reviewed (and re-picked) later ----------
@@ -2243,15 +2228,6 @@ function saveSession(sess){
   // a session that drops off the list takes its recorded takes with it
   all.slice(12).forEach(x=>{ if (x.takesId) deleteTakes(x.takesId); });
   save('slidetake:sessions', JSON.stringify(all.slice(0, 12)));
-}
-function renderSessionList(){
-  const box = document.getElementById('rec-sessions');
-  const mine = loadSessions().filter(x=>x.key === sessionKey() && !x.inBrowser);
-  box.innerHTML = mine.length ? '<h3>Earlier takes of this deck</h3>' + mine.map((x, i)=>
-    '<div class="row"><button class="btn small" data-session="' + i + '">Review</button><span>' +
-    escapeHtml(new Date(x.date).toLocaleString()) + ' · ' + fmtLength(x.totalObs ?? x.total) + (x.inBrowser ? ' · in this browser' + (x.cleaned ? ' (takes deleted)' : '') : x.withObs ? '' : ' · rehearsal') +
-    (x.outputPath ? ' · ' + escapeHtml(baseName(x.outputPath)) : '') + '</span></div>').join('') : '';
-  box.querySelectorAll('[data-session]').forEach(b=>b.onclick = ()=>{ closeModals(); openReview(mine[+b.dataset.session]); });
 }
 
 // the picked take of each slide (default: the last attempt), as ranges of the recording, in order
@@ -2297,55 +2273,6 @@ soundBtns.forEach(b=>b.onclick = ()=>{ save('slidetake:mic-sound', b.dataset.sou
 showLoud();
 loudBtns.forEach(b=>b.onclick = ()=>{ save('slidetake:loudness', loudOn() ? 'off' : 'on'); showLoud(); if (reviewing) renderReview(); });
 
-// ---------- YouTube publish pack ----------
-function deckTags(){
-  // tags, plus any other *_tags list a site keeps (Hugo sites often split tags by section)
-  const all = Object.keys(deck).filter(k=>k === 'tags' || /_tags$/.test(k)).flatMap(k=>[].concat(deck[k])).filter(t=>typeof t === 'string');
-  return [...new Set(all.map(t=>t.trim()).filter(Boolean))];
-}
-function relatedLinks(){
-  return [].concat(deck.related || []).map(x=>{
-    const md = String(x).match(/^\[([^\]]+)\]\(([^)]+)\)$/), pipe = String(x).split('|');
-    if (md) return md[1] + ': ' + md[2];
-    if (pipe.length === 2) return pipe[0].trim() + ': ' + pipe[1].trim();
-    return String(x);
-  });
-}
-// the deck's public page: front matter permalink/url, else site + the path it was loaded from
-function deckLink(){
-  if (deck.permalink || deck.url) return deck.permalink || deck.url;
-  const site = deck.site || load('slidetake:site');
-  if (!site || !deckBase) return pageLink();
-  try {
-    const path = new URL(deckBase).pathname.replace(/\/index\.md$/i, '/').replace(/\.md$/i, '/');
-    return new URL(path, site).href;
-  } catch(e){ return pageLink(); }
-}
-// otherwise the page the deck is open on, when others can open that address too: not this computer, not a
-// copy kept in this browser, and not a link with the whole deck inside it
-function pageLink(){
-  if (location.protocol === 'file:' || isLoopback(location.hostname)) return '';
-  if (/^\/(edit|new|share)\b/.test(location.pathname) || location.hash.includes('deflate:')) return '';
-  const u = new URL(location.href);
-  u.hash = '';
-  ['obs', 'edit', 'layout', 'mode'].forEach(k=>u.searchParams.delete(k));
-  return u.href;
-}
-function describe(sess){
-  const ch = finalChapters(sess), link = document.getElementById('rv-link').value.trim(), related = relatedLinks(), tags = deckTags();
-  const parts = [];
-  if (deck.summary) parts.push(deck.summary);
-  if (link) parts.push('📑 Slides: ' + link);
-  if (ch.lines.length >= 3) parts.push('Chapters\n' + ch.lines.join('\n'));
-  if (related.length) parts.push('Related\n' + related.map(r=>'• ' + r).join('\n'));
-  if (tags.length) parts.push(tags.slice(0, 3).map(t=>'#' + t.replace(/[^\p{L}\p{N}]+/gu, '')).join(' '));
-  document.getElementById('rv-yt-desc').value = parts.join('\n\n');
-  document.getElementById('rv-chapters-note').textContent =
-    (ch.dropped ? ch.dropped + ' section' + (ch.dropped > 1 ? 's were' : ' was') + ' under 10 seconds and folded into the chapter before, as YouTube requires. ' : '') +
-    (ch.lines.length < 3 ? 'YouTube needs at least three chapters, so none are listed. ' : '') +
-    'Final length ' + fmtLength(ch.length) + '.';
-}
-
 // ---------- the review screen ----------
 let reviewing = null, playlist = null;
 const rvVideo = document.getElementById('rv-video'), rvNow = document.getElementById('rv-now');
@@ -2363,16 +2290,18 @@ const selNote = ()=>{
   const n = selectedInOrder(order, selected).length;
   return n ? n + '/' + order.length + ' slide' + (n === 1 ? '' : 's') + ' up for a take' : '';
 };
-function openReview(sess){
+function openReview(sess, opts = {}){
+  closeModals();
   reviewing = sess;
   playlist = null;
   const slides = takesOf(sess), retakes = sess.events.filter(e=>e.retake).length;
   const recorded = sess.withObs || sess.inBrowser;
-  reviewDialog.classList.toggle('in-browser', !!sess.inBrowser);
-  reviewDialog.classList.remove('board');
-  document.getElementById('rv-title').textContent = (recorded ? 'Review the take · ' : 'Rehearsal · ') + sess.deckTitle;
+  reviewDialog.classList.remove('in-browser', 'board');
+  reviewDialog.classList.add('obs');
+  document.getElementById('rv-title').textContent = 'Takes · ' + sess.deckTitle;
+  document.getElementById('rv-rec').title = 'Records the deck with OBS: a new video in place of this one';
   document.getElementById('rv-render-btn').disabled = document.getElementById('rv-clean').disabled = !!sess.cleaned;
-  document.getElementById('rv-info').textContent = [
+  document.getElementById('rv-info').textContent = sess.empty ? 'Nothing recorded with OBS yet' : [
     sess.reason,
     new Date(sess.date).toLocaleString(),
     (recorded ? 'recorded ' : 'ran ') + fmtLength(sess.totalObs ?? sess.total),
@@ -2381,20 +2310,22 @@ function openReview(sess){
     sess.inBrowser ? sess.quality + ', in this browser' : sess.outputPath ? 'saved to ' + sess.outputPath : (sess.withObs ? '' : 'nothing was recorded')
   ].filter(Boolean).join(' · ');
   document.getElementById('rv-file').textContent = sess.outputPath ? ' (' + baseName(sess.outputPath) + ')' : '';
-  document.getElementById('rv-yt-title').value = sess.deckTitle;
   // pick the listed rate nearest to the take's (OBS reports e.g. 60000/1001 for 59.94)
   const fps = sessionFps(sess);
   fpsSel.value = [...fpsSel.options].reduce((a, o)=>Math.abs(o.value - fps) < Math.abs(a.value - fps) ? o : a).value;
-  document.getElementById('rv-yt-tags').value = deckTags().join(', ');
-  document.getElementById('rv-link').value = deckLink();
   if (rvVideo.src && (sess.inBrowser || reviewFileName !== baseName(sess.outputPath) && sess.outputPath)){
     rvVideo.removeAttribute('src'); rvVideo.load(); reviewFileName = '';
   }
-  document.getElementById('rv-novideo').hidden = !!rvVideo.src;
+  document.getElementById('rv-novideo').hidden = !!rvVideo.src || !!sess.empty;
+  playlist = null; clipList = null;
+  resetPreview();
   renderReview();
   openModal(reviewDialog);
-  if (!sess.inBrowser) autoLoadRecording(sess);
-  else say(sess.cleaned ? 'These takes were deleted.' : 'Click a take to preview it.');
+  setupEl.open = !!opts.setup || !obsConnected || !!sess.empty;
+  if (setupEl.open) refreshSetup();
+  say(opts.note || (sess.empty ? (obsConnected ? 'Press ● Record: OBS records the deck.' : 'Connect to OBS in Setup, then press ● Record.')
+    : rvVideo.src ? 'Click a take to preview it.' : 'Open the recording to preview it.'));
+  if (!sess.empty) autoLoadRecording(sess);
 }
 function renderReview(){
   if (reviewing && reviewing.board){ renderBoard(); return; }
@@ -2420,10 +2351,33 @@ function renderReview(){
       if (ev && ev.clip) playClips([{clip:ev.clip, keep:(t.end - t.start) / 1000, title}]);
     } else playRange([{start:t.start, end:t.end, title}]);
   });
-  document.getElementById('rv-ffmpeg').value = ffmpegScript(sess, document.getElementById('rv-mode').value);
-  describe(sess);
+  document.getElementById('rv-ffmpeg-copy').disabled = document.getElementById('rv-play-final').disabled = !sess.events.length;
+  showChapters(sess);
   showFinalSize(sess);
 }
+// ⧉ Chapters: YouTube's chapter list for the final cut, ready to paste into the description
+let cutChapters = '';
+function showChapters(sess){
+  const ch = finalChapters(sess), btn = document.getElementById('rv-chapters');
+  cutChapters = ch.lines.join('\n');
+  btn.disabled = ch.lines.length < 3;
+  btn.title = ch.lines.length < 3 ? 'YouTube needs at least three chapters of 10 seconds or more'
+    : 'Copies the ' + ch.lines.length + ' chapters, to paste into the YouTube description';
+}
+// copies text, saying so on the button for a moment
+function copyWith(btn, text){
+  const label = btn.dataset.label || (btn.dataset.label = btn.textContent);
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).catch(()=>{});
+  btn.textContent = '✓ Copied';
+  clearTimeout(+btn.dataset.timer);
+  btn.dataset.timer = String(setTimeout(()=>{ btn.textContent = label; }, 1500));
+}
+document.getElementById('rv-chapters').onclick = e=>copyWith(e.currentTarget, cutChapters);
+document.getElementById('rv-ffmpeg-copy').onclick = e=>{
+  if (!reviewing || !reviewing.events.length) return;
+  copyWith(e.currentTarget, ffmpegScript(reviewing, document.getElementById('rv-mode').value));
+  say('Copied the ffmpeg command: run it in a terminal, in the folder with ' + (baseName(reviewing.outputPath) || 'the recording') + '.');
+};
 // the final cut's length, and for takes kept in this browser about how big the downloaded file will be
 // a take's file never changes, so its size is read once
 const clipSizes = new Map();
@@ -2443,13 +2397,8 @@ async function showFinalSize(sess){
     if (token === finalSizeToken) el.textContent = line(bytes);
   } catch(e){ if (token === finalSizeToken) el.textContent = line(null); }
 }
-document.getElementById('rv-mode').onchange = ()=>renderReview();
 const fpsSel = document.getElementById('rv-fps');
 fpsSel.onchange = ()=>{ if (!reviewing) return; reviewing.fps = parseFloat(fpsSel.value); saveSession(reviewing); renderReview(); };
-document.getElementById('rv-link').addEventListener('input', e=>{
-  try { save('slidetake:site', new URL(e.target.value.trim()).origin); } catch(err){}
-  if (reviewing) describe(reviewing);
-});
 
 // preview: play ranges of the recording back to back
 // a take clicked while the recording is still opening plays as soon as it is ready
@@ -2831,6 +2780,7 @@ setupEl.addEventListener('toggle', ()=>{
 setupBtn.onclick = ()=>{ setupEl.open = !setupEl.open; };
 reviewDialog.addEventListener('click', e=>{ if (e.target === reviewDialog || e.target.closest('[data-close]')) stopMeter(); });
 function refreshSetup(){
+  if (obsMode()){ showScreenAdvice(); fillDevices(false); return; }
   recCheck.innerHTML = '';
   showBrowserCheck().then(b=>{ if (b.ok) fillDevices().then(setupSummary); else setupSummary(); });
 }
@@ -2845,11 +2795,11 @@ function openBoard(opts = {}){
   if (!RECORDING_UI) return;
   closeModals();
   loadBoard();
+  reviewDialog.classList.remove('obs');
   reviewDialog.classList.add('in-browser', 'board');
+  document.getElementById('rv-rec').title = 'Records the whole deck, or only the ticked slides (shift-click ticks a range)';
+  document.getElementById('rv-novideo').hidden = true;
   document.getElementById('rv-title').textContent = 'Takes · ' + (deck.title || (order[0] ? nodes.get(order[0]).title : 'Deck'));
-  document.getElementById('rv-yt-title').value = deck.title || (order[0] ? nodes.get(order[0]).title : '');
-  document.getElementById('rv-yt-tags').value = deckTags().join(', ');
-  document.getElementById('rv-link').value = deckLink();
   if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
   playlist = null; clipList = null;
   resetPreview();
@@ -2903,22 +2853,17 @@ function renderBoard(){
     ? [board.takes.length + ' take' + (board.takes.length === 1 ? '' : 's'), recorded + ' of ' + rows.length + ' slides ready',
        outdated ? outdated + ' to record again' : '', board.quality ? board.quality + ', in this browser' : ''].filter(Boolean).join(' · ')
     : order.length + ' slides, nothing recorded yet';
-  describe(sess);
-  const ch = finalChapters(sess), chBtn = document.getElementById('rv-chapters');
-  boardChapters = ch.lines.join('\n');
-  chBtn.disabled = ch.lines.length < 3;
-  chBtn.title = ch.lines.length < 3 ? 'YouTube needs at least three chapters of 10 seconds or more'
-    : 'Copies the ' + ch.lines.length + ' chapters, to paste into the YouTube description';
+  showChapters(sess);
   showFinalSize(sess);
 }
-let boardChapters = '';
-document.getElementById('rv-chapters').onclick = e=>{
-  const b = /** @type {HTMLButtonElement} */ (e.currentTarget);
-  (navigator.clipboard ? navigator.clipboard.writeText(boardChapters) : Promise.reject()).catch(()=>{});
-  b.textContent = '✓ Copied'; setTimeout(()=>{ b.textContent = '⧉ Chapters'; }, 1500);
+document.getElementById('rv-rec').onclick = ()=>{
+  if (!obsMode()){ startTake('browser', selectedInOrder(order, selected)); return; }
+  if (obsConnected){ startTake('obs'); return; }
+  setupEl.open = true;
+  say('Connect to OBS first: Setup → OBS → Connect.', {warn:true});
 };
-document.getElementById('rv-rec').onclick = ()=>startTake('browser', selectedInOrder(order, selected));
-document.getElementById('rv-use-obs').onclick = ()=>{ closeModals(); setRecMode('obs'); openRecordDialog(); };
+document.getElementById('rv-use-obs').onclick = ()=>setRecMode('obs');
+document.getElementById('rv-use-browser').onclick = ()=>setRecMode('browser');
 // deleting takes: the ones no slide plays, or all of them
 async function deleteClips(takes){
   for (const t of takes){
@@ -3013,7 +2958,6 @@ function useRecording(file, handle, retry){
   say('Loaded ' + file.name + '. Click a take to preview it.');
   if (pendingPlay) playRange(pendingPlay);
   else if (retry && playlist) playRange(playlist.ranges.slice(playlist.i));
-  if (reviewing) document.getElementById('rv-ffmpeg').value = ffmpegScript(reviewing, document.getElementById('rv-mode').value);
 }
 const fileInput = document.getElementById('rv-file-input');
 fileInput.addEventListener('change', ()=>{ if (fileInput.files[0]) useRecording(fileInput.files[0]); fileInput.value = ''; });
@@ -3058,22 +3002,6 @@ async function autoLoadRecording(sess){
   } catch(e){}
 }
 
-document.getElementById('rv-download').onclick = ()=>{
-  if (!reviewing) return;
-  const sess = reviewing, ch = finalChapters(sess);
-  const text = '# ' + document.getElementById('rv-yt-title').value + '\n\n' +
-    'Recorded ' + new Date(sess.date).toLocaleString() + (sess.outputPath ? ' · ' + sess.outputPath : '') + ' · final length ' + fmtLength(ch.length) + '\n\n' +
-    '## Render\n\n```sh\n' + document.getElementById('rv-ffmpeg').value + '\n```\n\n' +
-    '## YouTube title\n\n' + document.getElementById('rv-yt-title').value + '\n\n' +
-    '## YouTube description\n\n' + document.getElementById('rv-yt-desc').value + '\n\n' +
-    '## Tags\n\n' + document.getElementById('rv-yt-tags').value + '\n\n' +
-    '## Picked takes\n\n' + pickedRanges(sess).map(r=>'- ' + fmtTime(r.start) + '–' + fmtTime(r.end) + '  ' + r.title).join('\n') + '\n';
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], {type:'text/markdown'}));
-  a.download = sessionKey() + '-publish.md';
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
-};
 if (loadObsSettings() && new URLSearchParams(location.search).get('obs')) connectObs();
 
 // ---------- webcam in the PIP box ----------
@@ -3194,7 +3122,7 @@ help.addEventListener('click', e=>{ if (e.target===help) help.classList.remove('
 
 window.addEventListener('keydown', e=>{
   // a clicker's "start" button sends F5; never let it reload the page
-  if (e.key === 'F5'){ e.preventDefault(); if (!rec.active) openRecordDialog(); return; }
+  if (e.key === 'F5'){ e.preventDefault(); if (!rec.active) openTakes(); return; }
   if (rec.active){ takeKey(e); return; }
   if (document.querySelector('.modal.open')){ if (e.key === 'Escape') closeModals(); return; }
   const tag = document.activeElement && document.activeElement.tagName;
@@ -3211,7 +3139,7 @@ window.addEventListener('keydown', e=>{
   else if (k==='o' || k==='O'){ overview(); }
   else if (k==='e' || k==='E'){ toggleEditor(); }
   else if (k==='f' || k==='F' || k==='p' || k==='P'){ setPresent(!presenting); }
-  else if (k==='r' || k==='R'){ openRecordDialog(); }
+  else if (k==='r' || k==='R'){ openTakes(); }
   else if (/^[1-4]$/.test(k)){ setMode(LAYOUTS[+k - 1]); }
   else if (k==='c' || k==='C'){ setCameraEnabled(cameraOff); }
   else if (k==='v' || k==='V'){ cycleCamera(); }

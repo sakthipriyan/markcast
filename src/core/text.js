@@ -1,5 +1,5 @@
 // @ts-check
-// Small text helpers shared by the parser, the app and the publish pack. No DOM needed.
+// Small text helpers shared by the parser, the app and the recording tools. No DOM needed.
 
 /** @param {string} s */
 export function slugify(s){

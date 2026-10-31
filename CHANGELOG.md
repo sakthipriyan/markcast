@@ -28,6 +28,12 @@ package can notice. Tests, CI and tooling do not belong here.
   **⚙ Setup** (top right of the board) holds the browser and screen check,
   camera, microphone, level, 1080p or 720p, the sound settings and **🗑 Purge
   takes**. To rehearse, present with F: nothing is recorded.
+- OBS uses the same takes screen. ● Record opens it in the mode used last;
+  **⚙ Setup → Use OBS / Use this browser** switches. With OBS, Setup holds the
+  connection, the camera and the ffmpeg settings (mode, frame rate, Volume
+  boost), the screen check and the layout for takes; the screen edits one
+  video, the deck's latest OBS recording, and **⧉ ffmpeg** copies the
+  command that cuts it.
   Under the player, **▶ Preview** plays the final cut and **↓ Download** joins
   the picked takes into one MP4 without re-encoding, saving it like OBS (a new
   date-stamped file in a folder picked once) and saying where; pressed again
@@ -67,6 +73,15 @@ package can notice. Tests, CI and tooling do not belong here.
   under the player, with the final length and expected size; thin scrollbars
   in the accent. The slides link fills in from the page the deck is on when the
   deck names no permalink or site; the Record dialog is wider.
+
+### Removed
+
+- The Record dialog: its OBS connection, camera choice and take layout moved
+  into the takes screen's ⚙ Setup.
+- The review's YouTube section (title, description, tags) and the publish
+  pack download; ⧉ Chapters copies the chapters. The deck keys `summary`,
+  `related`, `tags` and `permalink` are no longer read for it.
+- The list of earlier OBS recordings: the takes screen shows the latest one.
 
 ## [0.3.4] - 2026-10-28
 
