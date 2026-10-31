@@ -29,8 +29,9 @@ const LOCAL = window.SLIDETAKE_LOCAL || null;
 const LOGO = document.querySelector('header .mark .logo').outerHTML;
 document.documentElement.classList.toggle('embed', !!EMBED);
 // Camera and Studio are for making a video: on slidetake.com and `npx slidetake`. Embedded in a site,
-// Slidetake is only a viewer; the deck is recorded from its markdown on slidetake.com or locally.
-const RECORDING_UI = !EMBED;
+// Slidetake is a viewer, unless the page opts in with recording: true (a site's own preview, such as
+// hugo-continuum under `hugo server`, so its author records where they write).
+const RECORDING_UI = !EMBED || EMBED.recording === true;
 document.documentElement.classList.toggle('no-record', !RECORDING_UI);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slidetake's own read-only decks

@@ -60,7 +60,7 @@ window.SLIDETAKE = {
 <script src="https://cdn.jsdelivr.net/npm/slidetake/dist/slidetake.js"></script>
 ```
 
-A viewer, nothing more: to record the deck, open its markdown here or with `npx slidetake`. The hugo-continuum theme writes this for pages with `engine: slidetake`.
+A viewer for your readers. To record, open the deck's markdown here or with `npx slidetake`, or add `recording: true` on a page only you see, such as your site's local preview. The hugo-continuum theme writes this for pages with `engine: slidetake`, with recording under `hugo server`.
 
 ### With AI
 
