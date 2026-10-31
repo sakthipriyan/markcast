@@ -13,6 +13,10 @@ pip: bottom-right
 
 Any AI writes the deck for you: it's plain markdown. For developers and technical educators who explain things on video. You're inside a Slidetake deck right now. Press \u2192 to walk it, **O** for the map.
 
+## \u23F1\uFE0F An hour, not days
+
+A video that takes two or three days to script, record and edit takes about an hour: an AI writes the deck, you record it slide by slide, and pick the best take of each in Studio. What comes out is ready to upload.
+
 ## \u2702\uFE0F Record without timeline editing
 
 **Every slide is a take.** Stumbled on a slide? Press \u2190 and say it again: every attempt is kept, and recording carries on. The slide is the timeline marker, so a fumbled line costs one press, not an editing session.
@@ -24,10 +28,6 @@ Press **\u25CF Studio**, then **<span class="st-rec">\u25CF Record</span>**, and
 ### Pick the best take
 
 Choose the best take of each slide in **Slidetake Studio**. It joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), at YouTube's loudness, with the **chapters** to paste.
-
-### An hour, not days
-
-A video that takes two or three days to script, record and edit takes about an hour: an AI writes the deck, you record it slide by slide, and Studio picks the best take of each. What comes out is ready to upload.
 
 ## \u{1F5FA}\uFE0F A map, not a stack
 
