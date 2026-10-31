@@ -1,27 +1,44 @@
 name: Publish
 
-# A version tag on main publishes the package to npm from this build, never from
-# a laptop. npm trusts this workflow directly (trusted publishing over OIDC), so
-# there is no npm token anywhere, and --provenance links the package on npmjs.com
-# to the commit and run that built it.
+# A version tag on main is the whole release: it publishes the package to npm,
+# waits until npm serves that version, then deploys slidetake.com with the app
+# npm has, byte for byte. Merging to main deploys nothing, so the site and the
+# package are always the same release.
+#
+# Run by hand (Actions → Publish → Run workflow), it only deploys slidetake.com
+# for a version already released, the latest on npm unless one is given: to
+# redeploy, or to roll back. Nothing is published.
+#
+# npm trusts this workflow directly (trusted publishing over OIDC), so there is
+# no npm token anywhere, and --provenance links the package on npmjs.com to the
+# commit and run that built it.
 on:
   push:
     tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'A released version to deploy, like 0.4.0 (empty: the latest on npm)'
+        required: false
+        default: ''
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  npm:
-    name: Publish to npm
+  verify_tag:
+    name: Verify the tag
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
       - name: Check the tag is on main
         env:
           SHA: ${{ github.sha }}
@@ -29,21 +46,23 @@ jobs:
         run: |
           git fetch origin main
           if ! git branch -r --contains "$SHA" | grep -E -q '(^|\s)origin/main$'; then
-            echo "Error: tag $TAG is not on the main branch."
+            echo "::error::Tag $TAG is not on the main branch."
             exit 1
           fi
+
       - name: Check the tag matches package.json
         env:
           TAG: ${{ github.ref_name }}
         run: |
           VERSION="v$(node -p "require('./package.json').version")"
           if [ "$TAG" != "$VERSION" ]; then
-            echo "Error: tag $TAG but package.json says $VERSION."
+            echo "::error::Tag $TAG but package.json says $VERSION."
             exit 1
           fi
+
       # Keep a Changelog puts a version's entries between its heading and the
-      # next one. Read before publishing: a release with no notes stops here,
-      # before npm has it.
+      # next one. Read before anything is published: a release with no notes
+      # stops here, before npm or the site has it.
       - name: Take the notes from CHANGELOG.md
         env:
           TAG: ${{ github.ref_name }}
@@ -66,7 +85,22 @@ jobs:
           fi
           echo "Notes for $TAG:"
           cat notes.md
-      - uses: actions/setup-node@v4
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: notes
+          path: notes.md
+
+  npm:
+    name: Publish to npm
+    needs: [verify_tag]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
@@ -74,12 +108,113 @@ jobs:
       - run: npm run check
       # trusted publishing needs npm 11.5.1 or later
       - run: npm install -g npm@latest
+      # A re-run after a later job failed finds the version already on npm: npm
+      # never takes the same version twice, so that's done, not an error.
       - name: Publish
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
           unset NODE_AUTH_TOKEN
-          npm publish --access public --provenance
-      - name: Create the GitHub release
+          if npm view "slidetake@${TAG#v}" version >/dev/null 2>&1; then
+            echo "slidetake@${TAG#v} is already on npm."
+          else
+            npm publish --access public --provenance
+          fi
+
+  website:
+    name: Deploy slidetake.com
+    needs: [npm]
+    # after a tag's npm publish; by hand, on its own (npm is skipped then)
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.npm.result == 'success') }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    steps:
+      # which release: the tag pushed, or the version asked for (the latest on npm if none)
+      - name: Pick the version
+        id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.ref_name }}
+          ASKED: ${{ inputs.version }}
+        run: |
+          if [ "$EVENT" = "push" ]; then VERSION="${TAG#v}"
+          elif [ -n "$ASKED" ]; then VERSION="${ASKED#v}"
+          else VERSION=$(npm view slidetake version)
+          fi
+          echo "Deploying slidetake@$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # npm can take a moment to serve a version it has just accepted; a version
+      # given by hand that npm never had fails here, before anything is deployed
+      - name: Wait for npm to serve the release
+        env:
+          VERSION: ${{ steps.pick.outputs.version }}
+        run: |
+          for i in $(seq 1 30); do
+            if npm view "slidetake@$VERSION" version >/dev/null 2>&1; then
+              echo "slidetake@$VERSION is on npm."
+              exit 0
+            fi
+            echo "Not served yet ($i/30); waiting 20 s."
+            sleep 20
+          done
+          echo "::error::npm doesn't serve slidetake@$VERSION after 10 minutes."
+          exit 1
+
+      # the release's own commit, so its decks match its app
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ steps.pick.outputs.version }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+
+      # The decks, llms.txt and icons come from this commit's build; the app
+      # itself is the npm release, so slidetake.com runs exactly what npm has.
+      - name: Build, then take the app from npm
+        env:
+          VERSION: ${{ steps.pick.outputs.version }}
+        run: |
+          npm run build
+          dir=$(mktemp -d)
+          (cd "$dir" && npm pack "slidetake@$VERSION" --silent >/dev/null && tar xzf ./*.tgz)
+          for f in index.html slidetake.js; do
+            if ! cmp -s "$dir/package/dist/$f" "dist/$f"; then
+              echo "::warning::dist/$f built here differs from the npm release; deploying the npm one."
+            fi
+            cp "$dir/package/dist/$f" "dist/$f"
+          done
+          head -1 dist/slidetake.js
+
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
+
+  release:
+    name: GitHub release
+    needs: [website]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: notes
+      - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" --title "$TAG" --notes-file notes.md
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists."
+          else
+            gh release create "$TAG" --title "$TAG" --notes-file notes.md
+          fi
