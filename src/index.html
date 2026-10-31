@@ -299,6 +299,7 @@
       </div>
       <div class="rv-list" id="rv-list"></div>
       <div class="rv-dl">
+        <button class="btn rv-board-only" id="rv-chapters" title="Copies the chapters, to paste into the YouTube description">⧉ Chapters</button>
         <span class="rv-final" id="rv-final"></span>
         <button class="btn" id="rv-render-btn" title="Saves the video: the picked takes joined into one file">↓ Download</button>
       </div>
@@ -324,6 +325,7 @@
       </h3>
       <textarea id="rv-ffmpeg" rows="4" readonly spellcheck="false"></textarea>
       </div>
+      <div class="rv-yt">
       <h3>YouTube</h3>
       <div class="two">
         <label>Title<input type="text" id="rv-yt-title"></label>
@@ -334,8 +336,9 @@
       <p id="rv-chapters-note"></p>
       <h3>Tags <button class="btn small" data-copy="rv-yt-tags">Copy</button></h3>
       <input type="text" id="rv-yt-tags" spellcheck="false" style="width:100%">
+      </div>
     </div>
-    <div class="row end">
+    <div class="row end rv-yt">
       <button class="btn" id="rv-download">↓ Download script + publish pack</button>
       <button class="btn primary" data-close>Done</button>
     </div>

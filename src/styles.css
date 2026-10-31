@@ -412,9 +412,11 @@
   .rv-setup-note{margin:0;font-size:12px;color:var(--text-muted);line-height:1.5;}
   #rv-setup > .rv-setup-note{margin-top:12px;}
   @media (max-width:900px){ .rv-setup-cols{grid-template-columns:1fr;} }
-  .rv-final{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+  .rv-final{font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap;}
   /* under the takes: the final cut's size, and Download */
   .rv-dl{grid-area:dl;display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:12px;}
+  #rv-chapters{margin-right:auto;min-width:112px;}
+  #review.board .rv-yt{display:none !important;}
   /* Preview and Pause: one width, so the button doesn't change size as it switches */
   .btn.rv-preview{min-width:104px;}
   #review:not(.in-browser) #rv-render-btn{display:none;}

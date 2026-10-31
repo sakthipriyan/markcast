@@ -2418,7 +2418,7 @@ let finalSizeToken = 0;
 async function showFinalSize(sess){
   const el = document.getElementById('rv-final'), token = ++finalSizeToken;
   const ms = pickedRanges(sess).reduce((a, r)=>a + r.end - r.start, 0);
-  const line = bytes=>'Final cut ' + fmtTime(ms) + (!bytes ? '' : ' · about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB'));
+  const line = bytes=>(!bytes ? 'Final cut ' : 'about ' + (bytes > 1e9 ? (bytes / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(bytes / 1e6)) + ' MB') + ' · ') + fmtTime(ms);
   if (!sess.inBrowser || sess.cleaned){ el.textContent = line(null); return; }
   try {
     let bytes = 0;
@@ -2884,8 +2884,19 @@ function renderBoard(){
        outdated ? outdated + ' to record again' : '', board.quality ? board.quality + ', in this browser' : ''].filter(Boolean).join(' · ')
     : order.length + ' slides, nothing recorded yet';
   describe(sess);
+  const ch = finalChapters(sess), chBtn = document.getElementById('rv-chapters');
+  boardChapters = ch.lines.join('\n');
+  chBtn.disabled = ch.lines.length < 3;
+  chBtn.title = ch.lines.length < 3 ? 'YouTube needs at least three chapters of 10 seconds or more'
+    : 'Copies the ' + ch.lines.length + ' chapters, to paste into the YouTube description';
   showFinalSize(sess);
 }
+let boardChapters = '';
+document.getElementById('rv-chapters').onclick = e=>{
+  const b = /** @type {HTMLButtonElement} */ (e.currentTarget);
+  (navigator.clipboard ? navigator.clipboard.writeText(boardChapters) : Promise.reject()).catch(()=>{});
+  b.textContent = '✓ Copied'; setTimeout(()=>{ b.textContent = '⧉ Chapters'; }, 1500);
+};
 document.getElementById('rv-rec').onclick = ()=>startTake('browser', selectedInOrder(order, selected));
 document.getElementById('rv-use-obs').onclick = ()=>{ closeModals(); setRecMode('obs'); openRecordDialog(); };
 // deleting takes: the ones no slide plays, or all of them

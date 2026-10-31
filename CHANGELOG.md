@@ -31,7 +31,8 @@ package can notice. Tests, CI and tooling do not belong here.
   Under the player, **▶ Preview** plays the final cut and **↓ Download** joins
   the picked takes into one MP4 without re-encoding, saving it like OBS (a new
   date-stamped file in a folder picked once) and saying where; pressed again
-  with nothing changed, it doesn't make it again. **🗑 Purge takes** removes
+  with nothing changed, it doesn't make it again. **⧉ Chapters** beside it
+  copies the YouTube chapters. **🗑 Purge takes** removes
   unused takes or all of them. OBS stays for any other browser or screen, with
   its own review.
 - Recording turns the camera on by itself: the camera chosen for the deck in
