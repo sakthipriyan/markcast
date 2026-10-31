@@ -278,6 +278,11 @@
     padding:10px 12px;overflow-x:auto;margin:0 0 10px;
   }
   .node .body pre code{border:none;background:none;padding:0;color:var(--text);}
+  /* a long line scrolls on a slim accent bar, not the system's grey one */
+  .node .body pre{scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--accent) 45%, transparent) transparent;}
+  .node .body pre::-webkit-scrollbar{height:5px;}
+  .node .body pre::-webkit-scrollbar-track{background:transparent;}
+  .node .body pre::-webkit-scrollbar-thumb{background:color-mix(in srgb, var(--accent) 45%, transparent);border-radius:3px;}
   .node .body strong{color:var(--accent);}
   .node .body a{color:var(--accent-teal);}
   .node .body a.xlink::after{content:" ↗";font-size:10px;}

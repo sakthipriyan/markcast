@@ -1,5 +1,5 @@
 ---
-title: Slidetake — write in markdown, record without timeline editing
+title: Slidetake — write in markdown with AI, record without timeline editing
 brand: slidetake
 pip: bottom-right
 ---
@@ -8,29 +8,25 @@ pip: bottom-right
 
 # ![](/favicon.svg) Slide<span class="st-take">take</span>
 
-**Write in markdown. Present on a spatial canvas. Record without timeline editing.**
+**Write in markdown, with AI. Present on a spatial canvas. Record without timeline editing.**
 
-For developers and technical educators who explain things on video. You're inside a Slidetake deck right now. Press → to walk it, **O** for the map.
+Any AI writes the deck for you: it's plain markdown. For developers and technical educators who explain things on video. You're inside a Slidetake deck right now. Press → to walk it, **O** for the map.
 
 ## ✂️ Record without timeline editing
 
-**Retake by slide.** The slide is the timeline marker, so a fumbled line costs one press, not an editing session.
+**Every slide is a take.** Stumbled on a slide? Press ← and say it again: every attempt is kept, and recording carries on. The slide is the timeline marker, so a fumbled line costs one press, not an editing session.
 
 ### Record right here, nothing to install
 
 Press **<span class="st-rec">●</span> Studio**, then **<span class="st-rec">● Record</span>**, and the deck records itself, in Chrome, Edge or another Chromium browser: your slides and camera in one 16:9 frame, at 1080p. Or let **[OBS Studio](https://obsproject.com)** record while the deck drives it, from any browser. No scenes to switch, no recording to watch.
 
-### Every slide is a take
-
-Stumbled on a slide? Press ← and say it again. Every attempt is kept, and recording carries on.
-
-### Pick, don't scrub
+### Pick the best take
 
 Choose the best take of each slide in **Slidetake Studio**. It joins them into the final video in seconds (or writes the **[ffmpeg](https://ffmpeg.org)** cut for OBS), at YouTube's loudness, with the **chapters** to paste.
 
-### One session, one finished video
+### An hour, not days
 
-Write, present and record in one sitting. What comes out is ready to upload.
+A video that takes two or three days to script, record and edit takes about an hour: an AI writes the deck, you record it slide by slide, and Studio picks the best take of each. What comes out is ready to upload.
 
 ## 🗺️ A map, not a stack
 
@@ -90,9 +86,9 @@ One line, `accent: "#3b82f6"`, gives a deck its own colour, shaded for dark and 
 
 Three places, one deck format: a markdown file.
 
-### slidetake.com: write, view, share
+### slidetake.com: write, record, share
 
-Write a deck in the **✎ Editor**, or view one straight from a link: a GitHub file, a gist or any markdown URL. **Share** a link with the deck inside it. Nothing to install.
+Write a deck in the **✎ Editor**, or view one straight from a link: a GitHub file, a gist or any markdown URL. Record it and cut the video in **● Studio**, in the same tab. **Share** a link with the deck inside it. Nothing to install.
 
 ### Your computer: all that, plus AI
 
