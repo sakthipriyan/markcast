@@ -2217,9 +2217,9 @@ async function finishTake(reason){
   if (rec.paused){ rec.pausedMs += performance.now() - rec.pauseAt; rec.paused = false; pausedEl.classList.remove('show'); }
   let total = Math.round(recNow()), totalObs = null;
   if (rec.withObs){
-    await wait(1200);                       // hold the last frame a moment before the cut
-    total = Math.round(recNow());
+    // the take ends at the press: what follows (Esc leaving full screen, the Studio opening) is never in the cut
     try { const st = await obs.call('GetRecordStatus'); if (st && typeof st.outputDuration === 'number') totalObs = st.outputDuration; } catch(e){}
+    await wait(1200);                       // OBS keeps recording a moment past the cut, so the end is surely in the file
     try { const r = await obs.call('StopRecord'); rec.outputPath = r && r.outputPath; }
     catch(e){ reason = (reason ? reason + '. ' : '') + 'OBS did not confirm the stop (' + ((e && e.message) || e) + ')'; }
   }
@@ -3046,7 +3046,7 @@ document.getElementById('rv-open').onclick = async ()=>{
   } catch(e){ if (!e || e.name !== 'AbortError') say('Could not open that file.', {warn:true}); }
 };
 const folderBtn = document.getElementById('rv-folder');
-folderBtn.hidden = !window.showDirectoryPicker;
+if (!window.showDirectoryPicker) folderBtn.style.display = 'none';   // `hidden` loses to .btn's display (Safari, Firefox)
 folderBtn.onclick = async ()=>{
   const name = reviewing && baseName(reviewing.outputPath);
   try {
@@ -3056,8 +3056,7 @@ folderBtn.onclick = async ()=>{
     const handle = await dir.getFileHandle(name);
     useRecording(await stableFile(handle), handle);
   } catch(e){
-    if (e && e.name === 'AbortError') return;
-    say((name ? name + ' is not in that folder' : 'Could not read that folder') + '. Use “Open the recording file…” instead.', {warn:true});
+    // not there (or unreadable): nothing to say, Open the recording file… is right beside it
   }
 };
 // a remembered folder that the browser still allows reading loads the take's file without any prompt

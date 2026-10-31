@@ -4504,13 +4504,12 @@
     }
     let total = Math.round(recNow()), totalObs = null;
     if (rec.withObs) {
-      await wait(1200);
-      total = Math.round(recNow());
       try {
         const st = await obs.call("GetRecordStatus");
         if (st && typeof st.outputDuration === "number") totalObs = st.outputDuration;
       } catch (e) {
       }
+      await wait(1200);
       try {
         const r = await obs.call("StopRecord");
         rec.outputPath = r && r.outputPath;
@@ -5511,7 +5510,7 @@
     }
   };
   var folderBtn = document.getElementById("rv-folder");
-  folderBtn.hidden = !window.showDirectoryPicker;
+  if (!window.showDirectoryPicker) folderBtn.style.display = "none";
   folderBtn.onclick = async () => {
     const name = reviewing && baseName(reviewing.outputPath);
     try {
@@ -5524,8 +5523,6 @@
       const handle = await dir.getFileHandle(name);
       useRecording(await stableFile(handle), handle);
     } catch (e) {
-      if (e && e.name === "AbortError") return;
-      say((name ? name + " is not in that folder" : "Could not read that folder") + ". Use \u201COpen the recording file\u2026\u201D instead.", { warn: true });
     }
   };
   async function autoLoadRecording(sess) {

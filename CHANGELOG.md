@@ -81,6 +81,11 @@ package can notice. Tests, CI and tooling do not belong here.
   before it and the jump back. OBS reports its time as encoded, a few hundred
   ms behind the screen; a retake now holds still for 0.6 s before its entry,
   and the cut starts inside that hold.
+- With OBS, the last slide's cut ends where Stop was pressed, so the browser
+  leaving full screen and the Studio opening are no longer at the end.
+- In Safari and Firefox, the “Use my OBS recordings folder…” button (which
+  they can't use) is hidden, and it no longer warns when the file isn't in the
+  chosen folder.
 
 ### Removed
 
