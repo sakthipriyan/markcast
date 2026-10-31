@@ -61,7 +61,7 @@ For Safari, Firefox or any browser, a screen too small for easy mode, or whateve
 | **Camera per slide** | corner, size, side, circle, full screen or off |
 | **Steps on one slide** | open on you, then reveal the slide |
 | **V** | try camera layouts live without editing |
-| **Off until you turn it on** | readers never see an empty camera box |
+| **Off until you turn it on** | not shown to viewers: the slides get the whole screen |
 
 ## ✍️ Plain markdown in
 

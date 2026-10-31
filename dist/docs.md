@@ -177,9 +177,9 @@ With `duration: 10m` (or `90s`, `1h`, `12:30`), a lighter layer of the same colo
 
 ## 4️⃣ Record a video
 
-Two ways to record, both slide by slide, so there's no timeline to edit afterwards. **● Studio** (beside ✎ Editor, or **R**) opens **Slidetake Studio** in the way you used last; ⚙ Setup switches between them:
+Two modes, both slide by slide, so there's no timeline to edit afterwards. **● Studio** (beside ✎ Editor, or **R**) opens **Slidetake Studio** in the mode you used last; ⚙ Setup switches between them:
 
-| | In this browser | OBS |
+| | Easy mode: in the browser | Pro mode: with OBS |
 |---|---|---|
 | Install | nothing | [OBS Studio](https://obsproject.com) (free) |
 | Browser | Chrome, Edge or another Chromium browser, on a computer (Safari and Firefox open with OBS) | any |
@@ -187,7 +187,7 @@ Two ways to record, both slide by slide, so there's no timeline to edit afterwar
 | Quality | 1080p, or 720p on a smaller screen | whatever OBS records |
 | Final video | **Download** joins the picked takes, in the browser | an ffmpeg command |
 
-### Record in the browser
+### Easy mode: record in the browser
 
 **● Studio** opens with the deck's takes: every slide, in order, with every take recorded of it, from every recording.
 
@@ -198,12 +198,12 @@ Two ways to record, both slide by slide, so there's no timeline to edit afterwar
 
 Every take is its own file, kept in this browser's private storage until you purge it: in ⚙ Setup → Files, **Purge takes → Unused takes** keeps only the ones the video uses, **All takes** clears this deck, and **Every deck's takes…** clears everything Slidetake keeps in this browser (it says how much first), including takes of decks since renamed or deleted.
 
-In fullscreen, the frame must be at least 1280×720 real pixels for 720p, 1920×1080 for 1080p: a Retina laptop makes 1080p, a 1366×768 screen 720p. Below that, use OBS.
+In fullscreen, the frame must be at least 1280×720 real pixels for 720p, 1920×1080 for 1080p: a Retina laptop makes 1080p, a 1366×768 screen 720p. Below that, use pro mode (OBS).
 
-### Set up OBS
+### Pro mode: set up OBS
 
 1. In OBS, turn on Tools → WebSocket Server Settings.
-2. In Slidetake, press **● Studio**, then **⚙ Setup → Use OBS**, enter OBS's host, port and password, and **Connect**. Tick *Remember* to skip this next time. Studio opens in the mode you used last; **Use Chrome** (or Edge, Brave…: your browser's name) switches back. Beside ⚙ Setup, a line shows what a take will use: `In Chrome · 1080p · camera · microphone`, or `OBS · 1080p · camera`.
+2. In Slidetake, press **● Studio**, then **⚙ Setup → Use pro mode (OBS)**, enter OBS's host, port and password, and **Connect**. Tick *Remember* to skip this next time. Studio opens in the mode you used last; **Use easy mode (Chrome)** (or Edge, Brave…: your browser's name) switches back. Beside ⚙ Setup, a line shows what a take will use: `Easy · Chrome · 1080p · camera · microphone`, or `Pro · OBS · 1080p · camera`.
 3. Use a 16:9 screen (YouTube is 16:9): Setup checks yours. If it isn't, move the window to one that is, physical or virtual (say 1920×1080), and press **F** there.
 
 `?obs=localhost:4455` (or `?obs=host:port:password`) in the address fills this in and connects as the page opens.
@@ -256,8 +256,8 @@ Clicks, dragging and the map are locked so the take only moves forward.
 
 When the take ends you're back in **Slidetake Studio**, the same in both modes: the player with **● Record** and **▶ Preview** under it, every slide with its takes on the right (click one to preview it), and under them **⧉ Chapters**, which copies the final cut's chapters (`0:00 Intro`, one per section) to paste into the YouTube description; YouTube needs at least three, each 10 seconds or more. Messages share one line beside Preview, in full on hover.
 
-- **Recorded in the browser:** the board is the review. **▶ Preview** plays the picked takes back to back, following along in the take list; right after you play a single take it continues from the next slide (a message says so), otherwise from the start. **↓ Download** joins them into one MP4, in a few seconds, without re-encoding, and saves it like OBS does: a new file named by the date (`deck 2026-10-30 20-04-49.mp4`) in a folder you pick once, starting in your videos folder. Pressing it again without changing a take or the sound settings says where the video already is, rather than making it again.
-- **Recorded with OBS:** one video at a time, the deck's latest recording; recording again replaces it here (the old file stays in your OBS folder). Previews come from the OBS file: open it once, or (in Chrome and Edge) pick your OBS recordings folder and later recordings load by themselves. **⧉ ffmpeg** copies a ready-to-run **[ffmpeg](https://ffmpeg.org)** command that cuts the picked takes (frame-exact); ⚙ Setup → Video sets how it encodes, the frame rate and Volume boost.
+- **Easy mode (recorded in the browser):** the board is the review. **▶ Preview** plays the picked takes back to back, following along in the take list; right after you play a single take it continues from the next slide (a message says so), otherwise from the start. **↓ Download** joins them into one MP4, in a few seconds, without re-encoding, and saves it like OBS does: a new file named by the date (`deck 2026-10-30 20-04-49.mp4`) in a folder you pick once, starting in your videos folder. Pressing it again without changing a take or the sound settings says where the video already is, rather than making it again.
+- **Pro mode (recorded with OBS):** one video at a time, the deck's latest recording; recording again replaces it here (the old file stays in your OBS folder). Previews come from the OBS file: open it once, or (in Chrome and Edge) pick your OBS recordings folder and later recordings load by themselves. **⧉ ffmpeg** copies a ready-to-run **[ffmpeg](https://ffmpeg.org)** command that cuts the picked takes (frame-exact); ⚙ Setup → Video sets how it encodes, the frame rate and Volume boost.
 - **The microphone's sound**, in ⚙ Setup → Microphone:
   - **Sound: Raw** (the default) records the mic as it is, best for a good mic in a quiet room. **Voice** turns on Chrome's noise suppression, which takes out fans, hum and other steady noise. On a Mac, Control Center → Mic Mode → Voice Isolation does the same for every app, before Chrome hears it.
   - **🔊 Volume boost** (on by default): YouTube plays videos at about −14 LUFS and turns louder ones down, but not quieter ones up, so a voice recorded as it is sounds quiet next to other videos. The final cut is measured the way YouTube measures it and raised towards −14 LUFS, stopping where its loudest peak would reach −1.5 dB, so it never clips. The status line says when a peak held it back.

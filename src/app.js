@@ -1794,7 +1794,7 @@ function browserRecording(){
   if (!type || !navigator.storage || !navigator.storage.getDirectory) return {why:'This browser can’t record video here. Use a recent Chrome or Edge.'};
   // in fullscreen the frame is the largest 16:9 area of the screen
   const {quality, device} = bestQuality(screen.width, screen.height, devicePixelRatio || 1);
-  if (!quality) return {why:'This screen gives a ' + device[0] + '×' + device[1] + ' frame, less than 720p. Use OBS, or a larger screen.'};
+  if (!quality) return {why:'This screen gives a ' + device[0] + '×' + device[1] + ' frame, less than 720p. Use pro mode (OBS), or a larger screen.'};
   return {ok:true, type, quality};
 }
 let meterToken = 0;   // only the latest start keeps its microphone
@@ -2843,8 +2843,8 @@ document.querySelectorAll('.browser-name').forEach(el=>{ el.textContent = browse
 function setupSummary(){
   const name = /** @param {HTMLSelectElement} sel */ sel=>{ const o = sel.selectedOptions[0]; return o ? o.textContent.replace(/ \(system default\)$/, '') : ''; };
   const cam = name(recCam) || (camChoice() === 'none' ? 'No camera' : 'Camera');
-  const parts = obsMode() ? ['OBS', obsSize, cam].filter(Boolean)
-    : browserRecording().ok ? ['In ' + browserName, recQuality.value, cam, name(recMic) || 'Microphone'].filter(Boolean) : ['In ' + browserName, 'can’t record here'];
+  const parts = obsMode() ? ['Pro', 'OBS', obsSize, cam].filter(Boolean)
+    : browserRecording().ok ? ['Easy', browserName, recQuality.value, cam, name(recMic) || 'Microphone'].filter(Boolean) : ['Easy', browserName + ' can’t record here'];
   const el = document.getElementById('rv-using');
   el.textContent = parts.join(' · ');
   el.title = setupBtn.title = 'Recording with ' + parts.join(' · ');
