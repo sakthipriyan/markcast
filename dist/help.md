@@ -60,15 +60,15 @@ window.SLIDETAKE = {
 <script src="https://cdn.jsdelivr.net/npm/slidetake/dist/slidetake.js"></script>
 ```
 
-It's a viewer: no editor, camera or Studio, just the deck. To record it, open the same markdown on slidetake.com or with `npx slidetake`; `accent:`, `brand:` and `logo:` give the video your site's look. The hugo-continuum theme writes this for slide pages with `engine: slidetake`, so a Hugo site previews decks locally with `hugo server`.
+A viewer, nothing more: to record the deck, open its markdown here or with `npx slidetake`. The hugo-continuum theme writes this for pages with `engine: slidetake`.
 
 ### With AI
 
-The deck is plain markdown, so any AI can write one. Point it at the format, [slidetake.com/llms.txt](/llms.txt), and say what the talk is about.
+Any AI can write a deck: point it at [slidetake.com/llms.txt](/llms.txt) and say what the talk is about.
 
-- **With an agent that edits files** (Claude Code and the like): *"Write a Slidetake deck about X in talk/deck.md, following slidetake.com/llms.txt"*, then `npx slidetake talk/deck.md`. Ask for changes and the open deck reloads as the file is saved.
-- **In a chat** (Claude, no tools): ask for the deck as one markdown block, then on slidetake.com press **✎ Editor**, select all and paste. It's your copy at once; **Share** gives a link with the deck inside it.
-- **Images:** an agent places them next to the file; in a chat, use full image URLs, or `base:` pointing at where they live.
+- **An agent** (Claude Code and the like): *"Write a Slidetake deck about X in talk/deck.md, following slidetake.com/llms.txt"*, then `npx slidetake talk/deck.md`. The deck reloads as it edits.
+- **A chat**: ask for one markdown block, then paste it into **✎ Editor** here.
+- **Images**: beside the file for an agent; full URLs in a chat.
 
 ## 2️⃣ Write a deck
 
@@ -99,20 +99,26 @@ Plain markdown, and the layout follows from what's on the card. [See every one i
 
 | Write | Get |
 |---|---|
-| `<!-- steps -->` | what follows, one press each (a list item by item), to the end of the card or a `<!-- steps: off -->` |
-| ` ```dot `, ` ```d2 ` | a Graphviz or D2 diagram |
-| ` ```echarts ` with JSON options | a chart, in the deck's colours for dark and light |
-| ` ```svg ` | an SVG drawing, inline: `currentColor` is the text colour and `var(--text)`, `var(--text-muted)`, `var(--accent)` switch with dark and light; scripts, styles and links are removed |
-| `![](drawing.svg)` | an SVG image, as drawn |
-| an image alone | an image card: a phone shot sits beside the heading and caption, a landscape one spans the card between them, a 16:9 one fills it |
-| an image and text | a split card: the image sits on the side written first |
-| a list of images, diagrams or charts | a gallery; with `<!-- steps -->` a carousel, one per press |
-| two or more images, diagrams or charts in a row after `<!-- steps -->` | a carousel, one per press |
-| images in one paragraph | a grid, up to four a row |
-| `<!-- view: full -->` in a card | a 16:9 card for a big image, without the camera unless the card asks for it |
-| a YouTube link alone on a line | the video: the next press plays it, leaving pauses it |
+| `<!-- steps -->` | what follows, one press each, to the end of the card or a `<!-- steps: off -->` |
+| ` ```dot `, ` ```d2 ` | a Graphviz or D2 diagram, in the deck's colours |
+| ` ```echarts ` with JSON options | a chart, in the deck's colours |
+| ` ```svg ` | an SVG drawing: `currentColor` and `var(--text)`, `var(--accent)` follow dark and light |
+| a YouTube link alone on a line | the video: the next press plays it |
+| `<!-- view: full -->` | a 16:9 card for a big image |
 
-The first and last cards animate in on their own. The alt text of an image is its caption.
+The first and last cards animate in on their own.
+
+### Images
+
+The layout follows from where the images are. The alt text is the caption.
+
+| Write | Get |
+|---|---|
+| an image alone | an image card, laid out by its shape: phone, landscape or 16:9 |
+| an image and text | a split card, the image on the side written first |
+| a list of images, diagrams or charts | a gallery; after `<!-- steps -->`, a carousel |
+| images in one paragraph | a grid, up to four a row |
+| `![](drawing.svg)` | an SVG image, as drawn |
 
 ### Deck settings
 
@@ -189,26 +195,44 @@ Two modes, both slide by slide, so there's no timeline to edit afterwards. **●
 
 ### Easy mode: record in the browser
 
-**● Studio** opens with the deck's takes: every slide, in order, with every take recorded of it, from every recording.
+**● Studio** shows every slide of the deck, with every take of it from every recording.
 
-1. The first time, **⚙ Setup** (top right) checks the browser and screen and lists your cameras and microphones with a level meter. The camera you pick there (or **No camera**) is remembered for the deck, and **● Record turns it on by itself**, before the countdown so you can check your framing, then back off afterwards. It defaults to your camera when the deck has a camera box or camera moves. **C** is for presenting live.
-2. **● Record** under the player, and when the browser asks, share **this tab**. The deck goes fullscreen in a 16:9 frame; only the frame (slides and camera) is recorded, never the rest of the screen.
-3. To redo part of it later, tick slides (shift-click ticks a range): **● Record** then records exactly those, each with its entry, and stops by itself after the last. Between ticked slides that aren't next to each other the deck jumps, as a retake does, so the slides in between keep their takes.
-4. Every take starts with the move in from the slide before it, so it depends on both. Edit a slide and its takes and the next slide's are marked *outdated*: kept, but no longer picked, until you record them again (or pick one yourself). To drop a slide, delete it from the deck, then record the slide that followed it again.
+1. **⚙ Setup**, the first time: pick your camera (or **No camera**) and microphone. ● Record turns the camera on and off by itself.
+2. **● Record**, and share **this tab** when the browser asks. Only the 16:9 frame is recorded: slides and camera.
 
-Every take is its own file, kept in this browser's private storage until you purge it: in ⚙ Setup → Files, **Purge takes → Unused takes** keeps only the ones the video uses, **All takes** clears this deck, and **Every deck's takes…** clears everything Slidetake keeps in this browser (it says how much first), including takes of decks since renamed or deleted.
+For 1080p the frame needs 1920×1080 real pixels (a Retina laptop has them); 1280×720 makes 720p. Smaller: use pro mode.
 
-In fullscreen, the frame must be at least 1280×720 real pixels for 720p, 1920×1080 for 1080p: a Retina laptop makes 1080p, a 1366×768 screen 720p. Below that, use pro mode (OBS).
+### Retake slides later
+
+Tick slides (shift-click for a range): **● Record** records just those, then stops.
+
+A take starts with the move in from the slide before it. So when you edit a slide, its takes and the next slide's are marked *outdated*: kept, but not picked until you record them again.
+
+To drop a slide, delete it, then record the slide after it again.
+
+### Takes stay in this browser
+
+Each take is a file in this browser's private storage until you purge it, in ⚙ Setup → Files:
+
+| Purge | Removes |
+|---|---|
+| **Unused takes** | takes the video doesn't use |
+| **All takes** | this deck's takes |
+| **Every deck's takes…** | everything Slidetake keeps here; it says how much first |
 
 ### Pro mode: set up OBS
 
-1. In OBS, turn on Tools → WebSocket Server Settings.
-2. In Slidetake, press **● Studio**, then **⚙ Setup → Use pro mode (OBS)**, enter OBS's host, port and password, and **Connect**. Tick *Remember* to skip this next time. Studio opens in the mode you used last; **Use easy mode (Chrome)** (or Edge, Brave…: your browser's name) switches back. Beside ⚙ Setup, a line shows what a take will use: `Easy · Chrome · 1080p · camera · microphone`, or `Pro · OBS · 1080p · camera`.
-3. Use a 16:9 screen (YouTube is 16:9): Setup checks yours. If it isn't, move the window to one that is, physical or virtual (say 1920×1080), and press **F** there.
+1. In OBS: Tools → WebSocket Server Settings, turn it on.
+2. In **● Studio**: **⚙ Setup → Use pro mode (OBS)**, enter host, port and password, then **Connect**. Tick *Remember*.
+3. Present on a 16:9 screen, physical or virtual (say 1920×1080). Setup checks it.
 
-`?obs=localhost:4455` (or `?obs=host:port:password`) in the address fills this in and connects as the page opens.
+Studio opens in the mode you used last. The line beside ⚙ Setup shows what a take uses: `Pro · OBS · 1080p · camera`.
 
-From https://slidetake.com, OBS must be on the same computer: browsers block secure pages from reaching plain `ws://` addresses elsewhere. For OBS on another machine, use `npx slidetake`, which serves over http.
+### OBS on another computer
+
+`?obs=host:port:password` in the address connects as the page opens.
+
+From https://slidetake.com, OBS must be on the same computer: browsers block secure pages from plain `ws://` addresses elsewhere. For OBS on another machine, use `npx slidetake`, which serves over http.
 
 ### Add your camera
 
@@ -244,25 +268,46 @@ Words you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`,
 
 ### Take by take
 
-**● Record** in Studio counts down and starts recording. From then on the deck drives everything: camera layouts, reveals and slides follow → (a Bluetooth clicker works).
+**● Record** counts down and starts. From then on → drives everything: slides, reveals and camera moves (a Bluetooth clicker works).
 
-- **←** takes the current slide again, keeping every attempt. The deck goes back and plays the slide's entry again (the flight, the camera moving), so every take starts with it and whichever you pick joins smoothly
+- **←** takes the slide again. The deck goes back and replays the slide's entry, so whichever take you pick joins smoothly
 - **B** pauses and resumes
-- one press past the last step ends the take (**Esc** ends it early)
+- one press past the last step ends the take; **Esc** ends it early
 
-Clicks, dragging and the map are locked so the take only moves forward.
+### Slidetake Studio
 
-### Review and cut
+When the take ends you're back in Studio, the same in both modes:
 
-When the take ends you're back in **Slidetake Studio**, the same in both modes: the player with **● Record** and **▶ Preview** under it, every slide with its takes on the right (click one to preview it), and under them **⧉ Chapters**, which copies the final cut's chapters (`0:00 Intro`, one per section) to paste into the YouTube description; YouTube needs at least three, each 10 seconds or more. Messages share one line beside Preview, in full on hover.
+- the player, with **● Record** and **▶ Preview** under it
+- every slide and its takes on the right: click one to preview it
+- **⧉ Chapters** copies the chapters (`0:00 Intro`, one per section) for the YouTube description. YouTube needs at least three, each 10 seconds or more
 
-- **Easy mode (recorded in the browser):** the board is the review. **▶ Preview** plays the picked takes back to back, following along in the take list; right after you play a single take it continues from the next slide (a message says so), otherwise from the start. **↓ Download** joins them into one MP4, in a few seconds, without re-encoding, and saves it like OBS does: a new file named by the date (`deck 2026-10-30 20-04-49.mp4`) in a folder you pick once, starting in your videos folder. Pressing it again without changing a take or the sound settings says where the video already is, rather than making it again.
-- **Pro mode (recorded with OBS):** one video at a time, the deck's latest recording; recording again replaces it here (the old file stays in your OBS folder). Previews come from the OBS file: open it once, or (in Chrome and Edge) pick your OBS recordings folder and later recordings load by themselves. **⧉ ffmpeg** copies a ready-to-run **[ffmpeg](https://ffmpeg.org)** command that cuts the picked takes (frame-exact); ⚙ Setup → Video sets how it encodes, the frame rate and Volume boost.
-- **The microphone's sound**, in ⚙ Setup → Microphone:
-  - **Sound: Raw** (the default) records the mic as it is, best for a good mic in a quiet room. **Voice** turns on Chrome's noise suppression, which takes out fans, hum and other steady noise. On a Mac, Control Center → Mic Mode → Voice Isolation does the same for every app, before Chrome hears it.
-  - **🔊 Volume boost** (on by default): YouTube plays videos at about −14 LUFS and turns louder ones down, but not quieter ones up, so a voice recorded as it is sounds quiet next to other videos. The final cut is measured the way YouTube measures it and raised towards −14 LUFS, stopping where its loudest peak would reach −1.5 dB, so it never clips. The status line says when a peak held it back.
-  - **Peak limiter** (off by default) lets the boost go all the way to −14 LUFS by catching the few peaks (a clicker press, a bump on the mic, a hard "p") that would pass −1.5 dB.
-  - The video is copied as it is; only the sound is re-encoded. In the ffmpeg command, Volume boost adds `loudnorm` (not in the no-re-encode mode), which also holds peaks below −1 dB.
+### Download (easy mode)
+
+**▶ Preview** plays the picked takes back to back.
+
+**↓ Download** joins them into one MP4 in seconds, without re-encoding the video, in a folder you pick once: `deck 2026-10-30 20-04-49.mp4`. Pressed again with nothing changed, it says where the video already is.
+
+### The ffmpeg cut (pro mode)
+
+Studio shows the deck's latest OBS recording; recording again replaces it here (the old file stays in your OBS folder).
+
+Previews come from the OBS file: open it once, or, in Chrome and Edge, pick your OBS folder and later recordings load by themselves.
+
+**⧉ ffmpeg** copies a command that cuts the picked takes, frame-exact. ⚙ Setup → Video sets how it encodes.
+
+### Sound
+
+In ⚙ Setup → Microphone:
+
+| Setting | Does |
+|---|---|
+| **Raw** (default) | the mic as it is: for a good mic in a quiet room |
+| **Voice** | Chrome's noise suppression: fans, hum, steady noise |
+| **🔊 Volume boost** (on) | raises the voice to YouTube's −14 LUFS, never past a −1.5 dB peak |
+| **Peak limiter** (off) | catches the few loud peaks, so the boost goes all the way |
+
+YouTube turns loud videos down but not quiet ones up, so without the boost your voice sounds quiet. With OBS, Volume boost adds `loudnorm` to the ffmpeg command.
 
 ## 5️⃣ Share and keep
 
