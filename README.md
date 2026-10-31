@@ -131,7 +131,7 @@ Two workflows. **Check PR** runs on every pull request: the changelog check, `np
 
 ## Status
 
-Early. See [PLAN.md](PLAN.md): an embed view for websites (and a hugo-continuum layout, `engine: slidetake`), a hosted Studio at slidetake.com, and an npm package with `npx slidetake`.
+Released and in use: see [docs/PLAN.md](docs/PLAN.md) for what's done and what's next.
 
 ## License
 
