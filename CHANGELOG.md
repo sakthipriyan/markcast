@@ -77,7 +77,6 @@ package can notice. Tests, CI and tooling do not belong here.
   under the player, with the final length and expected size; thin scrollbars
   in the accent. The slides link fills in from the page the deck is on when the
   deck names no permalink or site; the Record dialog is wider.
-
 - Slidetake's own decks write the name as in the header, the logo and
   Slide*take* in two colours, wherever it appears in a card's text.
 

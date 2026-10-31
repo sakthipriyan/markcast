@@ -72,7 +72,7 @@ The complete list, one line each. Press → to walk it, **O** for the map.
 |---|---|
 | **slidetake.com** | share links that carry the whole deck; your copy of any deck, kept in this browser |
 | **Your computer** | relative images, reload on save, browser edits saved to the file; OBS on another machine |
-| **Your website** | `?obs` turns your page into the recorder; the hugo-continuum theme with one frontmatter key |
+| **Your website** | a clean viewer in your site's colours; the hugo-continuum theme with one frontmatter key |
 
 ## 🔒 Private and open
 
