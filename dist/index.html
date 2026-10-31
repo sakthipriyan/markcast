@@ -120,6 +120,8 @@
   /* Slidetake's two-tone name in its own decks' titles, as in the header */
   .node .body .st-take{color:var(--accent);}
   .node .body .st-name{white-space:nowrap;color:var(--text);}
+  /* in bold the rest of the name (Studio) keeps the text colour too, not the accent bold text takes */
+  .node .body strong:has(> .st-name){color:var(--text);}
   .node .body .st-name .logo{width:1em;height:1em;vertical-align:-.14em;margin-right:.2em;fill:var(--accent);}
   /* the Record button's red, where a deck names the button; deeper on white so it reads */
   .node .body .st-rec{color:#f87171;}
