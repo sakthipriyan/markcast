@@ -593,12 +593,13 @@ function applyMedia(el, body){
   const parts = [...body.children].filter(c=>!/^H[1-6]$/.test(c.tagName) && !(c.nodeType === 1 && c.tagName === 'HR'));
   const media = parts.filter(c=>c.matches('figure.media'));
   if (media.length === 1 && parts.length === 1) el.classList.add('card-media');
-  // an image or a carousel alone runs edge to edge, the heading and caption laid over it
-  if (parts.length === 1 && (parts[0].matches('figure.media:not(.yt)') || parts[0].matches('.gallery.carousel:not(.diagrams)'))) el.classList.add('card-bleed');
   // <!-- view: full --> makes the card a 16:9 frame for its image, placed like any other slide
   const walker = document.createTreeWalker(body, NodeFilter.SHOW_COMMENT);
   while (walker.nextNode()) if (/^\s*view\s*:\s*full\s*$/i.test(walker.currentNode.data)) el.classList.add('card-full');
-  else if (media.length === 1){
+  // an image or a carousel alone runs edge to edge, the heading and caption laid over it; one image or
+  // video with text beside it makes a split card
+  if (parts.length === 1 && (parts[0].matches('figure.media:not(.yt)') || parts[0].matches('.gallery.carousel:not(.diagrams)'))) el.classList.add('card-bleed');
+  else if (media.length === 1 && parts.length > 1){
     el.classList.add('card-split', parts.indexOf(media[0]) === 0 ? 'media-first' : 'media-last');
     const text = document.createElement('div');
     text.className = 'split-text';

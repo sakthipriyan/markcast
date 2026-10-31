@@ -538,7 +538,8 @@
   /* ---------- media from plain markdown (see applyMedia) ---------- */
   .node .body figure.media{margin:0;}
   .node .body figure.media img{display:block;width:100%;height:auto;max-height:70vh;object-fit:contain;border-radius:8px;}
-  .node .body figure.media figcaption{margin-top:8px;font-size:.82em;color:var(--text-muted);line-height:1.45;}
+  /* one caption size on every kind of image card: the size of the text (.node .body p) */
+  .node .body figure.media figcaption{margin-top:8px;font-size:13px;color:var(--text-muted);line-height:1.45;}
   .node .body figure.yt .frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#000;}
   .node .body figure.yt.portrait .frame{aspect-ratio:9/16;max-height:70vh;width:auto;margin:0 auto;}
   .node .body figure.yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
@@ -551,12 +552,11 @@
   .node .body .gallery{list-style:none;padding:0;margin:8px 0 0;display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:14px;align-items:end;}
   .node .body .gallery li{margin:0;}
   .node .body .gallery figure.media img{max-height:calc(56vh / var(--rows,1));margin:0 auto;}
-  .node .body .gallery figure.media figcaption{font-size:.72em;text-align:center;}
+  .node .body .gallery figure.media figcaption{text-align:center;}
   /* a stepped gallery: the images stack in one place and each press brings the next */
   .node .body .gallery.carousel{grid-template-columns:minmax(0,1fr);}
   .node .body .gallery.carousel > li{grid-area:1/1;}
   .node .body .gallery.carousel figure.media img{max-height:58vh;}
-  .node .body .gallery.carousel figure.media figcaption{font-size:.82em;}
   .node .body .gallery.carousel figcaption[data-count]::before{content:attr(data-count) " ";color:var(--accent);font-weight:600;white-space:pre;}
   .node .body .gallery.carousel:has(> li.visible) > li:not(.fragment){opacity:0;visibility:hidden;transition:opacity .45s ease, visibility 0s .45s;}
   .node .body .gallery.carousel > li:not(.fragment){transition:opacity .45s ease;}
@@ -565,7 +565,7 @@
   .node.card-bleed .body .gallery{margin:0;}
   .node.card-bleed .body figure.media img,
   .node.card-bleed .body .gallery.carousel figure.media img{max-height:none;border-radius:0;background:var(--code-bg);}
-  .node.card-bleed .body figure.media figcaption{margin:0;text-align:left;font-size:.9em;}
+  .node.card-bleed .body figure.media figcaption{margin:0;text-align:left;}
   /* landscape: the image spans the card; the heading sits above it, the caption below */
   .node.img-landscape .crumb{margin:12px 18px 4px;}
   .node.img-landscape .body > :is(h1,h2,h3,h4,h5,h6):first-child{margin:0 18px 10px;}
@@ -576,10 +576,8 @@
   /* the text column takes what the breadcrumb leaves, so the caption ends inside the card */
   .node.img-portrait .body{display:flex;flex-direction:column;flex:1;min-height:0;}
   .node.img-portrait .crumb{margin-bottom:10px;}
-  .node.img-portrait .body > :is(h1,h2,h3,h4,h5,h6):first-child{font-size:22px;}
   .node.img-portrait .body > .gallery, .node.img-portrait .body > figure.media{margin-top:auto;}
   .node.img-portrait .body figure.media img{position:absolute;top:0;right:0;width:var(--img-w);height:540px;object-fit:contain;}
-  .node.img-portrait .body figure.media figcaption, .node.img-portrait .body .gallery.carousel figure.media figcaption{font-size:1.35em;line-height:1.45;color:var(--text);}
   /* 16:9, or a full-screen card: the image fills the card, the heading and caption over it */
   .node.img-overlay::before{content:"";position:absolute;inset:0 0 auto;height:96px;z-index:2;pointer-events:none;
     background:linear-gradient(rgba(0,0,0,.72), rgba(0,0,0,0));border-radius:8px 8px 0 0;}
@@ -2618,10 +2616,10 @@
     const parts = [...body.children].filter((c) => !/^H[1-6]$/.test(c.tagName) && !(c.nodeType === 1 && c.tagName === "HR"));
     const media = parts.filter((c) => c.matches("figure.media"));
     if (media.length === 1 && parts.length === 1) el.classList.add("card-media");
-    if (parts.length === 1 && (parts[0].matches("figure.media:not(.yt)") || parts[0].matches(".gallery.carousel:not(.diagrams)"))) el.classList.add("card-bleed");
     const walker = document.createTreeWalker(body, NodeFilter.SHOW_COMMENT);
     while (walker.nextNode()) if (/^\s*view\s*:\s*full\s*$/i.test(walker.currentNode.data)) el.classList.add("card-full");
-    else if (media.length === 1) {
+    if (parts.length === 1 && (parts[0].matches("figure.media:not(.yt)") || parts[0].matches(".gallery.carousel:not(.diagrams)"))) el.classList.add("card-bleed");
+    else if (media.length === 1 && parts.length > 1) {
       el.classList.add("card-split", parts.indexOf(media[0]) === 0 ? "media-first" : "media-last");
       const text = document.createElement("div");
       text.className = "split-text";

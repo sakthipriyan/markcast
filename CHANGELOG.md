@@ -86,6 +86,10 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ### Fixed
 
+- An image (or video) with text beside it is a split card again, the image on
+  the side it was written on; it had been laid out above the text.
+- Image cards use one heading and caption size: a square or tall image's card
+  no longer has larger text than the rest.
 - An image card for a square or tall image no longer pushes its caption past
   the bottom of the card.
 - A full-screen card (`view: full`) with an image nearly 16:9, such as a
