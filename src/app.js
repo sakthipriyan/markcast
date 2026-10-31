@@ -13,7 +13,7 @@ import {normalizeSource, shortLink} from './core/source.js';
 import {encodeDeck, decodeDeck, parseHash, deckHash} from './core/share.js';
 import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from './core/doc.js';
 import {youtubeVideo, embedUrl} from './core/media.js';
-import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious} from './core/record.js';
+import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious, deviceName} from './core/record.js';
 import {YOUTUBE_LUFS, MAX_BOOST_DB, loudnessMeter, gainToTarget, dbToGain, peakLimiter} from './core/loudness.js';
 import {fingerprint, deckSlides, takesFromRun, boardRows, boardSession, selectedInOrder, rangeOf} from './core/board.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
@@ -1819,9 +1819,12 @@ async function fillDevices(withMeter = true){
       const defLabel = def ? def.label.replace(/^Default - /, '') : '';
       const list = all.filter(d=>d.deviceId !== 'default' && d.deviceId !== 'communications');
       const isDef = d=>!!def && (d.label === defLabel || (!!def.groupId && d.groupId === def.groupId && !list.some(x=>x !== d && x.label === defLabel)));
+      // names without Chrome's USB ids; two devices that would then read the same are numbered
+      const names = list.map((d, i)=>deviceName(d.label) || (kind === 'audioinput' ? 'Microphone ' : 'Camera ') + (i + 1));
+      names.forEach((n, i)=>{ const k = names.slice(0, i).filter(m=>m === n).length; if (k) names[i] = n + ' ' + (k + 1); });
       const pick = list.some(d=>d.deviceId === saved) || saved === 'none' ? saved : (list.find(isDef) || list[0] || {}).deviceId;
       return list.map((d, i)=>'<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === pick ? ' selected' : '') + '>' +
-        escapeHtml((d.label || (kind === 'audioinput' ? 'Microphone ' : 'Camera ') + (i + 1)) + (isDef(d) ? ' (system default)' : '')) + '</option>').join('');
+        escapeHtml(names[i] + (isDef(d) ? ' (system default)' : '')) + '</option>').join('');
     };
     const cam = camChoice();
     recCam.innerHTML = '<option value="none"' + (cam === 'none' ? ' selected' : '') + '>No camera</option>' + opts('videoinput', cam);

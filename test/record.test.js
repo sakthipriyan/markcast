@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {frame16x9, bestQuality, recordingType, clipExt, bytesPerMinute, QUALITIES, clipPlan, afterPrevious} from '../src/core/record.js';
+import {frame16x9, bestQuality, recordingType, clipExt, bytesPerMinute, QUALITIES, clipPlan, afterPrevious, deviceName} from '../src/core/record.js';
 
 test('the 16:9 frame fits the area and is centred', ()=>{
   assert.deepEqual(frame16x9(1440, 900), {w: 1440, h: 810, x: 0, y: 45});      // 16:10: bars top and bottom
@@ -67,4 +67,10 @@ test('joined timestamps always move forward', ()=>{
 test('a length reads in words: 45s, 1m 09s, 1h 02m', async ()=>{
   const {fmtLength} = await import('../src/core/text.js');
   assert.deepEqual([45e3, 69e3, 166e3, 3725e3].map(fmtLength), ['45s', '1m 09s', '2m 46s', '1h 02m']);
+});
+
+test('device names drop the USB ids Chrome adds', ()=>{
+  assert.equal(deviceName('MacBook Pro Camera (0000:0001)'), 'MacBook Pro Camera');
+  assert.equal(deviceName('Sennheiser Profile (1377:1100)'), 'Sennheiser Profile');
+  assert.equal(deviceName('Studio Mic (USB)'), 'Studio Mic (USB)');
 });

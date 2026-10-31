@@ -1811,6 +1811,7 @@
     return out;
   }
   var afterPrevious = (prev, t) => t > prev ? t : prev + 1e-3;
+  var deviceName = (label) => label.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/i, "");
 
   // src/core/loudness.js
   var YOUTUBE_LUFS = -14;
@@ -3976,8 +3977,13 @@
         const defLabel = def ? def.label.replace(/^Default - /, "") : "";
         const list = all.filter((d) => d.deviceId !== "default" && d.deviceId !== "communications");
         const isDef = (d) => !!def && (d.label === defLabel || !!def.groupId && d.groupId === def.groupId && !list.some((x) => x !== d && x.label === defLabel));
+        const names = list.map((d, i) => deviceName(d.label) || (kind === "audioinput" ? "Microphone " : "Camera ") + (i + 1));
+        names.forEach((n, i) => {
+          const k = names.slice(0, i).filter((m) => m === n).length;
+          if (k) names[i] = n + " " + (k + 1);
+        });
         const pick = list.some((d) => d.deviceId === saved) || saved === "none" ? saved : (list.find(isDef) || list[0] || {}).deviceId;
-        return list.map((d, i) => '<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === pick ? " selected" : "") + ">" + escapeHtml((d.label || (kind === "audioinput" ? "Microphone " : "Camera ") + (i + 1)) + (isDef(d) ? " (system default)" : "")) + "</option>").join("");
+        return list.map((d, i) => '<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === pick ? " selected" : "") + ">" + escapeHtml(names[i] + (isDef(d) ? " (system default)" : "")) + "</option>").join("");
       };
       const cam2 = camChoice();
       recCam.innerHTML = '<option value="none"' + (cam2 === "none" ? " selected" : "") + ">No camera</option>" + opts("videoinput", cam2);

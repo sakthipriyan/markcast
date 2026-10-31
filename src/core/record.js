@@ -84,3 +84,9 @@ export function clipPlan(sess){
  * @param {number} prev @param {number} t  seconds
  */
 export const afterPrevious = (prev, t)=>t > prev ? t : prev + 0.001;
+
+/**
+ * A device's name as people know it: without the USB ids Chrome adds ("MacBook Pro Camera (0000:0001)").
+ * @param {string} label
+ */
+export const deviceName = label=>label.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/i, '');
