@@ -84,6 +84,9 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ### Fixed
 
+- A full-screen card (`view: full`) with an image nearly 16:9, such as a
+  1200×630 link preview, fills the frame instead of showing grey bars above and
+  below it in light mode; images further from 16:9 sit on black.
 - Closing Studio (a click outside it, ✕ or Esc) stops a preview that is
   playing, instead of leaving its sound running.
 - With OBS, a retake's cut no longer starts with a moment of the attempt

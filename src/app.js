@@ -717,11 +717,11 @@ function sizeCard(n){
   //   portrait or near-square → image on the right at the card's height, the heading and caption beside it
   //   wider     → image edge to edge across the card, the heading above it and the caption below
   //   16:9 → the image fills the card, the heading and caption over it
-  // A <!-- view: full --> card is 16:9 and fits its image whole, never cropped: an image narrow enough to leave
+  // A <!-- view: full --> card is 16:9 and fits its image whole (one nearly 16:9 just fills it): an image narrow enough to leave
   // room beside it sits on the right with the text in that room, as a portrait card does; a wider one fills
   // the card with the text over it.
   const full = el.classList.contains('card-full');
-  el.classList.remove('img-portrait', 'img-landscape', 'img-overlay');
+  el.classList.remove('img-portrait', 'img-landscape', 'img-overlay', 'img-cover');
   if (full) w = XWIDE_W;
   if (el.classList.contains('card-bleed')){
     const aspect = Math.max(0, ...[...b.querySelectorAll('img')].map(i=>i.naturalWidth && i.naturalHeight ? i.naturalWidth / i.naturalHeight : 0)) || 16 / 9;
@@ -731,7 +731,12 @@ function sizeCard(n){
       el.style.setProperty('--img-w', Math.round(BLEED_H * aspect) + 'px');
       w = XWIDE_W;
     }
-    else if (full || Math.abs(aspect - 16 / 9) < 0.08){ el.classList.add('img-overlay'); w = XWIDE_W; }
+    else if (full || Math.abs(aspect - 16 / 9) < 0.08){
+      el.classList.add('img-overlay'); w = XWIDE_W;
+      // nearly 16:9 (a 1200×630 link preview, say): fill the frame, losing a sliver at the sides, rather
+      // than leave thin bars above and below
+      if (aspect >= 16 / 9 && aspect <= 16 / 9 * 1.15) el.classList.add('img-cover');
+    }
     else if (aspect < 1.3){
       const iw = Math.min(Math.round(BLEED_H * aspect), XWIDE_W - 300);   // leave the text at least 300px
       el.classList.add('img-portrait');
