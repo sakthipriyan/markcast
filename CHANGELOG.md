@@ -42,8 +42,10 @@ package can notice. Tests, CI and tooling do not belong here.
   take it away), the countdown asks for **F**.
 - **🔊 Auto volume** in the review, selected by default: the final cut
   is measured the way YouTube measures it (ITU-R BS.1770 integrated loudness)
-  and given one gain to reach -14 LUFS, never pushing peaks past -1.5 dB and
-  never making a quiet recording quieter. In the browser only the sound is
+  and given one gain to reach -14 LUFS; a look-ahead limiter catches the few
+  peaks (a click, a plosive) that would pass -1.5 dB, so a single loud moment
+  no longer holds the whole video back, and the result is measured again so
+  it lands on -14. In the browser only the sound is
   re-encoded; the ffmpeg command gets `loudnorm`.
 
 ### Changed

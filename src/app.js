@@ -14,7 +14,7 @@ import {encodeDeck, decodeDeck, parseHash, deckHash} from './core/share.js';
 import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from './core/doc.js';
 import {youtubeVideo, embedUrl} from './core/media.js';
 import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious} from './core/record.js';
-import {loudnessMeter, gainToTarget, dbToGain} from './core/loudness.js';
+import {YOUTUBE_LUFS, MAX_BOOST_DB, loudnessMeter, gainToTarget, dbToGain, peakLimiter} from './core/loudness.js';
 import {fingerprint, deckSlides, takesFromRun, boardRows, boardSession, selectedInOrder, rangeOf} from './core/board.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
   finalChapters as finalChaptersCore, ffmpegScript as ffmpegScriptCore} from './core/cut.js';
@@ -2573,31 +2573,34 @@ async function downloadVideo(force){
     const MB = await import(MEDIABUNNY_URL);
     const target = file ? new MB.StreamTarget(file) : new MB.BufferTarget();
     const out = new MB.Output({format:mp4 ? new MB.Mp4OutputFormat({fastStart:file ? false : 'in-memory'}) : new MB.WebMOutputFormat(), target});
-    // loudness: measure the sound of the final cut first, then every take's sound gets the same gain
+    // loudness: measure the final cut, gain it to YouTube's level, then measure what that gain and the limiter
+    // actually give and correct for it. A few loud clicks carry much of the energy the first measure counts,
+    // and once the limiter tames them the voice would come out short of the target.
     let gain = 1, loudNote = '';
     if (loudOn()){
-      let meter = null;
-      for (const [i, part] of plan.entries()){
-        renderStatus.textContent = 'Measuring the volume ' + (i + 1) + ' of ' + plan.length + '…';
-        const input = new MB.Input({source:new MB.BlobSource(await clipFile(part.clip)), formats:MB.ALL_FORMATS});
-        const at = await input.getPrimaryAudioTrack();
-        if (!at) continue;
-        for await (const smp of new MB.AudioSampleSink(at).samples(0, part.keep)){
-          meter = meter || loudnessMeter(smp.sampleRate, smp.numberOfChannels);
-          meter.add(planesOf(smp));
-          smp.close();
+      const first = await measureCut(MB, plan, 1, 'Measuring the volume');
+      if (first && isFinite(first.integrated)){
+        let db = gainToTarget(first);
+        if (Math.abs(db) >= 0.05){
+          const then = await measureCut(MB, plan, dbToGain(db), 'Checking the volume');
+          if (then && isFinite(then.integrated)) db = Math.min(db + (YOUTUBE_LUFS - then.integrated), MAX_BOOST_DB);
         }
-      }
-      if (meter){
-        const m = meter.result(), db = gainToTarget(m);
         gain = dbToGain(db);
-        loudNote = !isFinite(m.integrated) ? '' : Math.abs(db) < 0.05 ? ' · loudness ' + m.integrated.toFixed(1) + ' LUFS, left as is'
-          : ' · loudness ' + m.integrated.toFixed(1) + ' → ' + (m.integrated + db).toFixed(1) + ' LUFS';
+        loudNote = Math.abs(db) < 0.05 ? ' · loudness ' + first.integrated.toFixed(1) + ' LUFS, left as is'
+          : ' · loudness ' + first.integrated.toFixed(1) + ' → ' + YOUTUBE_LUFS.toFixed(1) + ' LUFS';
       }
     }
     const reencode = gain !== 1;
     await checkJoinable(MB, plan);
-    let vSrc = null, aSrc = null, offset = 0, lastV = -1, lastA = -1;
+    let vSrc = null, aSrc = null, offset = 0, lastV = -1, lastA = -1, limiter = null;
+    const limited = [];   // pieces of sound waiting for the limiter: their time and length
+    const sendLimited = async ()=>{
+      while (limited.length && limiter.ready() >= limited[0].n){
+        const piece = limited.shift(), planes = limiter.take(piece.n), data = new Float32Array(piece.n * piece.ch);
+        planes.forEach((p, c)=>data.set(p, c * piece.n));
+        await aSrc.add(new MB.AudioSample({data, format:'f32-planar', numberOfChannels:piece.ch, sampleRate:piece.rate, timestamp:piece.t}));
+      }
+    };
     for (const [i, part] of plan.entries()){
       renderStatus.textContent = 'Joining take ' + (i + 1) + ' of ' + plan.length + '…';
       const input = new MB.Input({source:new MB.BlobSource(await clipFile(part.clip)), formats:MB.ALL_FORMATS});
@@ -2627,10 +2630,15 @@ async function downloadVideo(force){
         for await (const smp of new MB.AudioSampleSink(at).samples(0, end)){
           if (smp.timestamp + smp.duration > end + 1e-4){ smp.close(); continue; }
           lastA = afterPrevious(lastA, offset + smp.timestamp);
-          const planes = planesOf(smp), n = smp.numberOfFrames, data = new Float32Array(n * planes.length);
-          planes.forEach((p, c)=>{ for (let k = 0; k < n; k++) data[c * n + k] = p[k] * gain; });
-          await aSrc.add(new MB.AudioSample({data, format:'f32-planar', numberOfChannels:planes.length, sampleRate:smp.sampleRate, timestamp:lastA}));
+          const planes = planesOf(smp);
+          planes.forEach(p=>{ for (let k = 0; k < p.length; k++) p[k] *= gain; });
+          // the limiter catches the peaks the gain pushes past the ceiling; its output runs a few ms behind, so
+          // each piece waits until its frames are ready and keeps its own time
+          limiter = limiter || peakLimiter(smp.sampleRate, planes.length);
+          limiter.push(planes);
+          limited.push({t:lastA, n:smp.numberOfFrames, rate:smp.sampleRate, ch:planes.length});
           smp.close();
+          await sendLimited();
         }
       } else if (at && aSrc){
         const aMeta = {decoderConfig:await at.getDecoderConfig()};
@@ -2643,6 +2651,11 @@ async function downloadVideo(force){
         }
       }
       offset += end;
+    }
+    if (limiter){
+      limiter.end();
+      await sendLimited();
+      if (limiter.events) loudNote += ', ' + limiter.events + ' peak' + (limiter.events === 1 ? '' : 's') + ' limited';
     }
     renderStatus.textContent = 'Finishing…';
     await out.finalize();
@@ -2660,6 +2673,29 @@ async function downloadVideo(force){
     renderStatus.textContent = 'Could not save the video: ' + ((e && e.message) || e);
     if (file) file.abort().catch(()=>{});
   } finally { btn.disabled = !!sess.cleaned; }
+}
+// How loud the final cut is with a gain (and, above 1, the limiter after it): its takes' sound, as it will be
+// joined. null when there is no sound.
+async function measureCut(MB, plan, gain, label){
+  let meter = null, limiter = null;
+  for (const [i, part] of plan.entries()){
+    renderStatus.textContent = label + ' ' + (i + 1) + ' of ' + plan.length + '…';
+    const at = await new MB.Input({source:new MB.BlobSource(await clipFile(part.clip)), formats:MB.ALL_FORMATS}).getPrimaryAudioTrack();
+    if (!at) continue;
+    for await (const smp of new MB.AudioSampleSink(at).samples(0, part.keep)){
+      const planes = planesOf(smp);
+      meter = meter || loudnessMeter(smp.sampleRate, planes.length);
+      if (gain !== 1){
+        planes.forEach(p=>{ for (let k = 0; k < p.length; k++) p[k] *= gain; });
+        limiter = limiter || peakLimiter(smp.sampleRate, planes.length);
+        limiter.push(planes);
+        if (limiter.ready()) meter.add(limiter.take(limiter.ready()));
+      } else meter.add(planes);
+      smp.close();
+    }
+  }
+  if (limiter){ limiter.end(); if (limiter.ready()) meter.add(limiter.take(limiter.ready())); }
+  return meter ? meter.result() : null;
 }
 // Takes join without re-encoding only when they share the picture size and encoder settings. The odd ones
 // out (against the most common) are named, to be recorded again, rather than written into a broken file.
