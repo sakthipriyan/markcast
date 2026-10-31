@@ -298,7 +298,7 @@
   .modal h3{font-family:var(--display);font-size:13px;margin:18px 0 8px;color:var(--text);display:flex;align-items:center;gap:10px;}
   .modal p, .modal li{font-size:13px;line-height:1.6;color:var(--text-muted);margin:0 0 6px;}
   .modal ul{padding-left:18px;margin:0;}
-  .modal .close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+  .modal .close{position:absolute;top:23px;right:16px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
   .modal .fields{display:grid;grid-template-columns:2fr 1fr 2fr;gap:10px;}
   #open-form{display:flex;gap:8px;margin:12px 0 6px;}
   #help table.keys{border-collapse:collapse;margin:6px 0 12px;font-size:13px;}
@@ -347,7 +347,6 @@
   .rec-mode{display:flex;gap:10px;align-items:flex-start;}
   .rec-mode input{margin-top:3px;}
   .rec-mode small{display:block;color:var(--text-muted);font-size:12px;margin-top:2px;}
-  .rec-level meter{flex:1;height:10px;}
   #review.in-browser #rv-novideo, #review.in-browser #rv-ffmpeg-box, #review:not(.in-browser) #rv-render{display:none !important;}
   #rec-countdown{
     position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
@@ -388,12 +387,24 @@
   .rv-chip.outdated{opacity:.6;text-decoration:line-through;}
   .rv-none{font-size:12px;color:var(--text-muted);font-style:italic;}
   /* Recording setup: opened from the ⚙ Setup button at the top right, shown under the title */
-  .modal .rv-setup-btn{position:absolute;top:10px;right:46px;}
+  .modal .rv-setup-btn{position:absolute;top:20px;right:48px;}
   .modal .rv-setup-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   #rv-setup{margin:4px 0 12px;border:1px solid var(--panel-line);border-radius:8px;padding:10px 14px;}
   #rv-setup > summary{display:none;}
   #rv-setup:not([open]){display:none;}
   .rv-setup-sum{margin:0 0 8px;color:var(--text-muted);font-size:12px;}
+  /* three sections side by side: Camera, Microphone, Video; Use OBS at the top right */
+  .rv-setup-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--panel-line);}
+  .rv-setup-head h4{margin:0;font-family:var(--display);font-size:13px;color:var(--text-muted);}
+  .rv-setup-cols{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:18px;}
+  .rv-setup-cols section{display:flex;flex-direction:column;gap:8px;min-width:0;}
+  .rv-setup-cols h4{margin:0;font-family:var(--display);font-size:13px;color:var(--text);}
+  .rv-setup-cols select{width:100%;}
+  .rv-setup-cols meter{width:100%;height:8px;}
+  .rv-setup-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .rv-setup-note{margin:0;font-size:12px;color:var(--text-muted);line-height:1.5;}
+  #rv-setup > .rv-setup-note{margin-top:12px;}
+  @media (max-width:900px){ .rv-setup-cols{grid-template-columns:1fr;} }
   .rv-final{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
   /* under the takes: the final cut's size, and Download */
   .rv-dl{grid-area:dl;display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:12px;}

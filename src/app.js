@@ -2771,7 +2771,6 @@ function boardReview(){
   return {rows, sess};
 }
 const setupEl = document.getElementById('rv-setup');
-setupEl.insertBefore(document.getElementById('rec-browser'), setupEl.querySelector('.rv-setup-more'));
 const setupBtn = document.getElementById('rv-setup-btn');
 setupEl.addEventListener('toggle', ()=>{
   setupBtn.setAttribute('aria-expanded', String(setupEl.open));

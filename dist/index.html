@@ -339,7 +339,7 @@
   .modal h3{font-family:var(--display);font-size:13px;margin:18px 0 8px;color:var(--text);display:flex;align-items:center;gap:10px;}
   .modal p, .modal li{font-size:13px;line-height:1.6;color:var(--text-muted);margin:0 0 6px;}
   .modal ul{padding-left:18px;margin:0;}
-  .modal .close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+  .modal .close{position:absolute;top:23px;right:16px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
   .modal .fields{display:grid;grid-template-columns:2fr 1fr 2fr;gap:10px;}
   #open-form{display:flex;gap:8px;margin:12px 0 6px;}
   #help table.keys{border-collapse:collapse;margin:6px 0 12px;font-size:13px;}
@@ -388,7 +388,6 @@
   .rec-mode{display:flex;gap:10px;align-items:flex-start;}
   .rec-mode input{margin-top:3px;}
   .rec-mode small{display:block;color:var(--text-muted);font-size:12px;margin-top:2px;}
-  .rec-level meter{flex:1;height:10px;}
   #review.in-browser #rv-novideo, #review.in-browser #rv-ffmpeg-box, #review:not(.in-browser) #rv-render{display:none !important;}
   #rec-countdown{
     position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
@@ -429,12 +428,24 @@
   .rv-chip.outdated{opacity:.6;text-decoration:line-through;}
   .rv-none{font-size:12px;color:var(--text-muted);font-style:italic;}
   /* Recording setup: opened from the ⚙ Setup button at the top right, shown under the title */
-  .modal .rv-setup-btn{position:absolute;top:10px;right:46px;}
+  .modal .rv-setup-btn{position:absolute;top:20px;right:48px;}
   .modal .rv-setup-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
   #rv-setup{margin:4px 0 12px;border:1px solid var(--panel-line);border-radius:8px;padding:10px 14px;}
   #rv-setup > summary{display:none;}
   #rv-setup:not([open]){display:none;}
   .rv-setup-sum{margin:0 0 8px;color:var(--text-muted);font-size:12px;}
+  /* three sections side by side: Camera, Microphone, Video; Use OBS at the top right */
+  .rv-setup-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--panel-line);}
+  .rv-setup-head h4{margin:0;font-family:var(--display);font-size:13px;color:var(--text-muted);}
+  .rv-setup-cols{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:18px;}
+  .rv-setup-cols section{display:flex;flex-direction:column;gap:8px;min-width:0;}
+  .rv-setup-cols h4{margin:0;font-family:var(--display);font-size:13px;color:var(--text);}
+  .rv-setup-cols select{width:100%;}
+  .rv-setup-cols meter{width:100%;height:8px;}
+  .rv-setup-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .rv-setup-note{margin:0;font-size:12px;color:var(--text-muted);line-height:1.5;}
+  #rv-setup > .rv-setup-note{margin-top:12px;}
+  @media (max-width:900px){ .rv-setup-cols{grid-template-columns:1fr;} }
   .rv-final{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
   /* under the takes: the final cut's size, and Download */
   .rv-dl{grid-area:dl;display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:12px;}
@@ -886,16 +897,6 @@
       <label class="rec-mode"><input type="radio" name="rec-mode" value="browser"><span><strong>In this browser</strong><small>Nothing to install. Takes stay in this browser until you purge them.</small></span></label>
       <label class="rec-mode"><input type="radio" name="rec-mode" value="obs"><span><strong>OBS</strong><small>For any screen, or when this browser can't record at 720p or more.</small></span></label>
     </div>
-    <div id="rec-browser">
-      <p id="rec-browser-check"></p>
-      <div class="fields">
-        <label>Camera<select id="rec-cam"></select></label>
-        <label>Microphone<select id="rec-mic"></select></label>
-        <label>Quality<select id="rec-quality"></select></label>
-      </div>
-      <div class="row rec-level"><span>Mic level</span><meter id="rec-meter" min="0" max="1" low="0.1" high="0.8" optimum="0.5" value="0"></meter></div>
-      <p>When Chrome asks, share <strong>this tab</strong>. Only the slides and your camera are recorded, in a 16:9 frame; nothing else on the screen is.</p>
-    </div>
     <div id="rec-obs">
     <p id="rec-screen"></p>
     <div class="fields">
@@ -936,16 +937,34 @@
     <p id="rv-info"></p>
     <details id="rv-setup" class="rv-board-only">
       <summary>Recording setup</summary>
-      <p class="rv-setup-sum" id="rv-setup-sum"></p>
-      <div class="row rv-setup-more">
-        <button class="btn small toggle rv-loud" id="rv-loud" aria-pressed="true" title="Brings the video to YouTube's volume (-14 LUFS) with one gain, never past -1.5 dB peaks"><span class="ico" aria-hidden="true">🔊</span> Auto volume</button>
-        <button class="btn small" id="rv-folder-change" title="Where Download saves videos">Change the download folder…</button>
-        <details class="rv-purge">
-          <summary class="btn small" title="Delete takes from this browser">🗑 Purge takes</summary>
-          <div class="rv-menu"><button class="btn small" id="rv-clean-unused">Unused takes</button><button class="btn small" id="rv-clean">All takes</button></div>
-        </details>
-        <button class="btn small" id="rv-use-obs">Record with OBS instead…</button>
+      <div class="rv-setup-head"><h4>Record in this browser</h4><button class="btn small" id="rv-use-obs" title="Record with OBS instead of in this browser">Use OBS</button></div>
+      <div class="rv-setup-cols">
+        <section>
+          <h4>Camera</h4>
+          <select id="rec-cam" aria-label="Camera"></select>
+          <p class="rv-setup-note">Turns on by itself when recording starts. Choose No camera for slides only.</p>
+        </section>
+        <section>
+          <h4>Microphone</h4>
+          <select id="rec-mic" aria-label="Microphone"></select>
+          <meter id="rec-meter" min="0" max="1" low="0.1" high="0.8" optimum="0.5" value="0" aria-label="Mic level"></meter>
+          <div class="rv-setup-row"><button class="btn small toggle rv-loud" id="rv-loud" aria-pressed="true" title="Brings the video to YouTube's volume (-14 LUFS); a limiter catches the few peaks that would pass -1.5 dB"><span class="ico" aria-hidden="true">🔊</span> Auto volume</button></div>
+        </section>
+        <section>
+          <h4>Video</h4>
+          <select id="rec-quality" aria-label="Quality"></select>
+          <p class="rv-setup-note" id="rec-browser-check"></p>
+          <div class="rv-setup-row">
+            <button class="btn small" id="rv-folder-change" title="Where Download saves videos">Download folder…</button>
+            <details class="rv-purge">
+              <summary class="btn small" title="Delete takes from this browser">🗑 Purge takes</summary>
+              <div class="rv-menu"><button class="btn small" id="rv-clean-unused">Unused takes</button><button class="btn small" id="rv-clean">All takes</button></div>
+            </details>
+          </div>
+        </section>
       </div>
+      <p class="rv-setup-note">When Chrome asks, share <strong>this tab</strong>. Only the slides and your camera are recorded, in a 16:9 frame; nothing else on the screen is.</p>
+      <p class="rv-setup-sum" id="rv-setup-sum" hidden></p>
     </details>
     <div class="rv-grid">
       <div>
@@ -5105,7 +5124,6 @@
     return { rows, sess };
   }
   var setupEl = document.getElementById("rv-setup");
-  setupEl.insertBefore(document.getElementById("rec-browser"), setupEl.querySelector(".rv-setup-more"));
   var setupBtn = document.getElementById("rv-setup-btn");
   setupEl.addEventListener("toggle", () => {
     setupBtn.setAttribute("aria-expanded", String(setupEl.open));
