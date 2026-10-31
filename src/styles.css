@@ -389,6 +389,7 @@
   .rv-row.with-sel{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:start;}
   .rv-row .rv-sel{margin:3px 0 0;accent-color:var(--accent);}
   .rv-row.selected{background:color-mix(in srgb, var(--accent) 7%, transparent);}
+  .rv-row.playing{box-shadow:inset 3px 0 0 var(--accent);}
   .rv-chip.outdated{opacity:.6;text-decoration:line-through;}
   .rv-none{font-size:12px;color:var(--text-muted);font-style:italic;}
   /* Recording setup: opened from the ⚙ Setup button at the top right, shown under the title */

@@ -2446,11 +2446,48 @@ rvVideo.addEventListener('timeupdate', ()=>{
   rvVideo.currentTime = next.start / 1000;
   rvNow.textContent = '▶ ' + next.title;
 });
-document.getElementById('rv-play-final').onclick = ()=>{
+// Preview: the picked takes back to back. Right after a take was played on its own it continues from there (the
+// next slide, or the same one if that take was stopped partway); after anything else, from the start. While it
+// plays the button pauses it, and the take list follows the slide playing.
+const previewBtn = document.getElementById('rv-play-final');
+let previewFrom = null;
+function resetPreview(){ previewFrom = null; }
+previewBtn.onclick = ()=>{
   if (!reviewing) return;
-  if (reviewing.inBrowser) playClips(clipPlan(reviewing));
-  else playRange(pickedRanges(reviewing).map(r=>({start:r.start, end:r.end, title:r.title})));
+  if (!reviewing.inBrowser){ playRange(pickedRanges(reviewing).map(r=>({start:r.start, end:r.end, title:r.title}))); return; }
+  if (clipList && !clipList.single){                 // the preview is running: pause, or go on
+    if (rvVideo.paused) rvVideo.play().catch(()=>{}); else rvVideo.pause();
+    return;
+  }
+  const plan = clipPlan(reviewing);
+  const start = Math.max(0, previewFrom ? plan.findIndex(p=>p.id === previewFrom) : 0);
+  previewFrom = null;
+  playClips(plan.slice(start));
 };
+function showPreviewState(){
+  const running = clipList && !clipList.single && !rvVideo.paused;
+  previewBtn.textContent = running ? '❚❚ Pause' : '▶ Preview';
+  document.querySelectorAll('#rv-list .rv-row.playing').forEach(r=>r.classList.remove('playing'));
+  const part = clipList && clipList.parts[clipList.i];
+  const row = part && part.id && document.querySelector('#rv-list .rv-row[data-id="' + CSS.escape(part.id) + '"]');
+  if (row){ row.classList.add('playing'); row.scrollIntoView({block:'nearest'}); }
+}
+rvVideo.addEventListener('play', showPreviewState);
+rvVideo.addEventListener('pause', ()=>{
+  // a take played on its own and stopped partway: Preview starts with that slide
+  if (clipList && clipList.single && rvVideo.currentTime < clipList.parts[0].keep - 0.05){
+    previewFrom = clipList.parts[0].id;
+    rvNow.textContent = 'Preview starts from ' + clipList.parts[0].title.replace(/ · take \d+$/, '') + '.';
+  }
+  showPreviewState();
+});
+// a take played on its own has finished: Preview goes on from the next slide
+function singleTakeDone(part){
+  const plan = reviewing ? clipPlan(reviewing) : [];
+  const i = plan.findIndex(p=>p.id === part.id), next = i >= 0 ? plan[i + 1] : null;
+  previewFrom = next ? next.id : null;
+  rvNow.textContent = next ? 'Preview continues from ' + next.title + '.' : 'That was the last slide: Preview plays from the start.';
+}
 
 // a decoded audio sample as one float array per channel
 function planesOf(smp){
@@ -2464,10 +2501,11 @@ function planesOf(smp){
 let clipList = null;
 // a take's clip, by its path: '<recording>/<file>'
 async function clipFile(path){ const [run, name] = path.split('/'); return (await (await takesDir(run)).getFileHandle(name)).getFile(); }
-async function playClips(parts, i = 0){
+// single: one take played on its own (from the take list), after which Preview continues from it
+async function playClips(parts, i = 0, single = false){
   if (!reviewing || reviewing.cleaned || !parts.length) return;
   playlist = null;
-  clipList = {parts, i};
+  clipList = {parts, i, single};
   try {
     const file = await clipFile(parts[i].clip);
     if (rvVideo.src) URL.revokeObjectURL(rvVideo.src);
@@ -2480,14 +2518,16 @@ async function playClips(parts, i = 0){
     rvNow.textContent = e && e.name === 'NotFoundError' ? 'This take is no longer in the browser.' : 'Could not play this take: ' + ((e && e.message) || e);
   }
 }
-rvVideo.addEventListener('timeupdate', ()=>{
-  if (!clipList || rvVideo.currentTime < clipList.parts[clipList.i].keep) return;
-  if (clipList.i + 1 < clipList.parts.length) playClips(clipList.parts, clipList.i + 1);
-  else { rvVideo.pause(); clipList = null; rvNow.textContent = ''; }
-});
-rvVideo.addEventListener('ended', ()=>{
-  if (clipList && clipList.i + 1 < clipList.parts.length) playClips(clipList.parts, clipList.i + 1);
-});
+function clipDone(){
+  const c = clipList;
+  if (c.i + 1 < c.parts.length){ playClips(c.parts, c.i + 1, c.single); return; }
+  clipList = null;
+  rvVideo.pause();
+  if (c.single) singleTakeDone(c.parts[0]); else rvNow.textContent = '';
+  showPreviewState();
+}
+rvVideo.addEventListener('timeupdate', ()=>{ if (clipList && rvVideo.currentTime >= clipList.parts[clipList.i].keep) clipDone(); });
+rvVideo.addEventListener('ended', ()=>{ if (clipList) clipDone(); });
 
 // Render: the picked takes joined into one file, packets copied as they are (no decoding or re-encoding).
 // Every take starts on a keyframe and shares the recorder's settings, so the joins need nothing else.
@@ -2725,6 +2765,7 @@ function openBoard(opts = {}){
   document.getElementById('rv-link').value = deckLink();
   if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
   playlist = null; clipList = null;
+  resetPreview();
   renderStatus.textContent = '';
   renderBoard();
   openModal(reviewDialog);
@@ -2746,7 +2787,7 @@ function renderBoard(){
       '" data-id="' + id + '" data-uid="' + escapeHtml(t.uid) + '">Take ' + t.no + ' · ' + fmtTime(t.ms) + '</button>').join('') +
       (r.pick ? '' : '<span class="rv-none">' + (r.takes.some(t=>t.outdated === 'before') && !r.takes.some(t=>t.outdated === 'slide') ? 'The slide before changed: record again' : 'Changed since: record again') + '</span>')
       : '<span class="rv-none">No take yet</span>';
-    return '<div class="rv-row with-sel' + (isSec ? ' sec' : '') + (selected.has(r.id) ? ' selected' : '') + '">' +
+    return '<div class="rv-row with-sel' + (isSec ? ' sec' : '') + (selected.has(r.id) ? ' selected' : '') + '" data-id="' + id + '">' +
       '<input type="checkbox" class="rv-sel" data-id="' + id + '"' + (selected.has(r.id) ? ' checked' : '') + ' aria-label="Select ' + escapeHtml(r.title) + ' to record">' +
       '<div><div class="t">' + escapeHtml(r.title) + '</div><div class="rv-chips">' + chips + '</div></div></div>';
   }).join('');
@@ -2755,11 +2796,12 @@ function renderBoard(){
     saveBoard();
     renderBoard();
     const row = rows.find(r=>r.id === b.dataset.id), t = row && row.takes.find(x=>x.uid === b.dataset.uid);
-    if (t) playClips([{clip:t.clip, keep:t.ms / 1000, title:row.title + ' · take ' + t.no}]);
+    if (t) playClips([{id:row.id, clip:t.clip, keep:t.ms / 1000, title:row.title + ' · take ' + t.no}], 0, true);
   });
   list.querySelectorAll('.rv-sel').forEach(c=>c.addEventListener('click', e=>{
     const ids = e.shiftKey ? rangeOf(order, selAnchor, c.dataset.id) : [c.dataset.id];
     ids.forEach(i=>{ if (c.checked) selected.add(i); else selected.delete(i); });
+    resetPreview();
     selAnchor = c.dataset.id;
     renderBoard();
   }));
@@ -2789,6 +2831,7 @@ async function deleteClips(takes){
   saveBoard();
   if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
   clipList = null;
+  resetPreview();
   renderBoard();
 }
 // the purge menu closes once a choice is made
@@ -2809,6 +2852,7 @@ document.getElementById('rv-clean').onclick = async ()=>{
   for (const r of runs) await deleteTakes(r);
   if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
   clipList = null;
+  resetPreview();
   renderStatus.textContent = 'All takes purged.';
   renderBoard();
 };
