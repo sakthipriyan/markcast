@@ -94,10 +94,11 @@ window.SLIDETAKE = {
   colors: {                                           // optional: the site's colours instead of Slidetake's green
     light: {accent: "#7a5c12", line: "#f5c542", header: "linear-gradient(135deg,#f5c542,#d4af37)", headerText: "#1a1408"},
     dark:  {accent: "#e0b024", line: "#966f04"}
-  }
+  },
+  recording: false                                    // optional: true brings back ● Studio, for your own preview
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/slidetake@0.4.0/dist/slidetake.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/slidetake@0.4.1/dist/slidetake.js"></script>
 ```
 
 `colors` takes any CSS colour per token, for both modes or under `light` / `dark`: `accent` (text and the current slide), `accentSoft` (smaller headings), `line` (borders and the active path), `ring` (the current slide's outline), `header` and `headerText` (a band of colour behind the header). A deck can also set its own with `accent:` in its top block.
@@ -106,7 +107,7 @@ Load it from npm through a CDN (pin the version, as above), or copy `dist/slidet
 
 The page then shows that deck as a viewer: read-only, with no editor, camera or Studio, and no bottom bar. The header carries Slidetake, the layouts, light/dark, Keys and Fullscreen. See [examples/embed.html](examples/embed.html); the [hugo-continuum](https://github.com/sakthipriyan/hugo-continuum) theme uses it for slide pages with `engine: slidetake`.
 
-To record a video of an embedded deck, open its markdown on slidetake.com or with `npx slidetake`. `accent:`, `brand:` and `logo:` in its top block give the video your site's look.
+To record a video of an embedded deck, open its markdown on slidetake.com or with `npx slidetake`, or set `recording: true` on a page only you see, such as your site's local preview: the page gets ● Studio, Camera and the bottom bar, as on slidetake.com. hugo-continuum does this under `hugo server`, so the live site stays a viewer. `accent:`, `brand:` and `logo:` in a deck's top block give the video your site's look.
 
 ## Develop
 

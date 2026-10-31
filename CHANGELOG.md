@@ -12,6 +12,14 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-31
+
+### Added
+
+- `recording: true` in `window.SLIDETAKE` brings ● Studio, Camera and the
+  bottom bar back to an embedded deck, for a page only its author sees, such
+  as a site's local preview. Without it an embedded deck stays a viewer.
+
 ## [0.4.0] - 2026-10-31
 
 ### Added
