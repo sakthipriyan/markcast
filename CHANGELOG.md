@@ -28,9 +28,9 @@ package can notice. Tests, CI and tooling do not belong here.
   **⚙ Setup** (top right of the board) holds the browser and screen check,
   camera, microphone, level, 1080p or 720p, the sound settings and **🗑 Purge
   takes**. To rehearse, present with F: nothing is recorded.
-- OBS uses the same takes screen. ● Record opens it in the mode used last;
+- OBS uses the same screen, **Slidetake Studio**. ● Record opens it in the mode used last;
   **⚙ Setup → Use OBS / Use Chrome** (the browser's own name) switches, and a
-  line beside Setup shows the mode, camera and microphone. With OBS, Setup holds the
+  line beside Setup shows the mode, size, camera and microphone. With OBS, Setup holds the
   connection, the camera and the ffmpeg settings (mode, frame rate, Volume
   boost), the screen check and the layout for takes; the screen edits one
   video, the deck's latest OBS recording, and **⧉ ffmpeg** copies the

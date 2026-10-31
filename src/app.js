@@ -13,7 +13,7 @@ import {normalizeSource, shortLink} from './core/source.js';
 import {encodeDeck, decodeDeck, parseHash, deckHash} from './core/share.js';
 import {routeOf, originLabel, makeCopy, isEdited, matchesOrigin, parseCopy} from './core/doc.js';
 import {youtubeVideo, embedUrl} from './core/media.js';
-import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious, deviceName} from './core/record.js';
+import {QUALITIES, AUDIO_BITRATE, FPS, bestQuality, recordingType, clipExt, bytesPerMinute, clipPlan, afterPrevious, deviceName, sizeName} from './core/record.js';
 import {YOUTUBE_LUFS, MAX_BOOST_DB, loudnessMeter, gainToTarget, dbToGain, peakLimiter} from './core/loudness.js';
 import {fingerprint, deckSlides, takesFromRun, boardRows, boardSession, selectedInOrder, rangeOf} from './core/board.js';
 import {takesOf, pickedRanges, mergedRanges, sessionFps, baseName, sectionChapters as sectionChaptersCore,
@@ -1628,7 +1628,7 @@ const reviewDialog = document.getElementById('review');
 const countdownEl = document.getElementById('rec-countdown'), pausedEl = document.getElementById('rec-paused');
 const obsHost = document.getElementById('obs-host'), obsPort = document.getElementById('obs-port'), obsPass = document.getElementById('obs-pass');
 const obsRemember = document.getElementById('obs-remember'), obsStatus = document.getElementById('obs-status');
-let obs = null, obsConnected = false, recStartResolve = null, obsFps = null;
+let obs = null, obsConnected = false, recStartResolve = null, obsFps = null, obsSize = '';
 // t0/pausedMs give "time into the recording"; log holds slide arrivals and retakes; cuts are the bad parts
 // t0/pausedMs give "time into the recording"; every slide start (first attempt or retake) is an event,
 // stamped with OBS's own recording time when OBS is connected so cut points match the file exactly
@@ -1728,11 +1728,15 @@ async function connectObs(){
     const info = await obs.connect(url, obsPass.value || undefined);
     obsConnected = true;
     // cut points snap to OBS's exact frame rate
-    try { const v = await obs.call('GetVideoSettings'); if (v && v.fpsNumerator && v.fpsDenominator) obsFps = v.fpsNumerator / v.fpsDenominator; } catch(e){}
+    try {
+      const v = await obs.call('GetVideoSettings');
+      if (v && v.fpsNumerator && v.fpsDenominator) obsFps = v.fpsNumerator / v.fpsDenominator;
+      obsSize = v && v.outputWidth && v.outputHeight ? sizeName(v.outputWidth, v.outputHeight) : '';   // what OBS records at
+    } catch(e){}
     setObsStatus('Connected', 'ok', '');
     obsStatus.title = 'Connected' + (info && info.obsWebSocketVersion ? ' · OBS WebSocket ' + info.obsWebSocketVersion : '');
     saveObsSettings();
-    if (reviewDialog.classList.contains('open') && obsMode()) say('Connected to OBS. Press ● Record.');
+    if (reviewDialog.classList.contains('open') && obsMode()){ say('Connected to OBS. Press ● Record.'); setupSummary(); }
   } catch(e){
     obsConnected = false;
     const why = e && e.message && e.message !== 'Error' ? e.message + '.' : 'Nothing answered at ' + url + '.';
@@ -1866,7 +1870,7 @@ function restoreCamera(){
   if (rec.camWas !== !cameraOff) setCameraEnabled(rec.camWas, true);
   rec.camWas = null;
 }
-recQuality.onchange = ()=>save('slidetake:quality', recQuality.value);
+recQuality.onchange = ()=>{ save('slidetake:quality', recQuality.value); setupSummary(); };
 async function showBrowserCheck(){
   const b = browserRecording();
   if (!b.ok){ recCheck.innerHTML = '<span class="warn">' + escapeHtml(b.why) + '</span>'; return b; }
@@ -2821,7 +2825,8 @@ document.querySelectorAll('.browser-name').forEach(el=>{ el.textContent = browse
 function setupSummary(){
   const name = /** @param {HTMLSelectElement} sel */ sel=>{ const o = sel.selectedOptions[0]; return o ? o.textContent.replace(/ \(system default\)$/, '') : ''; };
   const cam = name(recCam) || (camChoice() === 'none' ? 'No camera' : 'Camera');
-  const parts = obsMode() ? ['OBS', cam] : browserRecording().ok ? ['In ' + browserName, cam, name(recMic) || 'Microphone'] : ['In ' + browserName, 'can’t record here'];
+  const parts = obsMode() ? ['OBS', obsSize, cam].filter(Boolean)
+    : browserRecording().ok ? ['In ' + browserName, recQuality.value, cam, name(recMic) || 'Microphone'].filter(Boolean) : ['In ' + browserName, 'can’t record here'];
   const el = document.getElementById('rv-using');
   el.textContent = parts.join(' · ');
   el.title = setupBtn.title = 'Recording with ' + parts.join(' · ');
@@ -2842,7 +2847,7 @@ function openBoard(opts = {}){
   openModal(reviewDialog);
   const ready = browserRecording().ok;
   setupEl.open = !!opts.setup || !ready || !board.takes.length;
-  if (setupEl.open) refreshSetup(); else fillDevices(false).then(setupSummary);
+  if (setupEl.open) refreshSetup(); else showBrowserCheck().then(()=>fillDevices(false)).then(setupSummary);
   say(opts.note || selNote() || (board.takes.length ? boardState() + '. Click a take to preview it.' : order.length + ' slides, nothing recorded yet. Press ● Record.'));
 }
 // how far the video is: slides with a take to use, and those to record again

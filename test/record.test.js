@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {frame16x9, bestQuality, recordingType, clipExt, bytesPerMinute, QUALITIES, clipPlan, afterPrevious, deviceName} from '../src/core/record.js';
+import {frame16x9, bestQuality, recordingType, clipExt, bytesPerMinute, QUALITIES, clipPlan, afterPrevious, deviceName, sizeName} from '../src/core/record.js';
 
 test('the 16:9 frame fits the area and is centred', ()=>{
   assert.deepEqual(frame16x9(1440, 900), {w: 1440, h: 810, x: 0, y: 45});      // 16:10: bars top and bottom
@@ -73,4 +73,10 @@ test('device names drop the USB ids Chrome adds', ()=>{
   assert.equal(deviceName('MacBook Pro Camera (0000:0001)'), 'MacBook Pro Camera');
   assert.equal(deviceName('Sennheiser Profile (1377:1100)'), 'Sennheiser Profile');
   assert.equal(deviceName('Studio Mic (USB)'), 'Studio Mic (USB)');
+});
+
+test('video sizes read as 1080p, or 1080p portrait when taller than wide', ()=>{
+  assert.equal(sizeName(1920, 1080), '1080p');
+  assert.equal(sizeName(1280, 720), '720p');
+  assert.equal(sizeName(1080, 1920), '1080p portrait');
 });

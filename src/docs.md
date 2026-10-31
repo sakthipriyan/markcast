@@ -203,7 +203,7 @@ In fullscreen, the frame must be at least 1280×720 real pixels for 720p, 1920×
 ### Set up OBS
 
 1. In OBS, turn on Tools → WebSocket Server Settings.
-2. In Slidetake, press **● Record**, then **⚙ Setup → Use OBS**, and enter OBS's host, port and password. Tick *Remember* to skip this next time. ● Record opens in the mode you used last; **Use Chrome** (or Edge, Brave…: your browser's name) switches back. Beside ⚙ Setup, a line shows what a take will use: `In Chrome · camera · microphone`, or `OBS · camera`.
+2. In Slidetake, press **● Record**, then **⚙ Setup → Use OBS**, and enter OBS's host, port and password. Tick *Remember* to skip this next time. ● Record opens in the mode you used last; **Use Chrome** (or Edge, Brave…: your browser's name) switches back. Beside ⚙ Setup, a line shows what a take will use: `In Chrome · 1080p · camera · microphone`, or `OBS · 1080p · camera`.
 3. Use a 16:9 screen (YouTube is 16:9): Setup checks yours. If it isn't, move the window to one that is, physical or virtual (say 1920×1080), and press **F** there.
 
 `?obs=localhost:4455` (or `?obs=host:port:password`) in the address fills this in and connects as the page opens.
@@ -254,7 +254,7 @@ Clicks, dragging and the map are locked so the take only moves forward.
 
 ### Review, cut and publish
 
-Then the takes screen opens, the same in both modes: the player with **● Record** and **▶ Preview** under it, every slide with its takes on the right (click one to preview it), and under them **⧉ Chapters**, which copies the final cut's chapters (`0:00 Intro`, one per section) to paste into the YouTube description; YouTube needs at least three, each 10 seconds or more. Messages share one line beside Preview, in full on hover.
+Then **Slidetake Studio** opens, the same in both modes: the player with **● Record** and **▶ Preview** under it, every slide with its takes on the right (click one to preview it), and under them **⧉ Chapters**, which copies the final cut's chapters (`0:00 Intro`, one per section) to paste into the YouTube description; YouTube needs at least three, each 10 seconds or more. Messages share one line beside Preview, in full on hover.
 
 - **Recorded in the browser:** the board is the review. **▶ Preview** plays the picked takes back to back, following along in the take list; right after you play a single take it continues from the next slide (a message says so), otherwise from the start. **↓ Download** joins them into one MP4, in a few seconds, without re-encoding, and saves it like OBS does: a new file named by the date (`deck 2026-10-30 20-04-49.mp4`) in a folder you pick once, starting in your videos folder. Pressing it again without changing a take or the sound settings says where the video already is, rather than making it again.
 - **Recorded with OBS:** one video at a time, the deck's latest recording; recording again replaces it here (the old file stays in your OBS folder). Previews come from the OBS file: open it once, or pick your OBS recordings folder and later recordings load by themselves. **⧉ ffmpeg** copies a ready-to-run **[ffmpeg](https://ffmpeg.org)** command that cuts the picked takes (frame-exact); ⚙ Setup → Video sets how it encodes, the frame rate and Volume boost.

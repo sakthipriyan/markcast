@@ -90,3 +90,10 @@ export const afterPrevious = (prev, t)=>t > prev ? t : prev + 0.001;
  * @param {string} label
  */
 export const deviceName = label=>label.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/i, '');
+
+/**
+ * A video size the way people say it: the short side and "p" (1080p), and "portrait" when it is taller than
+ * wide (a Short or a Reel: 1080p portrait).
+ * @param {number} w @param {number} h
+ */
+export const sizeName = (w, h)=>Math.min(w, h) + 'p' + (h > w ? ' portrait' : '');
