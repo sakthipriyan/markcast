@@ -60,7 +60,7 @@ For Safari, Firefox or any browser, a screen too small for easy mode, or whateve
 | **Webcam in its box** | you and the slides in one recording, no compositing |
 | **Camera per slide** | corner, size, side, circle, full screen or off |
 | **Steps on one slide** | open on you, then reveal the slide |
-| **V** | try camera layouts live without editing |
+| **Camera layouts** (V) | try them live, without editing the deck |
 | **Off until you turn it on** | not shown to viewers: the slides get the whole screen |
 
 ## ✍️ Plain markdown in
