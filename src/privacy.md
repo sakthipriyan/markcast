@@ -18,7 +18,7 @@ The address it records leaves out the part after `#` and `?obs=`, so neither a d
 
 **You can turn it off:** the **Privacy & analytics** button in the header (the pulse icon) → *Turn analytics off*. Nothing more is sent from that browser, the `_ga` cookies are removed, and the tag isn't loaded on later visits. Cloudflare, which serves the site, still sees each request the way any web server does.
 
-That is the only analytics. A copy of Slidetake you host yourself, the embed on your own site, and `npx slidetake` send none.
+> That is the only analytics. A copy of Slidetake you host yourself, the embed on your own site, and `npx slidetake` send none.
 
 ## 🎥 Recording stays on your device
 
