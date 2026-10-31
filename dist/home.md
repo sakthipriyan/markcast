@@ -63,6 +63,8 @@ Combine `on`, `off`, `full`, a size like `40%`, a corner, `flip` or `circle`.
 
 ## ✍️ Plain markdown in
 
+**Pure text, so an AI iterates fast.** Ask for a change and the whole deck is rewritten in seconds: no layouts to drag, no files to export.
+
 Markdown you already know: headings, lists, tables, code, steps, diagrams (Graphviz, D2, SVG), charts, images and YouTube links. [See them all in the showcase →](/showcase)
 
 ### A few comments do the rest
