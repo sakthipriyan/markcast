@@ -351,7 +351,7 @@
   .rec-mode{display:flex;gap:10px;align-items:flex-start;}
   .rec-mode input{margin-top:3px;}
   .rec-mode small{display:block;color:var(--text-muted);font-size:12px;margin-top:2px;}
-  #review.in-browser #rv-novideo, #review.in-browser #rv-ffmpeg-box, #review:not(.in-browser) #rv-render{display:none !important;}
+  #review.in-browser #rv-novideo, #review.in-browser #rv-ffmpeg-box{display:none !important;}
   #rec-countdown{
     position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
     background:rgba(4,7,13,.9);font-family:var(--display);color:var(--accent);
@@ -374,14 +374,12 @@
   .rv-grid > div:first-child{display:contents;}
   .rv-video{grid-area:video;}
   .rv-list{grid-area:list;contain:size;}
-  .rv-bar{grid-area:bar;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;}
-  .rv-sel-note{font-size:12px;color:var(--text-muted);}
+  .rv-bar{grid-area:bar;display:flex;align-items:center;gap:10px;margin-top:12px;min-width:0;}
   .rv-purge{position:relative;}
   .rv-purge summary{list-style:none;font-family:var(--mono);}
   .rv-purge summary::-webkit-details-marker{display:none;}
   .rv-purge .rv-menu{position:absolute;left:0;top:calc(100% + 6px);display:flex;flex-direction:column;gap:6px;padding:8px;z-index:3;
     background:var(--panel);border:1px solid var(--panel-line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:nowrap;}
-  #rv-render-status:empty{display:none;}
   /* the take board: every slide, a box to select it for recording, its takes */
   #review:not(.board) .rv-board-only{display:none !important;}
   .rv-row.with-sel{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:start;}
@@ -429,7 +427,10 @@
   #rv-novideo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;}
   #rv-novideo[hidden]{display:none;}
   /* the preview's message, right before Preview */
-  #rv-now{margin-left:auto;text-align:right;font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+  #rv-now{flex:1;min-width:0;text-align:right;font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #rv-now.warn{color:var(--danger);}
+  #rv-now .btn{vertical-align:middle;margin-right:6px;}
+  #rv-render-btn{min-width:120px;}
   .rv-list{overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
   .rv-row{padding:9px 12px;border-bottom:1px solid var(--panel-line);}
   .rv-row:last-child{border-bottom:none;}

@@ -392,7 +392,7 @@
   .rec-mode{display:flex;gap:10px;align-items:flex-start;}
   .rec-mode input{margin-top:3px;}
   .rec-mode small{display:block;color:var(--text-muted);font-size:12px;margin-top:2px;}
-  #review.in-browser #rv-novideo, #review.in-browser #rv-ffmpeg-box, #review:not(.in-browser) #rv-render{display:none !important;}
+  #review.in-browser #rv-novideo, #review.in-browser #rv-ffmpeg-box{display:none !important;}
   #rec-countdown{
     position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
     background:rgba(4,7,13,.9);font-family:var(--display);color:var(--accent);
@@ -415,14 +415,12 @@
   .rv-grid > div:first-child{display:contents;}
   .rv-video{grid-area:video;}
   .rv-list{grid-area:list;contain:size;}
-  .rv-bar{grid-area:bar;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;}
-  .rv-sel-note{font-size:12px;color:var(--text-muted);}
+  .rv-bar{grid-area:bar;display:flex;align-items:center;gap:10px;margin-top:12px;min-width:0;}
   .rv-purge{position:relative;}
   .rv-purge summary{list-style:none;font-family:var(--mono);}
   .rv-purge summary::-webkit-details-marker{display:none;}
   .rv-purge .rv-menu{position:absolute;left:0;top:calc(100% + 6px);display:flex;flex-direction:column;gap:6px;padding:8px;z-index:3;
     background:var(--panel);border:1px solid var(--panel-line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:nowrap;}
-  #rv-render-status:empty{display:none;}
   /* the take board: every slide, a box to select it for recording, its takes */
   #review:not(.board) .rv-board-only{display:none !important;}
   .rv-row.with-sel{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:start;}
@@ -470,7 +468,10 @@
   #rv-novideo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;}
   #rv-novideo[hidden]{display:none;}
   /* the preview's message, right before Preview */
-  #rv-now{margin-left:auto;text-align:right;font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+  #rv-now{flex:1;min-width:0;text-align:right;font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #rv-now.warn{color:var(--danger);}
+  #rv-now .btn{vertical-align:middle;margin-right:6px;}
+  #rv-render-btn{min-width:120px;}
   .rv-list{overflow-y:auto;border:1px solid var(--panel-line);border-radius:8px;}
   .rv-row{padding:9px 12px;border-bottom:1px solid var(--panel-line);}
   .rv-row:last-child{border-bottom:none;}
@@ -1000,7 +1001,6 @@
         </div>
         <div class="rv-bar">
           <button class="btn rec rv-board-only" id="rv-rec" title="Records the whole deck, or only the ticked slides (shift-click ticks a range)">● Record</button>
-          <span class="rv-sel-note rv-board-only" id="rv-sel-note"></span>
           <span id="rv-now"></span>
           <button class="btn rv-preview" id="rv-play-final" title="Plays the picked takes back to back">▶ Preview</button>
         </div>
@@ -1013,9 +1013,6 @@
       </div>
     </div>
     <div class="rv-out">
-      <div id="rv-render">
-        <p id="rv-render-status"></p>
-      </div>
       <div id="rv-ffmpeg-box">
       <h3>ffmpeg
         <select id="rv-mode">
@@ -4693,6 +4690,19 @@
   var playlist = null;
   var rvVideo = document.getElementById("rv-video");
   var rvNow = document.getElementById("rv-now");
+  function say(text, { warn = false, html = "", title = "" } = {}) {
+    rvNow.classList.toggle("warn", warn);
+    if (html) rvNow.innerHTML = html;
+    else rvNow.textContent = text;
+    rvNow.title = title || rvNow.textContent;
+    const again = document.getElementById("rv-save-again");
+    if (again) again.onclick = () => downloadVideo(true);
+  }
+  var lastTicked = -1;
+  var selNote = () => {
+    const n = selectedInOrder(order, selected).length;
+    return n ? n + "/" + order.length + " slide" + (n === 1 ? "" : "s") + " up for a take" : "";
+  };
   function openReview(sess) {
     reviewing = sess;
     playlist = null;
@@ -4701,7 +4711,6 @@
     reviewDialog.classList.toggle("in-browser", !!sess.inBrowser);
     reviewDialog.classList.remove("board");
     document.getElementById("rv-title").textContent = (recorded ? "Review the take \xB7 " : "Rehearsal \xB7 ") + sess.deckTitle;
-    document.getElementById("rv-render-status").textContent = sess.cleaned ? "These takes were deleted." : "";
     document.getElementById("rv-render-btn").disabled = document.getElementById("rv-clean").disabled = !!sess.cleaned;
     document.getElementById("rv-info").textContent = [
       sess.reason,
@@ -4726,7 +4735,7 @@
     renderReview();
     openModal(reviewDialog);
     if (!sess.inBrowser) autoLoadRecording(sess);
-    else rvNow.textContent = sess.cleaned ? "" : "Click a take to preview it.";
+    else say(sess.cleaned ? "These takes were deleted." : "Click a take to preview it.");
   }
   function renderReview() {
     if (reviewing && reviewing.board) {
@@ -4798,16 +4807,16 @@
   function playRange(ranges) {
     if (!rvVideo.src) {
       pendingPlay = ranges;
-      rvNow.textContent = rvOpening ? "Opening the recording\u2026 it plays when ready." : "Open the recording to preview.";
+      say(rvOpening ? "Opening the recording\u2026 it plays when ready." : "Open the recording to preview.");
       return;
     }
     pendingPlay = null;
     playlist = { ranges, i: 0 };
-    rvNow.textContent = "\u25B6 " + ranges[0].title;
+    say("\u25B6 " + ranges[0].title);
     const go = () => {
       rvVideo.currentTime = ranges[0].start / 1e3;
       rvVideo.play().catch((e) => {
-        if (e && e.name !== "AbortError") rvNow.textContent = "Could not play: " + e.message;
+        if (e && e.name !== "AbortError") say("Could not play: " + e.message, { warn: true });
       });
     };
     if (rvVideo.readyState >= 1) go();
@@ -4821,12 +4830,12 @@
     if (playlist.i >= playlist.ranges.length) {
       rvVideo.pause();
       playlist = null;
-      rvNow.textContent = "";
+      say("");
       return;
     }
     const next = playlist.ranges[playlist.i];
     rvVideo.currentTime = next.start / 1e3;
-    rvNow.textContent = "\u25B6 " + next.title;
+    say("\u25B6 " + next.title);
   });
   var previewBtn = document.getElementById("rv-play-final");
   var previewFrom = null;
@@ -4865,7 +4874,7 @@
   rvVideo.addEventListener("pause", () => {
     if (clipList && clipList.single && rvVideo.currentTime < clipList.parts[0].keep - 0.05) {
       previewFrom = clipList.parts[0].id;
-      rvNow.textContent = "Preview starts from " + clipList.parts[0].title.replace(/ · take \d+$/, "") + ".";
+      say("Preview starts from " + clipList.parts[0].title.replace(/ · take \d+$/, "") + ".");
     }
     showPreviewState();
   });
@@ -4873,7 +4882,7 @@
     const plan = reviewing ? clipPlan(reviewing) : [];
     const i = plan.findIndex((p) => p.id === part.id), next = i >= 0 ? plan[i + 1] : null;
     previewFrom = next ? next.id : null;
-    rvNow.textContent = next ? "Preview continues from " + next.title + "." : "That was the last slide: Preview plays from the start.";
+    say(next ? "Preview continues from " + next.title + "." : "That was the last slide: Preview plays from the start.");
   }
   function planesOf(smp) {
     return Array.from({ length: smp.numberOfChannels }, (_, c) => {
@@ -4895,12 +4904,12 @@
       const file = await clipFile(parts[i].clip);
       if (rvVideo.src) URL.revokeObjectURL(rvVideo.src);
       rvVideo.src = URL.createObjectURL(file);
-      rvNow.textContent = "\u25B6 " + parts[i].title;
+      say("\u25B6 " + parts[i].title);
       await rvVideo.play();
     } catch (e) {
       if (e && e.name === "AbortError") return;
       clipList = null;
-      rvNow.textContent = e && e.name === "NotFoundError" ? "This take is no longer in the browser." : "Could not play this take: " + (e && e.message || e);
+      say(e && e.name === "NotFoundError" ? "This take is no longer in the browser." : "Could not play this take: " + (e && e.message || e), { warn: true });
     }
   }
   function clipDone() {
@@ -4912,7 +4921,7 @@
     clipList = null;
     rvVideo.pause();
     if (c.single) singleTakeDone(c.parts[0]);
-    else rvNow.textContent = "";
+    else say("");
     showPreviewState();
   }
   rvVideo.addEventListener("timeupdate", () => {
@@ -4921,8 +4930,16 @@
   rvVideo.addEventListener("ended", () => {
     if (clipList) clipDone();
   });
-  var renderStatus = document.getElementById("rv-render-status");
-  document.getElementById("rv-render-btn").onclick = () => downloadVideo(false);
+  var renderBtn = document.getElementById("rv-render-btn");
+  renderBtn.onclick = () => downloadVideo(false);
+  var renderDone = 0;
+  var renderLabel = (
+    /** @param {string} [t] */
+    (t) => {
+      clearTimeout(renderDone);
+      renderBtn.textContent = t || "\u2193 Download";
+    }
+  );
   var savedWhere = (d) => d.where ? "\u201C" + d.where + "\u201D as " + d.name : "your downloads as " + d.name;
   async function stillSaved(d) {
     if (!d.where) return true;
@@ -4940,14 +4957,16 @@
     if (!sess || !sess.inBrowser || sess.cleaned) return;
     const plan = clipPlan(sess);
     if (!plan.length) {
-      renderStatus.textContent = "No slide has a take yet: nothing to save.";
+      say("No slide has a take yet: nothing to save.", { warn: true });
       return;
     }
     const sig = JSON.stringify([plan.map((c) => [c.clip, Math.round(c.keep * 1e3)]), loudOn(), limiterOn(), sess.type]);
     const last = sess.board && board.lastDownload;
     if (!force && last && last.sig === sig && await stillSaved(last)) {
-      renderStatus.innerHTML = "Already saved in " + escapeHtml(savedWhere(last)) + '. A new video is made only when a take or the sound settings change. <button class="btn small" id="rv-save-again">Save another copy</button>';
-      document.getElementById("rv-save-again").onclick = () => downloadVideo(true);
+      say("", {
+        html: '<button class="btn small" id="rv-save-again">Save another copy</button> Already saved in ' + escapeHtml(savedWhere(last)) + ".",
+        title: "Already saved in " + savedWhere(last) + ". A new video is made only when a take or the sound settings change."
+      });
       return;
     }
     const mp4 = clipExt(sess.type || "") === "mp4";
@@ -4962,9 +4981,9 @@
     } catch (e) {
       if (e && e.name === "AbortError") return;
     }
-    const btn = document.getElementById("rv-render-btn");
+    const btn = renderBtn;
     btn.disabled = true;
-    renderStatus.textContent = "Preparing the download\u2026";
+    renderLabel("Preparing\u2026");
     try {
       const MB = await import(MEDIABUNNY_URL);
       const target = file ? new MB.StreamTarget(file) : new MB.BufferTarget();
@@ -4972,11 +4991,11 @@
       let gain = 1, loudNote = "";
       const useLimiter = loudOn() && limiterOn();
       if (loudOn()) {
-        const first = await measureCut(MB, plan, 1, false, "Measuring the volume");
+        const first = await measureCut(MB, plan, 1, false, "Measuring");
         if (first && isFinite(first.integrated)) {
           let db = gainToTarget(first, { limit: useLimiter });
           if (useLimiter && Math.abs(db) >= 0.05) {
-            const then = await measureCut(MB, plan, dbToGain(db), true, "Checking the volume");
+            const then = await measureCut(MB, plan, dbToGain(db), true, "Checking");
             if (then && isFinite(then.integrated)) db = Math.min(db + (YOUTUBE_LUFS - then.integrated), MAX_BOOST_DB);
           }
           gain = dbToGain(db);
@@ -4997,7 +5016,7 @@
         }
       };
       for (const [i, part] of plan.entries()) {
-        renderStatus.textContent = "Joining take " + (i + 1) + " of " + plan.length + "\u2026";
+        renderLabel("Joining " + (i + 1) + "/" + plan.length);
         const input = new MB.Input({ source: new MB.BlobSource(await clipFile(part.clip)), formats: MB.ALL_FORMATS });
         const vt = await input.getPrimaryVideoTrack(), at = await input.getPrimaryAudioTrack();
         if (!vt) throw new Error(part.title + " has no video");
@@ -5060,7 +5079,7 @@
         await sendLimited();
         if (limiter.events) loudNote += ", " + limiter.events + " peak" + (limiter.events === 1 ? "" : "s") + " limited";
       }
-      renderStatus.textContent = "Finishing\u2026";
+      renderLabel("Finishing\u2026");
       await out.finalize();
       if (!file) {
         const a = document.createElement("a");
@@ -5074,9 +5093,12 @@
         board.lastDownload = saved;
         saveBoard();
       }
-      renderStatus.textContent = "Saved in " + savedWhere(saved) + " (" + fmtLength(offset * 1e3) + loudNote + ").";
+      say("Saved in " + savedWhere(saved) + " (" + fmtLength(offset * 1e3) + loudNote + ").");
+      renderLabel("\u2713 Saved");
+      renderDone = setTimeout(() => renderLabel(), 2500);
     } catch (e) {
-      renderStatus.textContent = "Could not save the video: " + (e && e.message || e);
+      renderLabel();
+      say("Could not save the video: " + (e && e.message || e), { warn: true });
       if (file) file.abort().catch(() => {
       });
     } finally {
@@ -5086,7 +5108,7 @@
   async function measureCut(MB, plan, gain, limit, label) {
     let meter2 = null, limiter = null;
     for (const [i, part] of plan.entries()) {
-      renderStatus.textContent = label + " " + (i + 1) + " of " + plan.length + "\u2026";
+      renderLabel(label + " " + (i + 1) + "/" + plan.length);
       const at = await new MB.Input({ source: new MB.BlobSource(await clipFile(part.clip)), formats: MB.ALL_FORMATS }).getPrimaryAudioTrack();
       if (!at) continue;
       for await (const smp of new MB.AudioSampleSink(at).samples(0, part.keep)) {
@@ -5141,7 +5163,7 @@
   document.getElementById("rv-folder-change").onclick = async () => {
     try {
       const dir = await videoFolder(true);
-      if (dir) renderStatus.textContent = "Videos now go to " + dir.name + ".";
+      if (dir) say("Videos now go to " + dir.name + ".");
     } catch (e) {
     }
   };
@@ -5237,14 +5259,14 @@
     playlist = null;
     clipList = null;
     resetPreview();
-    renderStatus.textContent = "";
+    lastTicked = -1;
     renderBoard();
     openModal(reviewDialog);
     const ready = browserRecording().ok;
     setupEl.open = !!opts.setup || !ready || !board.takes.length;
     if (setupEl.open) refreshSetup();
     else setupSummary();
-    rvNow.textContent = opts.note || (board.takes.length ? "Click a take to preview it." : "Nothing recorded yet. Press \u25CF Record to record the deck.");
+    say(opts.note || selNote() || (board.takes.length ? "Click a take to preview it." : "Nothing recorded yet. Press \u25CF Record to record the deck."));
   }
   function renderBoard() {
     const { rows, sess } = boardReview();
@@ -5278,7 +5300,8 @@
     }));
     const ticked = selectedInOrder(order, selected), ready = browserRecording().ok;
     document.getElementById("rv-rec").disabled = !ready;
-    document.getElementById("rv-sel-note").textContent = ticked.length ? ticked.length + "/" + order.length + " slide" + (ticked.length === 1 ? "" : "s") + " up for a take" : "";
+    if (lastTicked >= 0 && ticked.length !== lastTicked) say(selNote() || "Record takes the whole deck.");
+    lastTicked = ticked.length;
     document.getElementById("rv-render-btn").disabled = document.getElementById("rv-play-final").disabled = !sess.events.length;
     const recorded = rows.filter((r) => r.pick).length, outdated = rows.filter((r) => r.takes.length && !r.pick).length;
     document.getElementById("rv-info").textContent = board.takes.length ? [
@@ -5343,12 +5366,12 @@
     const { rows } = boardReview(), used = new Set(rows.map((r) => r.pick).filter(Boolean));
     const unused = board.takes.filter((t) => !used.has(t.uid));
     if (!unused.length) {
-      renderStatus.textContent = "Every take is in use.";
+      say("Every take is in use.");
       return;
     }
     if (!confirm("Purge " + unused.length + " take" + (unused.length === 1 ? "" : "s") + " the video doesn\u2019t use (earlier attempts and outdated takes)?")) return;
     await deleteClips(unused);
-    renderStatus.textContent = "Purged " + unused.length + " unused take" + (unused.length === 1 ? "" : "s") + ".";
+    say("Purged " + unused.length + " unused take" + (unused.length === 1 ? "" : "s") + ".");
   };
   document.getElementById("rv-clean").onclick = async () => {
     if (!board.takes.length || !confirm("Purge all " + board.takes.length + " takes of this deck from this browser? Download the video first if you need it.")) return;
@@ -5364,7 +5387,7 @@
     }
     clipList = null;
     resetPreview();
-    renderStatus.textContent = "All takes purged.";
+    say("All takes purged.");
     renderBoard();
   };
   function idb(name) {
@@ -5404,7 +5427,7 @@
     if (!rvVideo.getAttribute("src")) return;
     if (rvHandle && rvRetries < 5) {
       rvRetries++;
-      rvNow.textContent = "Reloading " + reviewFileName + " (OBS was still finishing it)\u2026";
+      say("Reloading " + reviewFileName + " (OBS was still finishing it)\u2026");
       await new Promise((r) => setTimeout(r, 1500));
       try {
         useRecording(await stableFile(rvHandle), rvHandle, true);
@@ -5412,7 +5435,7 @@
       } catch (e) {
       }
     }
-    rvNow.textContent = rvHandle ? "Chrome cannot play " + reviewFileName + ". In OBS set Recording Format to Hybrid MP4 (or MP4) with H.264 video; the ffmpeg command still works with this file." : "Could not play " + (reviewFileName || "this file") + ". If OBS was still finishing it when you opened it, open it again; if it still fails, set OBS to Hybrid MP4 (or MP4) with H.264 video.";
+    say(rvHandle ? "Chrome cannot play " + reviewFileName + ". In OBS set Recording Format to Hybrid MP4 (or MP4) with H.264 video; the ffmpeg command still works with this file." : "Could not play " + (reviewFileName || "this file") + ". If OBS was still finishing it when you opened it, open it again; if it still fails, set OBS to Hybrid MP4 (or MP4) with H.264 video.", { warn: true });
   });
   async function stableFile(handle) {
     rvOpening = true;
@@ -5439,7 +5462,7 @@
     rvVideo.src = URL.createObjectURL(file);
     reviewFileName = file.name;
     document.getElementById("rv-novideo").hidden = true;
-    rvNow.textContent = "Loaded " + file.name + ". Click a take to preview it.";
+    say("Loaded " + file.name + ". Click a take to preview it.");
     if (pendingPlay) playRange(pendingPlay);
     else if (retry && playlist) playRange(playlist.ranges.slice(playlist.i));
     if (reviewing) document.getElementById("rv-ffmpeg").value = ffmpegScript2(reviewing, document.getElementById("rv-mode").value);
@@ -5453,10 +5476,10 @@
     if (!window.showOpenFilePicker) return fileInput.click();
     try {
       const [handle] = await window.showOpenFilePicker({ id: "obs-recordings", types: [{ description: "Recordings", accept: { "video/*": [".mov", ".mp4", ".m4v", ".mkv", ".webm"] } }] });
-      rvNow.textContent = "Opening " + handle.name + "\u2026";
+      say("Opening " + handle.name + "\u2026");
       useRecording(await stableFile(handle), handle);
     } catch (e) {
-      if (!e || e.name !== "AbortError") rvNow.textContent = "Could not open that file.";
+      if (!e || e.name !== "AbortError") say("Could not open that file.", { warn: true });
     }
   };
   var folderBtn = document.getElementById("rv-folder");
@@ -5467,14 +5490,14 @@
       const dir = await window.showDirectoryPicker({ id: "obs-recordings", mode: "read" });
       kvSet("obs-folder", dir);
       if (!name) {
-        rvNow.textContent = "Folder remembered. This session has no file name from OBS; open the file instead.";
+        say("Folder remembered. This session has no file name from OBS; open the file instead.");
         return;
       }
       const handle = await dir.getFileHandle(name);
       useRecording(await stableFile(handle), handle);
     } catch (e) {
       if (e && e.name === "AbortError") return;
-      rvNow.textContent = (name ? name + " is not in that folder" : "Could not read that folder") + ". Use \u201COpen the recording file\u2026\u201D instead.";
+      say((name ? name + " is not in that folder" : "Could not read that folder") + ". Use \u201COpen the recording file\u2026\u201D instead.", { warn: true });
     }
   };
   async function autoLoadRecording(sess) {
@@ -5485,7 +5508,7 @@
       const dir = await kvGet("obs-folder");
       if (!dir || await dir.queryPermission({ mode: "read" }) !== "granted") return;
       const handle = await dir.getFileHandle(name);
-      rvNow.textContent = "Opening " + name + "\u2026";
+      say("Opening " + name + "\u2026");
       useRecording(await stableFile(handle), handle);
     } catch (e) {
     }
