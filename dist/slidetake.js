@@ -421,20 +421,37 @@ The complete list, one line each. Press \u2192 to walk it, **O** for the map.
 
 ## \u2702\uFE0F Record without timeline editing
 
+Two modes, the same takes: **easy** in the browser, **pro** with OBS.
+
 | Feature | Advantage |
 |---|---|
 | **Takes per slide** (\u2190) | every attempt kept; recording never stops |
-| **Record in the browser** | nothing to install: the deck records itself in a 16:9 frame, at 1080p (Chrome, Edge and other Chromium browsers) |
-| **Or OBS, driven by the deck** | any browser; it starts and stops for you, you only talk |
 | **Pause and resume** (B) | step away without a gap to cut |
 | **Clicker support** | any Bluetooth presenter remote moves the deck |
-| **16:9 check** | Setup warns before a video with bars |
-| **Slidetake Studio** | every slide's takes, Preview and Chapters, the same in the browser and with OBS |
-| **Retake any slide later** | tick slides and record just those; an edited slide's takes are marked outdated |
-| **Download in the browser** | the picked takes joined into one MP4 in seconds |
-| **Frame-exact [ffmpeg](https://ffmpeg.org) cut** | with OBS: one command, no video editor |
+| **Slidetake Studio** | every slide's takes, Preview and Chapters, the same in both modes |
 | **Volume boost** | your voice at YouTube's loudness (\u221214 LUFS), never clipped |
 | **YouTube chapters** | one click copies them, one per section |
+
+### Easy mode: in the browser
+
+For Chrome, Edge or another Chromium browser, on a screen with enough pixels: 1920\xD71080 for 1080p (a Retina laptop has them), 1280\xD7720 for 720p.
+
+| Feature | Advantage |
+|---|---|
+| **Nothing to install** | the deck records itself in a 16:9 frame, on a screen of any shape |
+| **Retake any slide later** | tick slides and record just those; an edited slide's takes are marked outdated |
+| **Download** | the picked takes joined into one MP4 in seconds |
+| **Takes kept in the browser** | every take, from every recording, until you purge them |
+
+### Pro mode: with OBS
+
+For Safari, Firefox or any browser, a screen too small for easy mode, or whatever OBS can record.
+
+| Feature | Advantage |
+|---|---|
+| **[OBS](https://obsproject.com), driven by the deck** | it starts and stops for you; you only talk |
+| **16:9 check** | Setup warns before a video with bars; use a 16:9 screen, physical or virtual |
+| **Frame-exact [ffmpeg](https://ffmpeg.org) cut** | one command, no video editor |
 
 ## \u{1F5FA}\uFE0F A map, not a stack
 
