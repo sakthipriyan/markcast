@@ -236,8 +236,8 @@ function toggleMode(){
   if (EMBED && EMBED.themeKey){ save(EMBED.themeKey, next); document.documentElement.classList.toggle('dark', next === 'dark'); }
   else save('slidetake:mode', next);
   applyMode();
-  // charts are drawn for one mode; redraw them for the other
-  if (world.querySelector('.echarts-container, .diagram.d2')) rebuild(true);
+  // charts and diagrams are drawn for one mode; redraw them for the other
+  if (world.querySelector('.echarts-container, .diagram.d2, .diagram.dot')) rebuild(true);
 }
 
 // ---------- camera layouts ----------
@@ -829,6 +829,17 @@ function d2Theme(){
   steps.forEach((x, i)=>{ t['B' + (i + 2)] = mixHex(tint, card, x); });
   return t;
 }
+// Graphviz in the deck's colours, for dark or light: written at the top of the diagram, so anything the
+// diagram sets itself (a colour, a background) comes after and wins
+function dotTheme(){
+  const text = tokenHex('--text'), muted = tokenHex('--text-muted'), accent = tokenHex('--accent');
+  const font = '"Helvetica,Arial,sans-serif"';
+  return ' graph [bgcolor=transparent color="' + muted + '" fontcolor="' + text + '" fontname=' + font + ']' +
+    ' node [color="' + accent + '" fontcolor="' + text + '" fontname=' + font + ']' +
+    ' edge [color="' + muted + '" fontcolor="' + muted + '" fontname=' + font + '] ';
+}
+/** @param {string} code @param {string} theme */
+const withDotTheme = (code, theme)=>code.replace('{', '{' + theme);
 // ELK lays out D2's containers more cleanly than the default; a deck's own d2-config still wins
 const withD2Defaults = code=>/d2-config\s*:/.test(code) ? code : 'vars: {\n  d2-config: {\n    layout-engine: elk\n  }\n}\n' + code;
 const scripts = {};
@@ -860,10 +871,11 @@ async function renderRich(){
       await loadScript(VIZ_URL);
       viz = viz || await Viz.instance();
       if (gen !== buildGen) return;
+      const theme = dotTheme();
       dots.forEach(code=>{
         const box = document.createElement('div');
-        box.className = 'diagram';
-        try { box.appendChild(viz.renderSVGElement(code.textContent)); }
+        box.className = 'diagram dot';
+        try { box.appendChild(viz.renderSVGElement(withDotTheme(code.textContent, theme))); }
         catch(e){ box.className = 'diagram err'; box.textContent = 'Diagram error: ' + e.message; }
         replaceBlock(code.parentElement, box);
       });
@@ -2535,6 +2547,7 @@ async function playClips(parts, i = 0, single = false){
   clipList = {parts, i, single};
   try {
     const file = await clipFile(parts[i].clip);
+    if (!reviewDialog.classList.contains('open')) return;   // Studio closed while the take was loading
     if (rvVideo.src) URL.revokeObjectURL(rvVideo.src);
     rvVideo.src = URL.createObjectURL(file);
     say('▶ ' + parts[i].title);
@@ -3208,8 +3221,12 @@ document.addEventListener('fullscreenchange', ()=>{
 const help = document.getElementById('help');
 // Keys is lit while the keys are open, Studio while it is open, as the Editor is
 new MutationObserver(()=>lightUp(document.getElementById('btn-keys'), help.classList.contains('open'))).observe(help, {attributes:true, attributeFilter:['class']});
-new MutationObserver(()=>document.getElementById('btn-studio').classList.toggle('active', reviewDialog.classList.contains('open')))
-  .observe(reviewDialog, {attributes:true, attributeFilter:['class']});
+// closing Studio (✕, Esc or a click outside it) stops a preview that is playing
+new MutationObserver(()=>{
+  const open = reviewDialog.classList.contains('open');
+  document.getElementById('btn-studio').classList.toggle('active', open);
+  if (!open && !rvVideo.paused) rvVideo.pause();
+}).observe(reviewDialog, {attributes:true, attributeFilter:['class']});
 // ? or K shows the keys; Docs (a link in the header) opens the full guide, itself a deck, in a new tab
 document.getElementById('btn-keys').onclick = ()=>help.classList.add('open');
 document.getElementById('help-close').onclick = ()=>help.classList.remove('open');

@@ -77,11 +77,15 @@ package can notice. Tests, CI and tooling do not belong here.
   under the player, with the final length and expected size; thin scrollbars
   in the accent. The slides link fills in from the page the deck is on when the
   deck names no permalink or site; the Record dialog is wider.
+- Graphviz diagrams are drawn in the deck's own colours for dark and light,
+  as D2 is, instead of on a light panel; colours a diagram sets itself still win.
 - Slidetake's own decks write the name as in the header, the logo and
   Slide*take* in two colours, wherever it appears in a card's text.
 
 ### Fixed
 
+- Closing Studio (a click outside it, ✕ or Esc) stops a preview that is
+  playing, instead of leaving its sound running.
 - With OBS, a retake's cut no longer starts with a moment of the attempt
   before it and the jump back. OBS reports its time as encoded, a few hundred
   ms behind the screen; a retake now holds still for 0.6 s before its entry,

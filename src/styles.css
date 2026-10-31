@@ -560,8 +560,8 @@
   .node .diagram{background:#f8fafc;border:1px solid var(--panel-line);border-radius:8px;padding:12px;margin:0 0 10px;overflow:auto;}
   .node .diagram svg{display:block;width:100%;height:auto;max-height:640px;}
   .node .diagram.err{background:none;color:var(--danger);font-family:var(--mono);font-size:12px;padding:0;}
-  /* D2 is drawn in the deck's own palette, so it needs no light backdrop */
-  .node .diagram.d2{background:none;border:none;padding:0;}
+  /* D2 and Graphviz are drawn in the deck's own palette, so they need no light backdrop */
+  .node .diagram.d2, .node .diagram.dot{background:none;border:none;padding:0;}
   /* a ```svg drawing is inline: currentColor is the card's text colour, and the deck's variables switch with dark and light */
   .node .diagram.svg{background:none;border:none;padding:0;color:var(--text);}
   .node .diagram.svg svg{max-height:62vh;}
