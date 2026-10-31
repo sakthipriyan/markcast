@@ -12,6 +12,18 @@ package can notice. Tests, CI and tooling do not belong here.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-31
+
+### Fixed
+
+- On a site's page, the site's colours (`colors` in `window.SLIDETAKE`) win over
+  the deck's own `accent:`, which only applies on slidetake.com and with
+  `npx slidetake`.
+- The privacy page link in the Privacy & analytics dialog is in the accent
+  colour, readable in dark mode (it was the browser's default dark blue).
+- The Privacy & analytics dialog's ✕ Close is the small button, in scale
+  with its heading.
+
 ## [0.4.1] - 2026-10-31
 
 ### Added

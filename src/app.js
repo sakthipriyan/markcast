@@ -167,8 +167,10 @@ function applyColors(){
       .map(([k, v])=>COLOR_TOKENS[k] + ':' + String(v).replace(/[;{}<>]/g, '')).join(';');
     if (decl) css += sel + '{' + decl + '}\n';
   };
-  // what a source leaves out follows from the accent it gives, never from Slidetake's green
-  [EMBED && EMBED.colors, deckColors()].filter(Boolean).forEach(c=>{
+  // what a source leaves out follows from the accent it gives, never from Slidetake's green. Embedded,
+  // the site's colours come last and win over the deck's accent:, which is for slidetake.com and
+  // `npx slidetake` (so a recording made there matches the site)
+  [deckColors(), EMBED && EMBED.colors].filter(Boolean).forEach(c=>{
     ['dark', 'light'].forEach(mode=>{
       const m = {...c, ...(c[mode] || {})}, dark = mode === 'dark';
       if (m.accent && typeof m.accent === 'string'){
