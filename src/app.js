@@ -1689,7 +1689,12 @@ function saveObsSettings(){
   if (obsRemember.checked) save('slidetake:obs', JSON.stringify({host:obsHost.value.trim(), port:obsPort.value.trim(), password:obsPass.value}));
   else { try { localStorage.removeItem('slidetake:obs'); } catch(e){} }
 }
-function setObsStatus(text, kind){ obsStatus.textContent = text; obsStatus.className = kind || ''; }
+// a short status beside Connect; what went wrong and what to do, when it failed, on the lines below
+function setObsStatus(text, kind, detail){
+  obsStatus.textContent = text; obsStatus.className = kind || ''; obsStatus.title = detail || text;
+  const d = document.getElementById('obs-detail');
+  d.textContent = detail || ''; d.hidden = !detail;
+}
 // A secure (https) page may only open plain ws:// connections to this computer: browsers block them to any
 // other address, and OBS has no secure WebSocket of its own. Say so instead of failing with a vague error.
 const isLoopback = host=>/^(localhost|127(\.\d+){3}|\[?::1\]?)$/i.test(host);
@@ -1702,10 +1707,11 @@ async function connectObs(){
   const url = 'ws://' + host + ':' + (obsPort.value.trim() || '4455');
   if (obsBlockedHere(host)){
     obsConnected = false;
-    setObsStatus(OBS_HTTPS_HELP, 'err');
+    setObsStatus('Blocked here', 'err', OBS_HTTPS_HELP);
     return;
   }
-  setObsStatus('Connecting to ' + url + '…');
+  setObsStatus('Connecting…');
+  obsStatus.title = 'Connecting to ' + url;
   try {
     await loadScript(OBS_URL);
     const Ctor = window.OBSWebSocket && (window.OBSWebSocket.default || window.OBSWebSocket);
@@ -1713,7 +1719,7 @@ async function connectObs(){
     obs = new Ctor();
     obs.on('ConnectionClosed', ()=>{
       obsConnected = false;
-      setObsStatus('Disconnected from OBS', 'err');
+      setObsStatus('Disconnected', 'err');
     });
     obs.on('RecordStateChanged', e=>{
       if (e.outputState === 'OBS_WEBSOCKET_OUTPUT_STARTED' && recStartResolve){ recStartResolve(); recStartResolve = null; }
@@ -1723,11 +1729,13 @@ async function connectObs(){
     obsConnected = true;
     // cut points snap to OBS's exact frame rate
     try { const v = await obs.call('GetVideoSettings'); if (v && v.fpsNumerator && v.fpsDenominator) obsFps = v.fpsNumerator / v.fpsDenominator; } catch(e){}
-    setObsStatus('Connected' + (info && info.obsWebSocketVersion ? ' · OBS WebSocket ' + info.obsWebSocketVersion : ''), 'ok');
+    setObsStatus('Connected', 'ok', '');
+    obsStatus.title = 'Connected' + (info && info.obsWebSocketVersion ? ' · OBS WebSocket ' + info.obsWebSocketVersion : '');
     saveObsSettings();
   } catch(e){
     obsConnected = false;
-    setObsStatus('Could not connect (' + ((e && e.message) || e) + '). Is OBS running with its WebSocket server on, and is the password right?', 'err');
+    const why = e && e.message && e.message !== 'Error' ? e.message + '.' : 'Nothing answered at ' + url + '.';
+    setObsStatus('Could not connect', 'err', why + ' Is OBS running with its WebSocket server on, and are the port and password right?');
   }
 }
 document.getElementById('obs-connect').onclick = connectObs;

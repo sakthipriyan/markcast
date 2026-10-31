@@ -366,7 +366,8 @@
   .modal textarea{width:100%;resize:vertical;line-height:1.6;}
   .modal .row{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;}
   .modal .row.end{justify-content:flex-end;margin-top:20px;}
-  #obs-status{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+  #obs-status{font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap;}
+  #obs-detail{color:var(--danger);}
   #obs-status.ok, #rec-screen .ok{color:#10b981;}
   #rec-screen a{color:inherit;text-decoration:underline;}
   #obs-status.err{color:var(--danger);}
@@ -923,8 +924,10 @@
           <div class="rv-setup-row">
             <button class="btn small" id="obs-connect">Connect</button>
             <label class="check rv-setup-label"><input type="checkbox" id="obs-remember"> Remember</label>
+            <span class="rv-setup-gap"></span>
+            <span id="obs-status">Not connected</span>
           </div>
-          <p class="rv-setup-note" id="obs-status">Not connected</p>
+          <p class="rv-setup-note" id="obs-detail" hidden></p>
           <p class="rv-setup-note">In OBS: Tools → WebSocket Server Settings → enable it (the port and password are there). Point OBS at this browser window plus your microphone; no scenes needed.</p>
         </section>
         <section>
@@ -3832,9 +3835,13 @@
       }
     }
   }
-  function setObsStatus(text, kind) {
+  function setObsStatus(text, kind, detail) {
     obsStatus.textContent = text;
     obsStatus.className = kind || "";
+    obsStatus.title = detail || text;
+    const d = document.getElementById("obs-detail");
+    d.textContent = detail || "";
+    d.hidden = !detail;
   }
   var isLoopback = (host) => /^(localhost|127(\.\d+){3}|\[?::1\]?)$/i.test(host);
   function obsBlockedHere(host) {
@@ -3846,10 +3853,11 @@
     const url = "ws://" + host + ":" + (obsPort.value.trim() || "4455");
     if (obsBlockedHere(host)) {
       obsConnected = false;
-      setObsStatus(OBS_HTTPS_HELP, "err");
+      setObsStatus("Blocked here", "err", OBS_HTTPS_HELP);
       return;
     }
-    setObsStatus("Connecting to " + url + "\u2026");
+    setObsStatus("Connecting\u2026");
+    obsStatus.title = "Connecting to " + url;
     try {
       await loadScript(OBS_URL);
       const Ctor = window.OBSWebSocket && (window.OBSWebSocket.default || window.OBSWebSocket);
@@ -3862,7 +3870,7 @@
       obs = new Ctor();
       obs.on("ConnectionClosed", () => {
         obsConnected = false;
-        setObsStatus("Disconnected from OBS", "err");
+        setObsStatus("Disconnected", "err");
       });
       obs.on("RecordStateChanged", (e) => {
         if (e.outputState === "OBS_WEBSOCKET_OUTPUT_STARTED" && recStartResolve) {
@@ -3878,11 +3886,13 @@
         if (v && v.fpsNumerator && v.fpsDenominator) obsFps = v.fpsNumerator / v.fpsDenominator;
       } catch (e) {
       }
-      setObsStatus("Connected" + (info && info.obsWebSocketVersion ? " \xB7 OBS WebSocket " + info.obsWebSocketVersion : ""), "ok");
+      setObsStatus("Connected", "ok", "");
+      obsStatus.title = "Connected" + (info && info.obsWebSocketVersion ? " \xB7 OBS WebSocket " + info.obsWebSocketVersion : "");
       saveObsSettings();
     } catch (e) {
       obsConnected = false;
-      setObsStatus("Could not connect (" + (e && e.message || e) + "). Is OBS running with its WebSocket server on, and is the password right?", "err");
+      const why = e && e.message && e.message !== "Error" ? e.message + "." : "Nothing answered at " + url + ".";
+      setObsStatus("Could not connect", "err", why + " Is OBS running with its WebSocket server on, and are the port and password right?");
     }
   }
   document.getElementById("obs-connect").onclick = connectObs;

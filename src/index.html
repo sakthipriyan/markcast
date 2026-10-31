@@ -215,8 +215,10 @@
           <div class="rv-setup-row">
             <button class="btn small" id="obs-connect">Connect</button>
             <label class="check rv-setup-label"><input type="checkbox" id="obs-remember"> Remember</label>
+            <span class="rv-setup-gap"></span>
+            <span id="obs-status">Not connected</span>
           </div>
-          <p class="rv-setup-note" id="obs-status">Not connected</p>
+          <p class="rv-setup-note" id="obs-detail" hidden></p>
           <p class="rv-setup-note">In OBS: Tools → WebSocket Server Settings → enable it (the port and password are there). Point OBS at this browser window plus your microphone; no scenes needed.</p>
         </section>
         <section>
