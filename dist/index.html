@@ -428,9 +428,12 @@
   .rv-none{font-size:12px;color:var(--text-muted);font-style:italic;}
   /* Recording setup: opened from the ⚙ Setup button at the top right, shown under the title */
   .modal .rv-setup-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);}
-  #rv-setup{margin:4px 0 12px;border:1px solid var(--panel-line);border-radius:8px;padding:10px 14px;}
+  #rv-setup{margin:12px 0 12px;border:1px solid var(--panel-line);border-radius:8px;padding:10px 14px;}
   #rv-setup > summary{display:none;}
   #rv-setup:not([open]){display:none;}
+  #review h2.rv-brand{display:flex;align-items:center;gap:8px;color:var(--text);}
+  #review h2.rv-brand .logo{width:22px;height:22px;fill:var(--accent);flex:none;}
+  #review h2.rv-brand .word > span{color:var(--accent);}
   .rv-using{align-self:center;max-width:34vw;font-family:var(--mono);font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #review h2{padding-right:calc(34vw + 200px);}
   @media (max-width:900px){ .rv-using{display:none;} #review h2{padding-right:190px;} }
@@ -905,8 +908,7 @@
       <button class="btn rv-setup-btn" id="rv-setup-btn" aria-expanded="false" aria-controls="rv-setup">⚙ Setup</button>
       <button class="btn close" data-close>✕ Close</button>
     </div>
-    <h2 id="rv-title">Review the take</h2>
-    <p id="rv-info"></p>
+    <h2 id="rv-title" class="rv-brand"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M 10 8 H 38 C 41.3 8 44 10.7 44 14 V 18 H 22 C 16.5 18 12 22.5 12 28 V 36 H 10 C 6.7 36 4 33.3 4 30 V 14 C 4 10.7 6.7 8 10 8 Z" opacity="0.4"/><path fill-rule="evenodd" d="M 22 22 H 54 C 57.3 22 60 24.7 60 28 V 50 C 60 53.3 57.3 56 54 56 H 22 C 18.7 56 16 53.3 16 50 V 28 C 16 24.7 18.7 22 22 22 Z M 26 34 C 28.2 34 30 32.2 30 30 C 30 27.8 28.2 26 26 26 C 23.8 26 22 27.8 22 30 C 22 32.2 23.8 34 26 34 Z M 38 40 C 36.9 40 36 40.9 36 42 V 48 C 36 49.1 36.9 50 38 50 H 50 C 51.1 50 52 49.1 52 48 V 42 C 52 40.9 51.1 40 50 40 H 38 Z"/></svg><span class="word">Slide<span>take</span></span> Takes</h2>
     <details id="rv-setup">
       <summary>Recording setup</summary>
       <div class="rv-setup-head">
@@ -4621,21 +4623,12 @@
     closeModals();
     reviewing = sess;
     playlist = null;
-    const slides = takesOf(sess), retakes = sess.events.filter((e) => e.retake).length;
-    const recorded = sess.withObs || sess.inBrowser;
+    const retakes = sess.events.filter((e) => e.retake).length;
+    const about = sess.empty ? "" : takesOf(sess).size + " slides, " + (retakes ? retakes + " retake" + (retakes > 1 ? "s" : "") : "no retakes") + ", recorded " + fmtLength(sess.totalObs ?? sess.total) + ". ";
     reviewDialog.classList.remove("in-browser", "board");
     reviewDialog.classList.add("obs");
-    document.getElementById("rv-title").textContent = "Takes \xB7 " + sess.deckTitle;
     document.getElementById("rv-rec").title = "Records the deck with OBS: a new video in place of this one";
     document.getElementById("rv-render-btn").disabled = document.getElementById("rv-clean").disabled = !!sess.cleaned;
-    document.getElementById("rv-info").textContent = sess.empty ? "Nothing recorded with OBS yet" : [
-      sess.reason,
-      new Date(sess.date).toLocaleString(),
-      (recorded ? "recorded " : "ran ") + fmtLength(sess.totalObs ?? sess.total),
-      slides.size + " slides",
-      retakes ? retakes + " retake" + (retakes > 1 ? "s" : "") : "no retakes",
-      sess.inBrowser ? sess.quality + ", in this browser" : sess.outputPath ? "saved to " + sess.outputPath : sess.withObs ? "" : "nothing was recorded"
-    ].filter(Boolean).join(" \xB7 ");
     document.getElementById("rv-file").textContent = sess.outputPath ? " (" + baseName(sess.outputPath) + ")" : "";
     const fps = sessionFps(sess);
     fpsSel.value = [...fpsSel.options].reduce((a, o) => Math.abs(o.value - fps) < Math.abs(a.value - fps) ? o : a).value;
@@ -4653,7 +4646,7 @@
     setupEl.open = !!opts.setup || !obsConnected || !!sess.empty;
     if (setupEl.open) refreshSetup();
     else fillDevices(false).then(setupSummary);
-    say(opts.note || (sess.empty ? obsConnected ? "Press \u25CF Record: OBS records the deck." : "Connect to OBS in Setup, then press \u25CF Record." : rvVideo.src ? "Click a take to preview it." : "Open the recording to preview it."));
+    say(opts.note || (sess.empty ? obsConnected ? "Press \u25CF Record: OBS records the deck." : "Connect to OBS in Setup, then press \u25CF Record." : about + (rvVideo.src ? "Click a take to preview it." : "Open the recording to preview it.")));
     if (!sess.empty) autoLoadRecording(sess);
   }
   function renderReview() {
@@ -5205,7 +5198,6 @@
     reviewDialog.classList.add("in-browser", "board");
     document.getElementById("rv-rec").title = "Records the whole deck, or only the ticked slides (shift-click ticks a range)";
     document.getElementById("rv-novideo").hidden = true;
-    document.getElementById("rv-title").textContent = "Takes \xB7 " + (deck.title || (order[0] ? nodes.get(order[0]).title : "Deck"));
     if (rvVideo.src) {
       URL.revokeObjectURL(rvVideo.src);
       rvVideo.removeAttribute("src");
@@ -5221,7 +5213,12 @@
     setupEl.open = !!opts.setup || !ready || !board.takes.length;
     if (setupEl.open) refreshSetup();
     else fillDevices(false).then(setupSummary);
-    say(opts.note || selNote() || (board.takes.length ? "Click a take to preview it." : "Nothing recorded yet. Press \u25CF Record to record the deck."));
+    say(opts.note || selNote() || (board.takes.length ? boardState() + ". Click a take to preview it." : order.length + " slides, nothing recorded yet. Press \u25CF Record."));
+  }
+  function boardState() {
+    const rows = boardRows(loadBoard(), boardDeck());
+    const ready = rows.filter((r) => r.pick).length, outdated = rows.filter((r) => r.takes.length && !r.pick).length;
+    return ready + " of " + rows.length + " slides ready" + (outdated ? ", " + outdated + " to record again" : "");
   }
   function renderBoard() {
     const { rows, sess } = boardReview();
@@ -5258,13 +5255,6 @@
     if (lastTicked >= 0 && ticked.length !== lastTicked) say(selNote() || "Record takes the whole deck.");
     lastTicked = ticked.length;
     document.getElementById("rv-render-btn").disabled = document.getElementById("rv-play-final").disabled = !sess.events.length;
-    const recorded = rows.filter((r) => r.pick).length, outdated = rows.filter((r) => r.takes.length && !r.pick).length;
-    document.getElementById("rv-info").textContent = board.takes.length ? [
-      board.takes.length + " take" + (board.takes.length === 1 ? "" : "s"),
-      recorded + " of " + rows.length + " slides ready",
-      outdated ? outdated + " to record again" : "",
-      board.quality ? board.quality + ", in this browser" : ""
-    ].filter(Boolean).join(" \xB7 ") : order.length + " slides, nothing recorded yet";
     showChapters(sess);
     showFinalSize(sess);
   }

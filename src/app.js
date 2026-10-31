@@ -2305,21 +2305,14 @@ function openReview(sess, opts = {}){
   closeModals();
   reviewing = sess;
   playlist = null;
-  const slides = takesOf(sess), retakes = sess.events.filter(e=>e.retake).length;
-  const recorded = sess.withObs || sess.inBrowser;
+  const retakes = sess.events.filter(e=>e.retake).length;
+  // what the recording is, said once as it opens
+  const about = sess.empty ? '' : takesOf(sess).size + ' slides, ' + (retakes ? retakes + ' retake' + (retakes > 1 ? 's' : '') : 'no retakes') +
+    ', recorded ' + fmtLength(sess.totalObs ?? sess.total) + '. ';
   reviewDialog.classList.remove('in-browser', 'board');
   reviewDialog.classList.add('obs');
-  document.getElementById('rv-title').textContent = 'Takes · ' + sess.deckTitle;
   document.getElementById('rv-rec').title = 'Records the deck with OBS: a new video in place of this one';
   document.getElementById('rv-render-btn').disabled = document.getElementById('rv-clean').disabled = !!sess.cleaned;
-  document.getElementById('rv-info').textContent = sess.empty ? 'Nothing recorded with OBS yet' : [
-    sess.reason,
-    new Date(sess.date).toLocaleString(),
-    (recorded ? 'recorded ' : 'ran ') + fmtLength(sess.totalObs ?? sess.total),
-    slides.size + ' slides',
-    retakes ? retakes + ' retake' + (retakes > 1 ? 's' : '') : 'no retakes',
-    sess.inBrowser ? sess.quality + ', in this browser' : sess.outputPath ? 'saved to ' + sess.outputPath : (sess.withObs ? '' : 'nothing was recorded')
-  ].filter(Boolean).join(' · ');
   document.getElementById('rv-file').textContent = sess.outputPath ? ' (' + baseName(sess.outputPath) + ')' : '';
   // pick the listed rate nearest to the take's (OBS reports e.g. 60000/1001 for 59.94)
   const fps = sessionFps(sess);
@@ -2335,7 +2328,7 @@ function openReview(sess, opts = {}){
   setupEl.open = !!opts.setup || !obsConnected || !!sess.empty;
   if (setupEl.open) refreshSetup(); else fillDevices(false).then(setupSummary);
   say(opts.note || (sess.empty ? (obsConnected ? 'Press ● Record: OBS records the deck.' : 'Connect to OBS in Setup, then press ● Record.')
-    : rvVideo.src ? 'Click a take to preview it.' : 'Open the recording to preview it.'));
+    : about + (rvVideo.src ? 'Click a take to preview it.' : 'Open the recording to preview it.')));
   if (!sess.empty) autoLoadRecording(sess);
 }
 function renderReview(){
@@ -2823,7 +2816,6 @@ function openBoard(opts = {}){
   reviewDialog.classList.add('in-browser', 'board');
   document.getElementById('rv-rec').title = 'Records the whole deck, or only the ticked slides (shift-click ticks a range)';
   document.getElementById('rv-novideo').hidden = true;
-  document.getElementById('rv-title').textContent = 'Takes · ' + (deck.title || (order[0] ? nodes.get(order[0]).title : 'Deck'));
   if (rvVideo.src){ URL.revokeObjectURL(rvVideo.src); rvVideo.removeAttribute('src'); rvVideo.load(); }
   playlist = null; clipList = null;
   resetPreview();
@@ -2833,7 +2825,13 @@ function openBoard(opts = {}){
   const ready = browserRecording().ok;
   setupEl.open = !!opts.setup || !ready || !board.takes.length;
   if (setupEl.open) refreshSetup(); else fillDevices(false).then(setupSummary);
-  say(opts.note || selNote() || (board.takes.length ? 'Click a take to preview it.' : 'Nothing recorded yet. Press ● Record to record the deck.'));
+  say(opts.note || selNote() || (board.takes.length ? boardState() + '. Click a take to preview it.' : order.length + ' slides, nothing recorded yet. Press ● Record.'));
+}
+// how far the video is: slides with a take to use, and those to record again
+function boardState(){
+  const rows = boardRows(loadBoard(), boardDeck());
+  const ready = rows.filter(r=>r.pick).length, outdated = rows.filter(r=>r.takes.length && !r.pick).length;
+  return ready + ' of ' + rows.length + ' slides ready' + (outdated ? ', ' + outdated + ' to record again' : '');
 }
 function renderBoard(){
   const {rows, sess} = boardReview();
@@ -2872,11 +2870,6 @@ function renderBoard(){
   if (lastTicked >= 0 && ticked.length !== lastTicked) say(selNote() || 'Record takes the whole deck.');
   lastTicked = ticked.length;
   document.getElementById('rv-render-btn').disabled = document.getElementById('rv-play-final').disabled = !sess.events.length;
-  const recorded = rows.filter(r=>r.pick).length, outdated = rows.filter(r=>r.takes.length && !r.pick).length;
-  document.getElementById('rv-info').textContent = board.takes.length
-    ? [board.takes.length + ' take' + (board.takes.length === 1 ? '' : 's'), recorded + ' of ' + rows.length + ' slides ready',
-       outdated ? outdated + ' to record again' : '', board.quality ? board.quality + ', in this browser' : ''].filter(Boolean).join(' · ')
-    : order.length + ' slides, nothing recorded yet';
   showChapters(sess);
   showFinalSize(sess);
 }
