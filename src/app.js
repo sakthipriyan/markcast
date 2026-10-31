@@ -704,7 +704,7 @@ function resolveUrls(root){
   });
   return unresolved;
 }
-// width the card needs: wide tables, columns, logo grids, diagrams, charts and embeds get more room
+// width the card needs: wide tables and code, columns, logo grids, diagrams, charts and embeds get more room
 function sizeCard(n){
   const el = n.el, b = el.querySelector('.body');
   el.classList.add('measuring');
@@ -758,6 +758,17 @@ function sizeCard(n){
     // long cell text wraps rather than stretching the card past WIDE_W; real overflow is handled below
     // (+12: offsetWidth rounds down, and a table at its exact width starts wrapping)
     tables.forEach(t=>{ w = Math.max(w, Math.min(WIDE_W, Math.ceil(t.offsetWidth) + pad + 12)); });
+  }
+  // code gets the width its longest line needs, so it doesn't scroll unless it's wider than the widest card
+  const codes = b.querySelectorAll('pre');
+  if (codes.length){
+    el.style.width = XWIDE_W + 'px';
+    const pad = el.offsetWidth - b.clientWidth;
+    codes.forEach(p=>{
+      p.style.width = 'max-content';
+      w = Math.max(w, Math.min(XWIDE_W, Math.ceil(p.offsetWidth) + pad + 2));
+      p.style.width = '';
+    });
   }
   // a "grow" fragment ends up 1.3x its size; leave room so its last step stays inside the card
   const growers = b.querySelectorAll('.fragment.grow');

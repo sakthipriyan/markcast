@@ -77,6 +77,8 @@ package can notice. Tests, CI and tooling do not belong here.
   under the player, with the final length and expected size; thin scrollbars
   in the accent. The slides link fills in from the page the deck is on when the
   deck names no permalink or site; the Record dialog is wider.
+- A card widens for its code, as it does for a table, so a code block only
+  scrolls when it's wider than the widest card.
 - Graphviz diagrams are drawn in the deck's own colours for dark and light,
   as D2 is, instead of on a light panel; colours a diagram sets itself still win.
 - Slidetake's own decks write the name as in the header, the logo and

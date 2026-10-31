@@ -51,10 +51,10 @@ It opens on `http://localhost:4300` with the files next to the deck served besid
 window.SLIDETAKE = {
   markdown: "# My deck\n\n## A section",
   settings: {title: "My deck"},
-  base: location.href,                 // where relative images resolve
+  base: location.href,         // for images
   trail: [{label: "My site", url: "/"}],
-  themeKey: "my-site-theme",           // optional: your site's light/dark key
-  colors: {accent: "#2563eb"}          // optional: your colours
+  themeKey: "my-theme",        // your light/dark key
+  colors: {accent: "#2563eb"}  // your colours
 };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/slidetake/dist/slidetake.js"></script>
@@ -75,12 +75,12 @@ Any AI can write a deck: point it at [slidetake.com/llms.txt](/llms.txt) and say
 A deck is an ordinary markdown file. **Every heading becomes a card**, and a heading branches off the nearest shallower heading above it.
 
 ```md
-# Product            ← the first card
+# Product          ← the first card
 Intro text.
 
-## Pricing           ← branches from Product
-### Enterprise       ← branches from Pricing
-## Roadmap {#plan}   ← branches from Product, id "plan"
+## Pricing         ← from Product
+### Enterprise     ← from Pricing
+## Roadmap {#plan} ← from Product, id "plan"
 
 See the [roadmap](#plan).
 ```
@@ -126,12 +126,12 @@ An optional block at the top of the file:
 
 ```yaml
 ---
-title: My talk               ← the page title, and the video's
-duration: 10m                ← talk length, for the timer
-accent: "#3b82f6"            ← the deck's colour (Slidetake's own is green)
-brand: example.com/talks     ← text in the top-right corner
-logo: https://…/logo.png     ← image beside it
-base: https://…/deck-folder/ ← where relative images live, for a file opened from elsewhere
+title: My talk        ← page and video title
+duration: 10m         ← for the timer
+accent: "#3b82f6"     ← the deck's colour
+brand: example.com    ← top-right corner text
+logo: https://…/l.png ← image beside it
+base: https://…/deck/ ← where images live
 ---
 ```
 
@@ -252,11 +252,11 @@ From https://slidetake.com, OBS must be on the same computer: browsers block sec
 
 ```yaml
 ---
-pip: bottom-right            ← camera corner, or none
-pip_size: 24%                ← camera box width
-pip_shape: rect              ← rect (16:9) or circle
-pip_mirror: yes              ← mirror the webcam
-camera: 24%, 40%, full, off  ← layouts V cycles through
+pip: bottom-right      ← corner, or none
+pip_size: 24%          ← box width
+pip_shape: rect        ← or circle
+pip_mirror: yes        ← mirror the webcam
+camera: 24%, full, off ← what V cycles
 ---
 ```
 
@@ -268,10 +268,10 @@ A comment in a slide changes the camera from that slide on:
 
 ```md
 ## Intro
-<!-- camera: full -->       ← camera fills the screen
+<!-- camera: full -->     ← fills the screen
 
 ## Pricing
-<!-- camera: 18% flip -->   ← small, on the other side
+<!-- camera: 18% flip --> ← small, other side
 ```
 
 Words you can combine: `on`, `off`, `full`, a size like `30%`, a corner, `flip`, `circle` / `rect`, `mirror` / `unmirror`. List them with commas to step through them on one slide: `full, on` opens on you, and the next → shrinks the camera to its corner and shows the slide.
